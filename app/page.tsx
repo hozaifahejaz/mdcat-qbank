@@ -1,22 +1,32 @@
 import Logo from "@/components/Logo";
 import Reveal from "@/components/Reveal";
-import SampleQuestion from "@/components/SampleQuestion";
 import ThemeToggle from "@/components/ThemeToggle";
-import { paper, prices, site } from "@/lib/site";
+import { prices, site } from "@/lib/site";
 import "./landing.css";
 
+/* MDCAT launches first. The others are listed as coming. */
+const tests = [
+  { name: "MDCAT", for: "PMDC", live: true, tone: "var(--sky)" },
+  { name: "NUMS", for: "Medical", live: false, tone: "var(--mint)" },
+  { name: "AKU", for: "Aga Khan University", live: false, tone: "var(--peach)" },
+  { name: "ECAT", for: "Engineering", live: false, tone: "var(--lemon)" },
+];
+
 const faqs = [
-  { q: "Is this a coaching course?", a: "No. It's a practice tool: MCQs, explanations, timed mocks and past papers. Most students use it alongside their academy or self-study, and it costs a fraction of a course." },
-  { q: "Where do the questions come from?", a: "Our own subject experts write them from the PMDC syllabus and the textbooks it's based on. Past-paper questions are rebuilt in our own words with our own explanations. Nothing is copied from academy books or other apps." },
-  { q: "What if I find a mistake?", a: "Tap \"Report\" on the question. We answer every report within 48 hours, and if we were wrong we fix the question for everyone and correct your stats." },
-  { q: "Can I use it on my phone and laptop?", a: "Yes. You can register two devices and use one at a time. Switching takes one tap, and an unfinished test picks up where you left off." },
-  { q: "How do I pay?", a: "JazzCash, Easypaisa, debit or credit card, or bank transfer. It's a one-time payment for the season, with no renewal." },
-  { q: "Do you cover NUMS, AKU or other tests?", a: "PMDC MDCAT first. NUMS is next, and we'll add other university tests after that." },
-  { q: "Are you affiliated with PMDC?", a: `No. ${site.name} is independent and not affiliated with PMDC, NUMS or any university.` },
+  { q: "Is this a coaching course?", a: "No. It's practice: MCQs, explanations, mocks and past papers, to use alongside your academy or self-study." },
+  { q: "Where do the questions come from?", a: "Our subject experts write them from the PMDC syllabus. Nothing is copied from academy books or other apps." },
+  { q: "How do I pay?", a: "JazzCash, Easypaisa, card or bank transfer. One payment covers the season." },
+  { q: "How many devices can I use?", a: "Two, one at a time." },
+];
+
+/* Illustrations below are sketches of the product, not real student data. */
+const subjects = [
+  { name: "Biology", v: 82, t: "var(--good)" },
+  { name: "Chemistry", v: 64, t: "var(--blue)" },
+  { name: "Physics", v: 47, t: "var(--warn)" },
 ];
 
 export default function Home() {
-  const total = paper.reduce((n, p) => n + p.count, 0);
   return (
     <>
       <nav>
@@ -24,7 +34,7 @@ export default function Home() {
           <div className="navbar">
             <Logo />
             <ul>
-              <li><a href="#how">How it works</a></li>
+              <li><a href="#features">Features</a></li>
               <li><a href="#pricing">Pricing</a></li>
               <li><a href="#faq">FAQ</a></li>
             </ul>
@@ -41,123 +51,150 @@ export default function Home() {
         <div className="wrap">
           <header className="hero">
             <div className="hero-copy">
-              <h1>Practise the MCQs that <span>decide your seat.</span></h1>
-              <p className="sub muted">MDCAT MCQs with a full explanation on every one, and mocks built like the real paper.</p>
+              <h1>Every MCQ, <span>explained.</span></h1>
+              <p className="sub muted">Practise for MDCAT with chapter drills, timed mocks and past papers.</p>
               <div className="ctas">
-                <a className="pill pill-dark" href="#try">Try a question</a>
+                <a className="pill pill-dark" href="/signup">Start free</a>
                 <a className="pill pill-light" href="#pricing">See pricing</a>
               </div>
             </div>
-            <SampleQuestion />
-          </header>
 
-          <section id="how">
-            <div className="center rv"><h2>Practise, test, fix.</h2></div>
-            <div className="steps">
-              <div className="step rv" style={{ background: "var(--sky)" }}>
-                <span className="n">1</span>
-                <h3>Practise by chapter</h3>
-                <p>Pick a subject, chapter or topic from the PMDC syllabus and get instant explanations as you go. Bookmark anything you want to see again.</p>
+            <div className="stage" aria-hidden="true">
+              <div className="card q">
+                <div className="q-top"><span className="chip">Biology</span></div>
+                <p className="q-stem">Which part of the nephron is impermeable to water?</p>
+                <div className="q-opt"><b>A</b>Proximal convoluted tubule</div>
+                <div className="q-opt no"><b>B</b>Descending limb of the loop of Henle</div>
+                <div className="q-opt yes"><b>C</b>Ascending limb of the loop of Henle</div>
+                <div className="q-opt"><b>D</b>Collecting duct</div>
+                <div className="q-why"><b>Why C?</b> It pumps salt out of the filtrate, but water can't follow.</div>
               </div>
-              <div className="step rv" style={{ background: "var(--mint)" }}>
-                <span className="n">2</span>
-                <h3>Sit full-length mocks</h3>
-                <p>180 MCQs in 3 hours, with the real paper's subject split and mix of easy, moderate and hard questions. Past papers by year too.</p>
+              <div className="card float score">
+                <span className="muted">Mock 3</span>
+                <strong>142<small>/180</small></strong>
+                <span className="up">+18 since Mock 2</span>
               </div>
-              <div className="step rv" style={{ background: "var(--lemon)" }}>
-                <span className="n">3</span>
-                <h3>Fix your weak chapters</h3>
-                <p>Your dashboard shows your score by subject and chapter, and "My mistakes" collects every question you got wrong to retry.</p>
+              <div className="card float weak">
+                <span className="muted">Fix next</span>
+                <strong>Thermodynamics</strong>
               </div>
             </div>
-            <div className="card split rv">
-              <div className="split-head"><b>Mocks match the real paper</b><span>{total} MCQs · 3 hours · no negative marking</span></div>
-              <div className="split-bar" aria-hidden="true">
-                {paper.map((p) => <i key={p.subject} style={{ flexGrow: p.count, background: p.solid }} />)}
+          </header>
+
+          <section className="tests" aria-label="Entry tests">
+            {tests.map((t) => (
+              <div key={t.name} className="test rv" style={{ background: t.tone }}>
+                <b>{t.name}</b>
+                <span>{t.for}</span>
+                <em className={t.live ? "live" : ""}>{t.live ? "Live" : "Soon"}</em>
               </div>
-              <div className="split-key">
-                {paper.map((p) => <span key={p.subject} style={{ ["--c" as string]: p.solid }}>{p.subject} <b>{p.count}</b></span>)}
+            ))}
+          </section>
+
+          <section id="features" className="bento">
+            <div className="card tile wide rv">
+              <div>
+                <h2>Know why, not just what.</h2>
+                <p className="muted">Every option explained, right and wrong.</p>
+              </div>
+              <div className="mini-opts" aria-hidden="true">
+                <span className="yes"><b>C</b>Right: salt leaves, water can't follow</span>
+                <span><b>A</b>Wrong: reabsorbs most water</span>
+                <span><b>B</b>Wrong: permeable to water</span>
+              </div>
+            </div>
+            <div className="tile rv" style={{ background: "var(--mint)" }}>
+              <h2>Full mocks</h2>
+              <p className="big">180<small> MCQs</small></p>
+              <p className="muted">3 hours, real paper split.</p>
+            </div>
+            <div className="tile rv" style={{ background: "var(--peach)" }}>
+              <h2>Weak spots</h2>
+              <div className="bars" aria-hidden="true">
+                {subjects.map((s) => (
+                  <div key={s.name} className="bar">
+                    <span>{s.name}</span>
+                    <i><i style={{ width: `${s.v}%`, background: s.t }} /></i>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="card tile wide rv">
+              <div>
+                <h2>Past papers</h2>
+                <p className="muted">Solved, by year.</p>
+              </div>
+              <div className="years" aria-hidden="true">
+                {["2025", "2024", "2023", "2022", "2021"].map((y) => <span key={y}>{y}</span>)}
               </div>
             </div>
           </section>
 
-          <section id="pricing">
+          <section id="pricing" className="pricing">
             <div className="center rv"><h2>One payment. The whole season.</h2></div>
             <div className="plans">
+              <div className="card plan best rv">
+                <div className="plan-top">
+                  <h3>Season pass</h3>
+                  <span className="badge">Early bird Rs. {prices.earlyBird} until {prices.earlyBirdUntil}</span>
+                </div>
+                <div className="price"><small>Rs.</small><b>{prices.seasonPass}</b></div>
+                <ul>
+                  <li>Full question bank</li>
+                  <li>Timed full-length mocks</li>
+                  <li>Past papers</li>
+                  <li>Progress by chapter</li>
+                </ul>
+                <div className="plan-end">
+                  <a className="pill" href="/signup">Get the pass</a>
+                  <span>or Rs. {prices.monthly} a month</span>
+                </div>
+              </div>
               <div className="card plan rv">
                 <h3>Free</h3>
                 <div className="price"><small>Rs.</small><b>0</b></div>
                 <ul>
-                  <li>About 300 questions across all subjects</li>
+                  <li>300 questions</li>
                   <li>One mini mock</li>
-                  <li>Basic progress stats</li>
                 </ul>
-                <a className="pill pill-light" href="/signup">Start free</a>
-              </div>
-              <div className="card plan best rv">
-                <span className="badge">Best for most</span>
-                <h3>MDCAT season pass</h3>
-                <div className="price"><small>Rs.</small><b>{prices.seasonPass}</b><span>per season</span></div>
-                <span className="early">Early bird Rs. {prices.earlyBird} until {prices.earlyBirdUntil}</span>
-                <ul>
-                  <li className="plus">Everything in Free, plus</li>
-                  <li>The full question bank, every chapter</li>
-                  <li>Full-length timed mocks</li>
-                  <li>Past papers by year</li>
-                  <li>Chapter-by-chapter dashboard</li>
-                  <li>Bookmarks and "My mistakes"</li>
-                </ul>
-                <a className="pill" href="/signup">Get the season pass</a>
-              </div>
-              <div className="card plan rv">
-                <h3>Monthly</h3>
-                <div className="price"><small>Rs.</small><b>{prices.monthly}</b><span>per month</span></div>
-                <ul>
-                  <li className="plus">Everything in the season pass</li>
-                  <li>Pay one month at a time</li>
-                  <li>Switch to the season pass any time</li>
-                </ul>
-                <a className="pill pill-dark" href="/signup">Go monthly</a>
+                <div className="plan-end">
+                  <a className="pill pill-light" href="/signup">Start free</a>
+                </div>
               </div>
             </div>
           </section>
 
-          <section id="devices" aria-labelledby="devices-h">
+          <section className="apps-wrap" aria-labelledby="apps-h">
             <div className="card apps rv">
               <div className="apps-copy">
-                <h2 id="devices-h">Your pass, on your phone and laptop.</h2>
-                <ul>
-                  <li>Register two devices and use one at a time</li>
-                  <li>Switch in one tap, and pick up an unfinished test where you left off</li>
-                  <li>Questions carry a faint watermark with your account ID, so leaked screenshots trace back</li>
-                </ul>
-                <div className="soon" aria-label="Mobile apps">
-                  <span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="3" /><path d="M11 18h2" /></svg> iOS app <small>Coming soon</small></span>
-                  <span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="3" /><path d="M11 18h2" /></svg> Android app <small>Coming soon</small></span>
+                <h2 id="apps-h">iOS and Android apps are coming.</h2>
+                <div className="soon">
+                  <span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="3" /><path d="M11 18h2" /></svg>
+                    iOS <small>Coming soon</small>
+                  </span>
+                  <span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="3" /><path d="M11 18h2" /></svg>
+                    Android <small>Coming soon</small>
+                  </span>
                 </div>
               </div>
               <div className="phone" aria-hidden="true">
-                <div className="wm">{Array.from({ length: 16 }, (_, i) => <span key={i}>ID 4821-0937</span>)}</div>
                 <span className="notch" />
-                <span className="ph-title">Biology · Q 14 of 40</span>
-                <span className="ph-alert">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="6" y="2" width="12" height="20" rx="3" /><path d="M11 18h2" /></svg>
-                  Active on this phone
-                </span>
-                <span className="ph-q"><i /><i /><i /></span>
-                <span className="ph-opt"><b>A</b><i /></span>
-                <span className="ph-opt"><b>B</b><i /></span>
-                <span className="ph-opt on"><b>C</b><i /></span>
-                <span className="ph-opt"><b>D</b><i /></span>
+                <span className="ph-title">Today</span>
+                <span className="ph-stat"><b>40</b>questions left</span>
+                <span className="ph-row"><i /><b style={{ background: "var(--good)" }}>82</b><i /></span>
+                <span className="ph-row"><i /><b style={{ background: "var(--blue)" }}>64</b><i /></span>
+                <span className="ph-row"><i /><b style={{ background: "var(--warn)" }}>47</b><i /></span>
               </div>
             </div>
           </section>
 
-          <section id="faq">
-            <div className="center rv"><h2>Questions, answered.</h2></div>
+          <section id="faq" className="faq-sec">
+            <h2 className="rv">Questions</h2>
             <div className="faq">
-              {faqs.map((f, i) => (
-                <details className="rv" key={f.q} open={i === 0}>
+              {faqs.map((f) => (
+                <details className="rv" key={f.q}>
                   <summary>{f.q}</summary>
                   <p>{f.a}</p>
                 </details>
@@ -165,29 +202,24 @@ export default function Home() {
             </div>
           </section>
 
-          <div className="final rv" id="join">
-            <h2>Start practising before MDCAT {site.season}.</h2>
-            <div className="ctas">
-              <a className="pill pill-dark" href="/signup">Start free</a>
-              <a className="pill pill-light" href="#try">Try a question</a>
-            </div>
+          <div className="final rv">
+            <h2>Start free today.</h2>
+            <a className="pill pill-dark" href="/signup">Create an account</a>
           </div>
         </div>
       </main>
 
       <footer>
-        <div className="wrap">
-          <div className="foot">
-            <Logo size={22} />
-            <ul>
-              <li><a href="#how">How it works</a></li>
-              <li><a href="#pricing">Pricing</a></li>
-              <li><a href="#faq">FAQ</a></li>
-              <li><a href="/privacy">Privacy</a></li>
-              <li><a href="/terms">Terms</a></li>
-            </ul>
-          </div>
-          <p className="legal">Not affiliated with PMDC, NUMS or any university. MDCAT is administered by PMDC. © {new Date().getFullYear()} {site.name}</p>
+        <div className="wrap foot">
+          <Logo size={22} />
+          <ul>
+            <li><a href="#features">Features</a></li>
+            <li><a href="#pricing">Pricing</a></li>
+            <li><a href="#faq">FAQ</a></li>
+            <li><a href="/privacy">Privacy</a></li>
+            <li><a href="/terms">Terms</a></li>
+          </ul>
+          <p className="legal">Not affiliated with PMDC or any university. © {new Date().getFullYear()} {site.name}</p>
         </div>
       </footer>
       <Reveal />

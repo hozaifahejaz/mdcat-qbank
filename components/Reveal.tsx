@@ -7,7 +7,7 @@ export default function Reveal() {
   useEffect(() => {
     const els = Array.from(document.querySelectorAll<HTMLElement>(".rv"));
     els.forEach((el) => { if (el.getBoundingClientRect().top > innerHeight * 0.92) el.classList.add("wait"); });
-    [".steps", ".plans"].forEach((s) => {
+    [".tests", ".bento", ".plans"].forEach((s) => {
       document.querySelectorAll<HTMLElement>(s + " > .rv").forEach((el, i) => el.style.setProperty("--rd", i * 90 + "ms"));
     });
     if (!("IntersectionObserver" in window)) {

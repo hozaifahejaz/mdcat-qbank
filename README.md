@@ -19,8 +19,7 @@ npm run build      # production build
 npm run typecheck
 ```
 
-- `app/page.tsx` and `app/landing.css`: the landing page. Its look matches residencypilot.com (same tokens in `app/globals.css`).
-- `components/SampleQuestion.tsx`: the "Try a question" card, with sample questions in `lib/sample-questions.ts`.
+- `app/page.tsx` and `app/landing.css`: the landing page, in the residencypilot.com theme (same tokens in `app/globals.css`).
 - `lib/site.ts`: the brand name (Examwise), prices and the paper's subject split.
 
 ## Hosting
