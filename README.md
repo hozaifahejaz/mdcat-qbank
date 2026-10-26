@@ -6,7 +6,22 @@ Students buy a season pass per exam and get chapter-wise practice, timed tests, 
 
 ## Status
 
-Planning. See [docs/plan.md](docs/plan.md) for the full business and build plan.
+Planning, with the landing page built. See [docs/plan.md](docs/plan.md) for the full business and build plan.
+
+## Running locally
+
+Needs Node 20.9 or newer.
+
+```sh
+npm install
+npm run dev        # http://localhost:3000
+npm run build      # production build
+npm run typecheck
+```
+
+- `app/page.tsx` and `app/landing.css`: the landing page. Its look matches residencypilot.com (same tokens in `app/globals.css`).
+- `components/SampleQuestion.tsx`: the "Try a question" card, with sample questions in `lib/sample-questions.ts`.
+- `lib/site.ts`: the brand name (a working name for now), prices and the paper's subject split.
 
 ## Exams
 

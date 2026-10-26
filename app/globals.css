@@ -1,0 +1,42 @@
+@import "tailwindcss";
+
+/* Design tokens, shared with residencypilot.com: soft grey canvas, white rounded cards, black pill buttons,
+   pastel tiles and big, tight, bold headlines. */
+:root {
+  --bg: #f4f4f1;
+  --card: #ffffff;
+  --ink: #111214;
+  --muted: #64666d;
+  --line: #e6e6e1;
+  --blue: #2445ff;
+  --blue-soft: #e8ecff;
+  --pill: #111214;
+  --on-pill: #ffffff;
+  --mint: #dff5e8;
+  --peach: #ffe9dc;
+  --lilac: #ece6ff;
+  --sky: #dff0ff;
+  --lemon: #fbf3cf;
+  --rose: #ffe3ea;
+  --good: #11804a;
+  --warn: #b06a00;
+  --bad: #cc2f2f;
+  --shadow: 0 1px 2px rgba(17,18,20,.04), 0 12px 32px -12px rgba(17,18,20,.14);
+  --font: var(--font-jakarta), "Plus Jakarta Sans", "Helvetica Neue", Arial, system-ui, sans-serif;
+  --r-lg: 28px;
+  --r-md: 18px;
+}
+:root[data-theme="dark"] {
+  --bg: #0f1012; --card: #18191c; --ink: #f3f3f1; --muted: #9a9ca3; --line: #2a2b30;
+  --blue: #6f86ff; --blue-soft: #1c2142; --pill: #f3f3f1; --on-pill: #111214;
+  --mint: #15291f; --peach: #2e2119; --lilac: #221d36; --sky: #152434; --lemon: #2a2614; --rose: #2f1a20;
+  --good: #48d08a; --warn: #f0aa45; --bad: #ff7272;
+  --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 32px -12px rgba(0,0,0,.6);
+  color-scheme: dark;
+}
+
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 400 1rem/1.6 var(--font); -webkit-font-smoothing: antialiased; }
+/* No sideways scroll on phones, whatever a child does */
+html, body { overflow-x: clip; }
+:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; }
