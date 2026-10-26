@@ -130,13 +130,13 @@ A leaked screenshot traced by its watermark is an immediate ban. Website detecti
 | --- | --- |
 | Web app | Next.js (React, TypeScript) |
 | Styling | Tailwind CSS |
-| Database | PostgreSQL (Supabase or Neon) |
-| Auth | Supabase Auth or Auth.js (email, Google, phone OTP) |
-| Storage | Cloudflare R2 or Supabase Storage |
+| Database | Cloudflare D1 |
+| Auth | Own sign-in on Cloudflare Pages Functions (email, phone OTP, Google, Apple) |
+| Storage | Cloudflare R2 |
 | Formulas | KaTeX |
 | Hosting | Cloudflare Pages |
 | Payments | Safepay / PayFast / Simpaisa |
-| Email | Resend; local SMS provider for OTP |
+| Email | Cloudflare Email Service; Twilio Verify for SMS codes (a local SMS gateway later if cheaper) |
 | Product analytics | PostHog |
 | Admin | Built-in admin screens with bulk CSV import |
 

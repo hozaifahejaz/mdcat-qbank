@@ -1,4 +1,4 @@
-/* Everything the student dashboard shows, in the shape the backend will return it.
+/* The student's study stats on the dashboard, in the shape the backend will return it.
    Mock data for now: getDashboard() is the one place to swap for real queries over attempts, answers and tests. */
 import type { StudentUser } from "@/lib/user";
 
@@ -19,8 +19,6 @@ export type TestResult = {
   minutes: number;
 };
 
-export type Device = { id: string; name: string; lastSeen: string; active: boolean; thisDevice: boolean };
-
 export type Dashboard = {
   streakDays: number;
   bookmarks: number;
@@ -29,8 +27,6 @@ export type Dashboard = {
   subjects: SubjectStat[];
   weakTopics: WeakTopic[];
   recent: TestResult[];
-  devices: Device[];
-  lastDeviceSwap?: string; // ISO; a removed device can be replaced once every 30 days
 };
 
 const ch = (chapter: string, answered: number, available: number, correct: number): ChapterStat => ({ chapter, answered, available, correct });
@@ -116,10 +112,6 @@ const mock: Dashboard = {
     { id: "t4", kind: "mock", title: "Full mock 3", date: "2026-10-11T10:00:00+05:00", score: 118, total: 180, minutes: 172 },
     { id: "t3", kind: "mock", title: "Full mock 2", date: "2026-10-04T10:00:00+05:00", score: 112, total: 180, minutes: 180 },
     { id: "t2", kind: "mock", title: "Full mock 1", date: "2026-09-27T10:00:00+05:00", score: 104, total: 180, minutes: 178 },
-  ],
-  devices: [
-    { id: "d1", name: "Chrome on Windows laptop", lastSeen: "2026-10-26T20:10:00+05:00", active: true, thisDevice: true },
-    { id: "d2", name: "Android phone", lastSeen: "2026-10-25T22:41:00+05:00", active: false, thisDevice: false },
   ],
 };
 

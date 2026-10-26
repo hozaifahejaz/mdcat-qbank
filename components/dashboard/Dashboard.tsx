@@ -4,9 +4,12 @@ import { useEffect, useState } from "react";
 import Logo from "@/components/Logo";
 import ThemeToggle from "@/components/ThemeToggle";
 import ScoreTrend from "@/components/dashboard/ScoreTrend";
+import { type Device, friendlyError, myDevices, removeDevice, signOut } from "@/lib/auth";
 import { getDashboard, type Dashboard as Data, type SubjectStat, type TestResult } from "@/lib/dashboard-data";
 import { paper, prices, site } from "@/lib/site";
-import { getCurrentUser, type Plan, type StudentUser } from "@/lib/user";
+import { getCurrentUser, type StudentUser } from "@/lib/user";
+
+type Plan = StudentUser["plan"];
 
 const links = [
   { href: "/dashboard", label: "Home" },
@@ -86,6 +89,7 @@ export default function Dashboard() {
             </nav>
             <div className="dnav-end">
               <ThemeToggle />
+              <button type="button" className="signout" onClick={async () => { await signOut(); window.location.replace("/"); }}>Sign out</button>
               <a className="avatar" href="/account" title="Account" aria-label="Account">{user ? initials(user.name) : ""}</a>
             </div>
           </div>
@@ -100,7 +104,7 @@ export default function Dashboard() {
 }
 
 function initials(name: string) {
-  return name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]!.toUpperCase()).join("");
+  return (name || "?").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]!.toUpperCase()).join("");
 }
 
 function Skeleton() {
@@ -119,13 +123,13 @@ function Body({ user, data }: { user: StudentUser; data: Data }) {
   const lastMock = mocks.at(-1);
   const prevMock = mocks.at(-2);
   const days = daysUntil(site.examDate);
-  const firstName = user.name.split(/\s+/)[0];
+  const firstName = user.name.split(/\s+/)[0] || "there";
 
   return (
     <div className="dgrid">
       <section className="hello" aria-labelledby="hello-h">
         <div>
-          <p className="demo"><i />Preview with sample data</p>
+          <p className="demo"><i />Sample stats until the question bank is live</p>
           <h1 id="hello-h">{greeting()}, {firstName}.</h1>
           <p className="muted">
             <b>{days} days</b> to MDCAT (expected {fullDay(site.examDate)}) · {data.streakDays}-day practice streak
@@ -263,7 +267,7 @@ function Body({ user, data }: { user: StudentUser; data: Data }) {
 
       <div className="cols even">
         <PlanCard user={user} />
-        <Devices data={data} />
+        <Devices />
       </div>
     </div>
   );
@@ -328,37 +332,59 @@ function PlanCard({ user }: { user: StudentUser }) {
   );
 }
 
-function Devices({ data }: { data: Data }) {
-  const [note, setNote] = useState(false);
+function Devices() {
+  const [devices, setDevices] = useState<Device[] | null>(null);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    myDevices().then(setDevices).catch((e) => setMsg(friendlyError(e)));
+  }, []);
+
+  async function remove(d: Device) {
+    if (!window.confirm(`Remove ${d.label}? It will be signed out, and you can only replace a device once every 30 days.`)) return;
+    setMsg(null);
+    try {
+      const res = await removeDevice(d.id);
+      if (res.status === "removed") setDevices(res.devices);
+      else if (res.status === "swap_limit") setMsg(`You've already removed a device in the last 30 days. You can remove one again on ${fullDay(res.next_allowed_at)}.`);
+      else setDevices((ds) => ds?.filter((x) => x.id !== d.id) ?? null);
+    } catch (e) {
+      setMsg(friendlyError(e));
+    }
+  }
+
   return (
     <section className="dcard panel" aria-labelledby="dev-h">
       <div className="panel-h">
         <h2 id="dev-h">Devices</h2>
-        <span className="muted">{data.devices.length} of 2 registered</span>
+        {devices && <span className="muted">{devices.length} of 2 registered</span>}
       </div>
-      <ul className="devices">
-        {data.devices.map((d) => (
-          <li key={d.id}>
-            <span className="dev-ico" aria-hidden="true">
-              {/android|phone|iphone/i.test(d.name) ? (
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="6" y="2" width="12" height="20" rx="3" /><path d="M11 18h2" /></svg>
-              ) : (
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="4" width="18" height="12" rx="2" /><path d="M2 20h20" /></svg>
-              )}
-            </span>
-            <div>
-              <b>{d.name}{d.thisDevice && <em> · this device</em>}</b>
-              <span className="muted">{d.active ? "Active now" : `Last used ${day(d.lastSeen)}`}</span>
-            </div>
-            {d.active ? <span className="badge good">Active</span> : <button type="button" className="link" onClick={() => setNote(true)}>Remove</button>}
-          </li>
-        ))}
-      </ul>
+      {devices && (
+        <ul className="devices">
+          {devices.map((d) => (
+            <li key={d.id}>
+              <span className="dev-ico" aria-hidden="true">
+                {/android|phone|iphone|ipad/i.test(d.label) ? (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="6" y="2" width="12" height="20" rx="3" /><path d="M11 18h2" /></svg>
+                ) : (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="4" width="18" height="12" rx="2" /><path d="M2 20h20" /></svg>
+                )}
+              </span>
+              <div>
+                {/* This page only shows while this device is the active one, so the active device is this one. */}
+                <b>{d.label}{d.active && <em> · this device</em>}</b>
+                <span className="muted">{d.active ? "Active now" : `Last used ${day(new Date(d.last_seen_at).toISOString())}`}</span>
+              </div>
+              {d.active ? <span className="badge good">Active</span> : <button type="button" className="link" onClick={() => remove(d)}>Remove</button>}
+            </li>
+          ))}
+        </ul>
+      )}
       <p className="muted small">
         Only one device can be in use at a time. Opening {site.name} on the other one moves your session there, and an unfinished test picks up where you left off.
         A removed device can be replaced once every 30 days.
       </p>
-      {note && <p className="small" role="status">Removing devices turns on with sign-in.</p>}
+      {msg && <p className="small" role="status">{msg}</p>}
     </section>
   );
 }
