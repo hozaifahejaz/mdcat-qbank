@@ -63,7 +63,7 @@ Email Sending needs the **Workers Paid** plan (USD 5 a month) and a domain whose
 
 1. Add your domain to Cloudflare, then go to **Compute > Email Service > Email Sending > Onboard Domain**.
 2. Create an API token with **Account > Email Sending > Edit**.
-3. Add the secrets `CF_ACCOUNT_ID` (your account id), `CF_EMAIL_API_TOKEN` (that token) and `EMAIL_FROM`, e.g. `MDCAT Pilot <no-reply@yourdomain.com>`.
+3. Add the secrets `CF_ACCOUNT_ID` (your account id), `CF_EMAIL_API_TOKEN` (that token) and `EMAIL_FROM`, e.g. `Examwise <no-reply@yourdomain.com>`.
 
 ### 4. Google
 
