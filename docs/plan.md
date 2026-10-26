@@ -12,7 +12,7 @@ Build a focused, practice-first question bank for PMDC MDCAT first, sold as a se
 - **Price:** Around Rs. 2,500 to 4,000 for a season pass, with a free tier of a few hundred questions.
 - **Payments:** A Pakistani payment aggregator covering JazzCash, Easypaisa and cards in one integration, with manual transfer as a launch fallback.
 - **Timeline:** About 3 to 4 months to an MVP. Live by March 2027 for the August 2027 exam.
-- **Budget:** Roughly Rs. 1 to 3.5 million for year one, mostly content writing.
+- **Budget:** Roughly Rs. 1 to 2.25 million for year one. The site is built in-house, so almost all of it is content writing and marketing.
 
 ## Exams covered
 
@@ -144,13 +144,13 @@ Core data model: exams, subjects, chapters, topics, questions (stem, options, an
 | --- | --- | --- |
 | Question writing (8,000 MCQs) | 400,000 | 800,000 |
 | Expert review | 160,000 | 320,000 |
-| Development | 0 | 1,200,000 |
+| Development (built in-house) | 0 | 0 |
 | Hosting, database, email, domain | 60,000 | 250,000 |
 | Business setup and legal | 30,000 | 80,000 |
 | Marketing | 300,000 | 800,000 |
-| **Total** | **~950,000** | **~3,450,000** |
+| **Total** | **~950,000** | **~2,250,000** |
 
-Break-even at Rs. 2,999 per pass: about 330 paying students (low case) to 1,200 (high case).
+Break-even at Rs. 2,999 per pass: about 330 paying students (low case) to 780 (high case).
 
 ## Risks
 
@@ -162,7 +162,6 @@ Break-even at Rs. 2,999 per pass: about 330 paying students (low case) to 1,200 
 
 ## Open questions
 
-- Build in-house or hire a developer?
 - MDCAT only at launch, or MDCAT plus NUMS?
 - Subject writers: existing contacts or recruit?
 - Brand name and domain?
