@@ -5,16 +5,6 @@ import ThemeToggle from "@/components/ThemeToggle";
 import { paper, prices, site } from "@/lib/site";
 import "./landing.css";
 
-/* The six checks every question passes before it goes live (docs/plan.md, "Question quality control"). */
-const checks = [
-  { title: "Written to a template", text: "Stem, four options, answer key, syllabus tag and a textbook reference. The explanation covers every option, not just the right one." },
-  { title: "Automatic checks", text: "Missing fields, duplicates, answer keys that lean on one letter, and wording that matches other sources are all blocked." },
-  { title: "Solved blind", text: "A second subject expert answers it without seeing the key. A different answer, or two defensible ones, sends it back." },
-  { title: "Checked against the textbook", text: "Facts and numbers, exactly one correct answer, a complete explanation, on the PMDC syllabus, in clear English." },
-  { title: "Audited every week", text: "A senior reviewer per subject re-checks a random 10% of approved questions and settles any disagreement." },
-  { title: "Watched after launch", text: "Questions most students miss, or that top scorers get wrong, are pulled for review. Reports are answered within 48 hours." },
-];
-
 const faqs = [
   { q: "Is this a coaching course?", a: "No. It's a practice tool: MCQs, explanations, timed mocks and past papers. Most students use it alongside their academy or self-study, and it costs a fraction of a course." },
   { q: "Where do the questions come from?", a: "Our own subject experts write them from the PMDC syllabus and the textbooks it's based on. Past-paper questions are rebuilt in our own words with our own explanations. Nothing is copied from academy books or other apps." },
@@ -35,7 +25,6 @@ export default function Home() {
             <Logo />
             <ul>
               <li><a href="#how">How it works</a></li>
-              <li><a href="#quality">Quality</a></li>
               <li><a href="#pricing">Pricing</a></li>
               <li><a href="#faq">FAQ</a></li>
             </ul>
@@ -57,11 +46,6 @@ export default function Home() {
               <div className="ctas">
                 <a className="pill pill-dark" href="#try">Try a question</a>
                 <a className="pill pill-light" href="#pricing">See pricing</a>
-              </div>
-              <div className="who" aria-label="Every subject on the paper">
-                {paper.map((p) => (
-                  <span key={p.subject} style={{ background: p.tone }}><b>{p.count}</b>{p.subject}</span>
-                ))}
               </div>
             </div>
             <SampleQuestion />
@@ -94,19 +78,6 @@ export default function Home() {
               <div className="split-key">
                 {paper.map((p) => <span key={p.subject} style={{ ["--c" as string]: p.solid }}>{p.subject} <b>{p.count}</b></span>)}
               </div>
-            </div>
-          </section>
-
-          <section id="quality">
-            <div className="center rv"><h2>Every question is checked six times.</h2></div>
-            <div className="checks">
-              {checks.map((c, i) => (
-                <div className="card check rv" key={c.title}>
-                  <span className="n">Check {i + 1}</span>
-                  <h3>{c.title}</h3>
-                  <p>{c.text}</p>
-                </div>
-              ))}
             </div>
           </section>
 
@@ -160,6 +131,10 @@ export default function Home() {
                   <li>Switch in one tap, and pick up an unfinished test where you left off</li>
                   <li>Questions carry a faint watermark with your account ID, so leaked screenshots trace back</li>
                 </ul>
+                <div className="soon" aria-label="Mobile apps">
+                  <span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="3" /><path d="M11 18h2" /></svg> iOS app <small>Coming soon</small></span>
+                  <span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="3" /><path d="M11 18h2" /></svg> Android app <small>Coming soon</small></span>
+                </div>
               </div>
               <div className="phone" aria-hidden="true">
                 <div className="wm">{Array.from({ length: 16 }, (_, i) => <span key={i}>ID 4821-0937</span>)}</div>
@@ -206,7 +181,6 @@ export default function Home() {
             <Logo size={22} />
             <ul>
               <li><a href="#how">How it works</a></li>
-              <li><a href="#quality">Quality</a></li>
               <li><a href="#pricing">Pricing</a></li>
               <li><a href="#faq">FAQ</a></li>
               <li><a href="/privacy">Privacy</a></li>
