@@ -23,6 +23,15 @@ npm run typecheck
 - `components/SampleQuestion.tsx`: the "Try a question" card, with sample questions in `lib/sample-questions.ts`.
 - `lib/site.ts`: the brand name (a working name for now), prices and the paper's subject split.
 
+## Hosting
+
+Cloudflare Pages, project `mdcat-qbank`. The build is a static export to `out/`. The GitHub Actions workflow in `.github/workflows/deploy.yml` builds and deploys on every push: `main` goes to production, and any other branch gets a preview at `<branch>.mdcat-qbank.pages.dev`.
+
+It needs two repository secrets (Settings > Secrets and variables > Actions):
+
+- `CLOUDFLARE_API_TOKEN`: a token with Cloudflare Pages Edit permission
+- `CLOUDFLARE_ACCOUNT_ID`
+
 ## Exams
 
 | Exam | Format | Phase |
@@ -38,4 +47,4 @@ npm run typecheck
 - Supabase Auth or Auth.js (email, Google, phone OTP)
 - KaTeX for formulas and equations
 - Payments via a Pakistani aggregator (Safepay, PayFast or Simpaisa) for JazzCash, Easypaisa and cards
-- Hosting on Vercel or Render
+- Hosting on Cloudflare Pages
