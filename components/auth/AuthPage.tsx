@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { authConfigured, supabase } from "@/lib/supabase";
+import { type AuthConfig, getAuthConfig } from "@/lib/api";
 import { readNext } from "@/lib/auth";
+import { getCurrentUser } from "@/lib/user";
 import AuthFrame from "@/components/auth/AuthFrame";
 import AfterSignIn from "@/components/auth/AfterSignIn";
 import EmailForm from "@/components/auth/EmailForm";
@@ -18,12 +19,13 @@ const copy = {
   signup: { title: "Create your account", lede: "Start free. Upgrade to the season pass when you're ready.", switchText: "Already have an account?", switchLabel: "Sign in", switchHref: "/signin" },
 };
 
-/* Sign in and sign up share one screen: Google and Apple on top, then phone (SMS code) or email and password. */
+/* Sign in and sign up share one screen: Google and Apple on top, then phone (SMS code) or email and password.
+   Methods that aren't switched on yet (docs/auth-setup.md) are simply not shown. */
 export default function AuthPage({ mode }: { mode: Mode }) {
   const [next, setNext] = useState("/dashboard");
+  const [config, setConfig] = useState<AuthConfig | null | undefined>(undefined);
   const [method, setMethod] = useState<Method>("phone");
   const [signedIn, setSignedIn] = useState(false);
-  const [ready, setReady] = useState(false);
   const [error, setError] = useState("");
   const c = copy[mode];
 
@@ -31,39 +33,46 @@ export default function AuthPage({ mode }: { mode: Mode }) {
     setNext(readNext());
     const params = new URLSearchParams(window.location.search);
     if (params.get("error")) setError(params.get("error")!);
-    if (params.get("method") === "email") setMethod("email");
-    if (!supabase) return;
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) setSignedIn(true);
-      setReady(true);
+    getAuthConfig().then((cfg) => {
+      setConfig(cfg);
+      if (cfg && (params.get("method") === "email" || !cfg.phone) && cfg.email) setMethod("email");
     });
+    getCurrentUser().then((u) => { if (u) setSignedIn(true); });
   }, []);
 
   const switchHref = next === "/dashboard" ? c.switchHref : `${c.switchHref}?next=${encodeURIComponent(next)}`;
   const top = { hint: c.switchText, label: c.switchLabel, href: switchHref };
 
-  if (!authConfigured) return <AuthFrame top={top}><NotConfigured /></AuthFrame>;
   if (signedIn) return <AuthFrame><AfterSignIn next={next} /></AuthFrame>;
+  const anyMethod = config && (config.phone || config.email || config.google || config.apple);
+  if (config === null || (config && !anyMethod)) return <AuthFrame top={top}><NotConfigured /></AuthFrame>;
 
+  const both = Boolean(config?.phone && config?.email);
+  const siteKey = config?.turnstileSiteKey ?? "";
   return (
     <AuthFrame side top={top}>
-      <div className="card auth-card" aria-busy={!ready}>
+      <div className="card auth-card" aria-busy={!config}>
         <div>
           <h1>{c.title}</h1>
           <p className="lede">{c.lede}</p>
         </div>
-        <ProviderButtons next={next} onError={setError} />
-        <div className="or">or</div>
-        <div className="tabs" role="tablist" aria-label="Sign-in method">
-          <button type="button" role="tab" aria-selected={method === "phone"} onClick={() => { setMethod("phone"); setError(""); }}>Phone</button>
-          <button type="button" role="tab" aria-selected={method === "email"} onClick={() => { setMethod("email"); setError(""); }}>Email</button>
-        </div>
-        {error && <p className="note bad" role="alert">{error}</p>}
-        <div role="tabpanel">
-          {method === "phone"
-            ? <PhoneForm key={`p-${mode}`} mode={mode} onSignedIn={() => setSignedIn(true)} />
-            : <EmailForm key={`e-${mode}`} mode={mode} next={next} onSignedIn={() => setSignedIn(true)} />}
-        </div>
+        {config && (
+          <>
+            <ProviderButtons next={next} google={config.google} apple={config.apple} />
+            {(config.google || config.apple) && (config.phone || config.email) && <div className="or">or</div>}
+            {both && (
+              <div className="tabs" role="tablist" aria-label="Sign-in method">
+                <button type="button" role="tab" aria-selected={method === "phone"} onClick={() => { setMethod("phone"); setError(""); }}>Phone</button>
+                <button type="button" role="tab" aria-selected={method === "email"} onClick={() => { setMethod("email"); setError(""); }}>Email</button>
+              </div>
+            )}
+            {error && <p className="note bad" role="alert">{error}</p>}
+            <div role={both ? "tabpanel" : undefined}>
+              {method === "phone" && config.phone && <PhoneForm key={`p-${mode}`} mode={mode} siteKey={siteKey} onSignedIn={() => setSignedIn(true)} />}
+              {method === "email" && config.email && <EmailForm key={`e-${mode}`} mode={mode} next={next} siteKey={siteKey} onSignedIn={() => setSignedIn(true)} />}
+            </div>
+          </>
+        )}
         {mode === "signup" && (
           <p className="fine">
             By creating an account you agree to our Terms and Fair Use policy: one account per student, up to two devices,

@@ -9,7 +9,7 @@ function DeviceIcon({ label }: { label: string }) {
   );
 }
 
-const when = (iso: string) => new Date(iso).toLocaleDateString("en-PK", { day: "numeric", month: "short", year: "numeric" });
+const when = (t: number) => new Date(t).toLocaleDateString("en-PK", { day: "numeric", month: "short", year: "numeric" });
 
 /* The account's registered devices, each with an optional action button (Remove). */
 export default function DeviceList({ devices, action }: { devices: Device[]; action?: (d: Device) => React.ReactNode }) {

@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { turnstileSiteKey } from "@/lib/supabase";
 
 type TurnstileApi = {
   render: (el: HTMLElement, opts: Record<string, unknown>) => string;
@@ -24,21 +23,21 @@ function loadScript(): Promise<void> {
   return loading;
 }
 
-/* Cloudflare Turnstile. Renders nothing when no site key is set. Tokens are single use, so the parent bumps
-   `resetKey` after every request that spent one. */
-export default function Turnstile({ onToken, resetKey = 0 }: { onToken: (token: string) => void; resetKey?: number }) {
+/* Cloudflare Turnstile. Renders nothing without a site key (the API hands one out only when it checks tokens).
+   Tokens are single use, so the parent bumps `resetKey` after every request that spent one. */
+export default function Turnstile({ siteKey, onToken, resetKey = 0 }: { siteKey: string; onToken: (token: string) => void; resetKey?: number }) {
   const box = useRef<HTMLDivElement>(null);
   const widget = useRef<string | null>(null);
   const cb = useRef(onToken);
   cb.current = onToken;
 
   useEffect(() => {
-    if (!turnstileSiteKey || !box.current) return;
+    if (!siteKey || !box.current) return;
     let gone = false;
     loadScript().then(() => {
       if (gone || !box.current || !window.turnstile) return;
       widget.current = window.turnstile.render(box.current, {
-        sitekey: turnstileSiteKey,
+        sitekey: siteKey,
         theme: document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light",
         size: "flexible",
         callback: (t: string) => cb.current(t),
@@ -51,7 +50,7 @@ export default function Turnstile({ onToken, resetKey = 0 }: { onToken: (token: 
       if (widget.current && window.turnstile) window.turnstile.remove(widget.current);
       widget.current = null;
     };
-  }, []);
+  }, [siteKey]);
 
   useEffect(() => {
     if (resetKey && widget.current && window.turnstile) {
@@ -60,8 +59,6 @@ export default function Turnstile({ onToken, resetKey = 0 }: { onToken: (token: 
     }
   }, [resetKey]);
 
-  if (!turnstileSiteKey) return null;
+  if (!siteKey) return null;
   return <div ref={box} />;
 }
-
-export const captchaOn = Boolean(turnstileSiteKey);

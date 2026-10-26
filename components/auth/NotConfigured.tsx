@@ -1,4 +1,4 @@
-/* Shown when the Supabase keys aren't in the build yet (see docs/auth-setup.md). */
+/* Shown when the sign-in API is unreachable or no sign-in method is switched on yet (see docs/auth-setup.md). */
 export default function NotConfigured() {
   return (
     <div className="center-state">

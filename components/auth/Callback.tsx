@@ -1,51 +1,44 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { EmailOtpType } from "@supabase/supabase-js";
-import { authConfigured, supabase } from "@/lib/supabase";
+import { api } from "@/lib/api";
 import { friendlyError, readNext } from "@/lib/auth";
+import { getCurrentUser } from "@/lib/user";
 import AuthFrame from "@/components/auth/AuthFrame";
 import AfterSignIn from "@/components/auth/AfterSignIn";
-import NotConfigured from "@/components/auth/NotConfigured";
 
 /* Where Google, Apple and email links land.
-   - ?code=...            (Google, Apple, and email links opened in the same browser): the Supabase client swaps it
-                          for a session on load, so this just waits for the session.
-   - ?token_hash=&type=   (the email templates in docs/auth-setup.md): verified here, so links work on any device.
-   - ?error=...           sent back to /signin with the reason. */
+   - ?verify=<token>  an email confirmation link. Confirmed here with a POST, not by the link itself, so mail
+                      scanners that open links can't use it up.
+   - ?error=...       sent back to /signin with the reason.
+   - otherwise        Google and Apple have already signed the browser in; this runs the device check. */
 export default function Callback() {
   const [next, setNext] = useState<string | null>(null);
   const [problem, setProblem] = useState("");
 
   useEffect(() => {
-    if (!supabase) return;
     const params = new URLSearchParams(window.location.search);
-    const hash = new URLSearchParams(window.location.hash.slice(1));
-    const err = params.get("error_description") || hash.get("error_description") || params.get("error") || hash.get("error");
+    const err = params.get("error");
     if (err) {
-      window.location.replace(`/signin?error=${encodeURIComponent(err.replace(/\+/g, " "))}`);
+      window.location.replace(`/signin?error=${encodeURIComponent(err)}`);
       return;
     }
     const target = readNext();
-    const tokenHash = params.get("token_hash");
-    const type = params.get("type") as EmailOtpType | null;
-
+    const token = params.get("verify");
     (async () => {
-      if (tokenHash && type) {
-        const { error } = await supabase!.auth.verifyOtp({ token_hash: tokenHash, type });
-        if (error) return setProblem(friendlyError(error));
-        if (type === "recovery") return window.location.replace("/reset-password");
+      if (token) {
+        try {
+          await api("/api/auth/verify-email", { body: { token } });
+        } catch (e) {
+          return setProblem(`${friendlyError(e)} If you already confirmed it, just sign in.`);
+        }
+        return setNext(target);
       }
-      const { data, error } = await supabase!.auth.getSession();
-      if (error) return setProblem(friendlyError(error));
-      if (!data.session) {
-        return setProblem("This link has expired or was opened in a different browser. If you were confirming your email, it may already be confirmed, so try signing in.");
-      }
-      setNext(target);
+      if (await getCurrentUser()) setNext(target);
+      else setProblem("Sign-in didn't complete. Please try again.");
     })();
   }, []);
 
-  if (!authConfigured) return <AuthFrame><NotConfigured /></AuthFrame>;
   if (next) return <AuthFrame><AfterSignIn next={next} /></AuthFrame>;
   return (
     <AuthFrame>

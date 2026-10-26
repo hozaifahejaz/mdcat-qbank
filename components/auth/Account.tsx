@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { api } from "@/lib/api";
 import { type Device, formatPhone, friendlyError, myDevices, removeDevice, signOut } from "@/lib/auth";
-import { type StudentUser, getCurrentUser } from "@/lib/user";
+import { type AccountUser, getCurrentUser } from "@/lib/user";
 import AuthFrame from "@/components/auth/AuthFrame";
 import DeviceGate from "@/components/auth/DeviceGate";
 import DeviceList from "@/components/auth/DeviceList";
@@ -22,8 +22,7 @@ export default function Account() {
 }
 
 function AccountBody() {
-  const [user, setUser] = useState<StudentUser | null>(null);
-  const [methods, setMethods] = useState<string[]>([]);
+  const [user, setUser] = useState<AccountUser | null>(null);
   const [devices, setDevices] = useState<Device[]>([]);
   const [name, setName] = useState("");
   const [saved, setSaved] = useState("");
@@ -32,21 +31,22 @@ function AccountBody() {
 
   useEffect(() => {
     getCurrentUser().then((u) => { setUser(u); setName(u?.name ?? ""); });
-    supabase?.auth.getUser().then(({ data }) => {
-      setMethods([...new Set((data.user?.identities ?? []).map((i) => i.provider))]);
-    });
     myDevices().then(setDevices).catch((e) => setError(friendlyError(e)));
   }, []);
 
   async function saveName(e: React.FormEvent) {
     e.preventDefault();
-    if (!supabase || !user) return;
+    if (!user) return;
     setSaved(""); setError("");
     const full = name.trim();
     if (full.length < 2) return setError("Please enter your name.");
-    const { error } = await supabase.from("profiles").update({ full_name: full }).eq("id", user.id);
-    if (error) return setError(friendlyError(error));
-    setSaved("Saved.");
+    try {
+      const res = await api<{ user: AccountUser }>("/api/auth/me", { method: "PATCH", body: { name: full } });
+      setUser(res.user);
+      setSaved("Saved.");
+    } catch (err) {
+      setError(friendlyError(err));
+    }
   }
 
   async function remove(d: Device) {
@@ -60,7 +60,7 @@ function AccountBody() {
         setError(`You've already swapped a device in the last 30 days. You can remove one again on ${date}.`);
       }
     } catch (e) {
-      setError(friendlyError(e as Error));
+      setError(friendlyError(e));
     }
     setBusyId("");
   }
@@ -72,7 +72,7 @@ function AccountBody() {
         <dl className="kv">
           {user?.email && <><dt>Email</dt><dd>{user.email}</dd></>}
           {user?.phone && <><dt>Phone</dt><dd>{formatPhone(user.phone)}</dd></>}
-          <dt>Signs in with</dt><dd>{methods.map((m) => providerName[m] ?? m).join(", ") || "…"}</dd>
+          <dt>Signs in with</dt><dd>{user ? user.methods.map((m) => providerName[m] ?? m).join(", ") : "…"}</dd>
           <dt>Plan</dt><dd style={{ textTransform: "capitalize" }}>{user?.plan ?? "…"}</dd>
         </dl>
         <form className="field" onSubmit={saveName}>

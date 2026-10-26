@@ -1,14 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { ApiError, api } from "@/lib/api";
 import { friendlyError } from "@/lib/auth";
-import Turnstile, { captchaOn } from "@/components/auth/Turnstile";
+import Turnstile from "@/components/auth/Turnstile";
 
 type Mode = "signin" | "signup";
 
-/* Email and password. Sign-up sends a confirmation link (it lands on /auth/callback); sign-in is immediate. */
-export default function EmailForm({ mode, next, onSignedIn }: { mode: Mode; next: string; onSignedIn: () => void }) {
+/* Email and password. Sign-up emails a confirmation link (it lands on /auth/callback); sign-in is immediate. */
+export default function EmailForm({ mode, next, siteKey, onSignedIn }: { mode: Mode; next: string; siteKey: string; onSignedIn: () => void }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -21,58 +21,50 @@ export default function EmailForm({ mode, next, onSignedIn }: { mode: Mode; next
   const [captcha, setCaptcha] = useState("");
   const [captchaReset, setCaptchaReset] = useState(0);
 
-  const redirect = () => `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`;
-  const spend = () => { const t = captcha || undefined; setCaptchaReset((n) => n + 1); return t; };
+  const needCaptcha = Boolean(siteKey) && !captcha;
+  const spend = () => { const t = captcha; setCaptchaReset((n) => n + 1); return t; };
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!supabase || busy) return;
+    if (busy) return;
     setError(""); setInfo(""); setUnconfirmed(false);
     if (mode === "signup" && name.trim().length < 2) return setError("Please enter your name.");
     if (mode === "signup" && password.length < 8) return setError("Use at least 8 characters for your password.");
-    if (captchaOn && !captcha) return setError("Please complete the check above.");
+    if (needCaptcha) return setError("Please complete the check above.");
     setBusy(true);
     const addr = email.trim().toLowerCase();
-    if (mode === "signup") {
-      const { data, error } = await supabase.auth.signUp({
-        email: addr,
-        password,
-        options: { data: { full_name: name.trim() }, emailRedirectTo: redirect(), captchaToken: spend() },
-      });
-      setBusy(false);
-      if (error) return setError(friendlyError(error));
-      if (data.session) return onSignedIn();
-      setSentTo(addr);
-    } else {
-      const { error } = await supabase.auth.signInWithPassword({ email: addr, password, options: { captchaToken: spend() } });
-      setBusy(false);
-      if (error) {
-        setUnconfirmed(error.code === "email_not_confirmed");
-        return setError(friendlyError(error));
+    try {
+      if (mode === "signup") {
+        await api("/api/auth/signup", { body: { name: name.trim(), email: addr, password, next, captcha: spend() } });
+        setSentTo(addr);
+      } else {
+        await api("/api/auth/signin", { body: { email: addr, password, captcha: spend() } });
+        onSignedIn();
       }
-      onSignedIn();
+    } catch (err) {
+      setUnconfirmed(err instanceof ApiError && err.code === "email_not_confirmed");
+      setError(friendlyError(err));
     }
+    setBusy(false);
   }
 
   async function resend() {
-    if (!supabase) return;
-    if (captchaOn && !captcha) return setError("Please complete the check above, then resend.");
+    if (needCaptcha) return setError("Please complete the check above, then resend.");
     setError(""); setInfo("");
-    const { error } = await supabase.auth.resend({
-      type: "signup",
-      email: (sentTo || email).trim().toLowerCase(),
-      options: { emailRedirectTo: redirect(), captchaToken: spend() },
-    });
-    if (error) setError(friendlyError(error));
-    else setInfo("Sent again. It can take a minute, and check your spam folder.");
+    try {
+      await api("/api/auth/resend-verification", { body: { email: (sentTo || email).trim().toLowerCase(), next, captcha: spend() } });
+      setInfo("Sent again. It can take a minute, and check your spam folder.");
+    } catch (err) {
+      setError(friendlyError(err));
+    }
   }
 
   if (sentTo) {
     return (
       <div className="stack">
-        <p className="note good">We sent a confirmation link to <b>{sentTo}</b>. Open it on this device to finish creating your account.</p>
+        <p className="note good">We sent a confirmation link to <b>{sentTo}</b>. Open it to finish creating your account.</p>
         <p className="fine">Nothing arrived? Check spam, or resend it.</p>
-        <Turnstile onToken={setCaptcha} resetKey={captchaReset} />
+        <Turnstile siteKey={siteKey} onToken={setCaptcha} resetKey={captchaReset} />
         <button type="button" className="pill pill-light block" onClick={resend}>Resend the link</button>
         {info && <p className="note info" role="status">{info}</p>}
         {error && <p className="note bad" role="alert">{error}</p>}
@@ -104,7 +96,7 @@ export default function EmailForm({ mode, next, onSignedIn }: { mode: Mode; next
           <button type="button" onClick={() => setShow(!show)} aria-label={show ? "Hide password" : "Show password"}>{show ? "Hide" : "Show"}</button>
         </div>
       </div>
-      <Turnstile onToken={setCaptcha} resetKey={captchaReset} />
+      <Turnstile siteKey={siteKey} onToken={setCaptcha} resetKey={captchaReset} />
       {error && (
         <p className="note bad" role="alert">
           {error}

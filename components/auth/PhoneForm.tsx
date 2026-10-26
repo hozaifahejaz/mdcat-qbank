@@ -1,16 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { api } from "@/lib/api";
 import { formatPhone, friendlyError, normalisePhone } from "@/lib/auth";
-import Turnstile, { captchaOn } from "@/components/auth/Turnstile";
+import Turnstile from "@/components/auth/Turnstile";
 
 type Mode = "signin" | "signup";
 const RESEND_AFTER = 60;
 
 /* Phone number and a 6-digit SMS code. The same flow signs in an existing number or creates a new account,
    so a student who picks the "wrong" page still gets in. */
-export default function PhoneForm({ mode, onSignedIn }: { mode: Mode; onSignedIn: () => void }) {
+export default function PhoneForm({ mode, siteKey, onSignedIn }: { mode: Mode; siteKey: string; onSignedIn: () => void }) {
   const [name, setName] = useState("");
   const [raw, setRaw] = useState("");
   const [phone, setPhone] = useState("");
@@ -28,20 +28,19 @@ export default function PhoneForm({ mode, onSignedIn }: { mode: Mode; onSignedIn
   }, [wait]);
 
   async function send(number: string) {
-    if (!supabase) return;
-    if (captchaOn && !captcha) return setError("Please complete the check above.");
+    if (siteKey && !captcha) return setError("Please complete the check above.");
     setBusy(true); setError("");
-    const token = captcha || undefined;
+    const token = captcha;
     setCaptchaReset((n) => n + 1);
-    const { error } = await supabase.auth.signInWithOtp({
-      phone: number,
-      options: { channel: "sms", captchaToken: token, data: mode === "signup" && name.trim() ? { full_name: name.trim() } : undefined },
-    });
+    try {
+      await api("/api/auth/phone/start", { body: { phone: number, captcha: token } });
+      setPhone(number);
+      setCode("");
+      setWait(RESEND_AFTER);
+    } catch (err) {
+      setError(friendlyError(err));
+    }
     setBusy(false);
-    if (error) return setError(friendlyError(error));
-    setPhone(number);
-    setCode("");
-    setWait(RESEND_AFTER);
   }
 
   function submitNumber(e: React.FormEvent) {
@@ -55,14 +54,17 @@ export default function PhoneForm({ mode, onSignedIn }: { mode: Mode; onSignedIn
 
   async function submitCode(e: React.FormEvent) {
     e.preventDefault();
-    if (!supabase || busy) return;
+    if (busy) return;
     const token = code.replace(/\D/g, "");
     if (token.length !== 6) return setError("Enter the 6-digit code from the SMS.");
     setBusy(true); setError("");
-    const { error } = await supabase.auth.verifyOtp({ phone, token, type: "sms" });
-    setBusy(false);
-    if (error) return setError(friendlyError(error));
-    onSignedIn();
+    try {
+      await api("/api/auth/phone/verify", { body: { phone, code: token, name: mode === "signup" ? name.trim() : "" } });
+      onSignedIn();
+    } catch (err) {
+      setError(friendlyError(err));
+      setBusy(false);
+    }
   }
 
   if (phone) {
@@ -79,7 +81,7 @@ export default function PhoneForm({ mode, onSignedIn }: { mode: Mode; onSignedIn
         </label>
         {error && <p className="note bad" role="alert">{error}</p>}
         <button className="pill pill-dark block" disabled={busy || code.length !== 6}>{busy ? "Checking…" : "Verify and continue"}</button>
-        <Turnstile onToken={setCaptcha} resetKey={captchaReset} />
+        <Turnstile siteKey={siteKey} onToken={setCaptcha} resetKey={captchaReset} />
         <p className="fine">
           No SMS?{" "}
           <button type="button" className="linkish" disabled={wait > 0 || busy} onClick={() => send(phone)}>
@@ -107,7 +109,7 @@ export default function PhoneForm({ mode, onSignedIn }: { mode: Mode; onSignedIn
         </div>
       </label>
       <p id="phone-hint" className="fine">We&apos;ll text you a 6-digit code. Outside Pakistan? Type your number with its country code, like +44.</p>
-      <Turnstile onToken={setCaptcha} resetKey={captchaReset} />
+      <Turnstile siteKey={siteKey} onToken={setCaptcha} resetKey={captchaReset} />
       {error && <p className="note bad" role="alert">{error}</p>}
       <button className="pill pill-dark block" disabled={busy || !raw}>{busy ? "Sending…" : "Send code"}</button>
     </form>

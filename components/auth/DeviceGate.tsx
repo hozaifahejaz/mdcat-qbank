@@ -1,10 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { authConfigured, supabase } from "@/lib/supabase";
+import { ApiError } from "@/lib/api";
 import { type Device, checkDevice, claimDevice, friendlyError, signOut } from "@/lib/auth";
 import DeviceLimit from "@/components/auth/DeviceLimit";
-import NotConfigured from "@/components/auth/NotConfigured";
+import { getCurrentUser } from "@/lib/user";
 
 type State =
   | { kind: "loading" }
@@ -18,13 +18,18 @@ const CHECK_EVERY_MS = 30_000;
 /* Wrap any signed-in page in this. It sends signed-out visitors to /signin, and enforces "one active device":
    it checks in every 30 seconds and whenever the tab comes back into view, and if another device has taken
    over it swaps the page for a lock screen with "Use it here". The server enforces the same rule on data
-   (public.is_active_session), so this screen is the friendly half, not the only guard. */
+   (requireActiveSession in server/routes.ts), so this screen is the friendly half, not the only guard. */
 export default function DeviceGate({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<State>({ kind: "loading" });
 
   const claim = useCallback(async () => {
     const res = await claimDevice();
     setState(res.status === "active" ? { kind: "active" } : { kind: "limit", devices: res.devices });
+  }, []);
+
+  const toSignIn = useCallback(() => {
+    const here = window.location.pathname + window.location.search;
+    window.location.replace(`/signin?next=${encodeURIComponent(here)}`);
   }, []);
 
   const check = useCallback(async () => {
@@ -34,34 +39,28 @@ export default function DeviceGate({ children }: { children: React.ReactNode }) 
       else if (res.status === "locked") setState({ kind: "locked", label: res.active_label });
       else await claim();
     } catch (e) {
+      // Signed out elsewhere (or this device was removed): back to sign-in.
+      if (e instanceof ApiError && e.status === 401) return toSignIn();
       // A dropped connection shouldn't throw the student out; only a first load that fails shows an error.
-      setState((s) => (s.kind === "loading" ? { kind: "error", message: friendlyError(e as Error) } : s));
+      setState((s) => (s.kind === "loading" ? { kind: "error", message: friendlyError(e) } : s));
     }
-  }, [claim]);
+  }, [claim, toSignIn]);
 
   useEffect(() => {
-    if (!supabase) return;
-    const toSignIn = () => {
-      const here = window.location.pathname + window.location.search;
-      window.location.replace(`/signin?next=${encodeURIComponent(here)}`);
-    };
     let timer: ReturnType<typeof setInterval> | undefined;
-    supabase.auth.getSession().then(({ data }) => {
-      if (!data.session) return toSignIn();
+    getCurrentUser().then((user) => {
+      if (!user) return toSignIn();
       check();
       timer = setInterval(() => { if (document.visibilityState === "visible") check(); }, CHECK_EVERY_MS);
     });
     const onVisible = () => { if (document.visibilityState === "visible") check(); };
     document.addEventListener("visibilitychange", onVisible);
-    const { data: sub } = supabase.auth.onAuthStateChange((event) => { if (event === "SIGNED_OUT") toSignIn(); });
     return () => {
       clearInterval(timer);
       document.removeEventListener("visibilitychange", onVisible);
-      sub.subscription.unsubscribe();
     };
-  }, [check]);
+  }, [check, toSignIn]);
 
-  if (!authConfigured) return <NotConfigured />;
   if (state.kind === "active") return <>{children}</>;
   if (state.kind === "limit") {
     return <div className="center-state"><DeviceLimit devices={state.devices} onFreed={() => { setState({ kind: "loading" }); claim(); }} /></div>;

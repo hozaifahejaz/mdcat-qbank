@@ -1,0 +1,12 @@
+# Cloudflare Pages project. The static site is in out/ (next build); the sign-in API is in functions/,
+# with shared server code in server/. Secrets (Google, Apple, SMS, email, Turnstile) are set in the
+# Cloudflare dashboard, never here: see docs/auth-setup.md.
+name = "mdcat-qbank"
+pages_build_output_dir = "out"
+compatibility_date = "2026-10-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "mdcat-qbank"
+database_id = "f909e867-fab8-4834-a715-e9dc75b3a4af"
+migrations_dir = "migrations"

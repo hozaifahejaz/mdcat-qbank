@@ -22,7 +22,7 @@ npm run typecheck
 - `app/page.tsx` and `app/landing.css`: the landing page. Its look matches residencypilot.com (same tokens in `app/globals.css`).
 - `components/SampleQuestion.tsx`: the "Try a question" card, with sample questions in `lib/sample-questions.ts`.
 - `lib/site.ts`: the brand name (a working name for now), prices and the paper's subject split.
-- `app/signin`, `app/signup`, `app/account` and `components/auth/`: accounts, with the two-device rule. Database schema in `supabase/migrations/`. Setup steps (Supabase, Google, Apple, SMS) are in [docs/auth-setup.md](docs/auth-setup.md).
+- `app/signin`, `app/signup`, `app/account` and `components/auth/`: the sign-in pages, with the two-device rule. The API behind them is `functions/` and `server/` (Cloudflare Pages Functions), and the D1 database schema is in `migrations/`. Setup steps for SMS, email, Google and Apple are in [docs/auth-setup.md](docs/auth-setup.md).
 
 ## Hosting
 
@@ -33,7 +33,9 @@ It needs two repository secrets (Settings > Secrets and variables > Actions):
 - `CLOUDFLARE_API_TOKEN`: a token with Cloudflare Pages Edit permission
 - `CLOUDFLARE_ACCOUNT_ID`
 
-Sign-in also needs the repository variables `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (and optionally `NEXT_PUBLIC_TURNSTILE_SITE_KEY`); see [docs/auth-setup.md](docs/auth-setup.md).
+The sign-in API uses the D1 database `mdcat-qbank` (bound in `wrangler.toml`). The token also needs D1 Edit so the workflow can apply `migrations/`. Provider secrets are set on the Pages project; see [docs/auth-setup.md](docs/auth-setup.md).
+
+To run the site with its API locally: `cp .dev.vars.example .dev.vars && npm run preview` (http://localhost:8788).
 
 ## Exams
 
@@ -46,8 +48,8 @@ Sign-in also needs the repository variables `NEXT_PUBLIC_SUPABASE_URL` and `NEXT
 ## Planned stack
 
 - Next.js (TypeScript) with Tailwind CSS
-- PostgreSQL (Supabase or Neon)
-- Supabase Auth (email, phone OTP, Google, Apple)
+- Cloudflare D1 database and Pages Functions for the API
+- Our own sign-in on Cloudflare: email, phone OTP (Twilio Verify), Google, Apple
 - KaTeX for formulas and equations
 - Payments via a Pakistani aggregator (Safepay, PayFast or Simpaisa) for JazzCash, Easypaisa and cards
-- Hosting on Cloudflare Pages
+- Hosting on Cloudflare Pages; everything else on Cloudflare too

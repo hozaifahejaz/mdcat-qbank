@@ -24,7 +24,7 @@ export default function DeviceLimit({ devices: initial, onFreed }: { devices: De
         setDevices(devices.filter((x) => x.id !== d.id));
       }
     } catch (e) {
-      setError(friendlyError(e as Error));
+      setError(friendlyError(e));
     }
     setBusy(false);
     setConfirm(null);

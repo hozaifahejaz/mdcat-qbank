@@ -22,11 +22,6 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm run build
-        env:
-          # Public values for sign-in (docs/auth-setup.md). Without them the auth pages say accounts open soon.
-          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
-          NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${{ vars.NEXT_PUBLIC_TURNSTILE_SITE_KEY }}
       - name: Check the Cloudflare settings are there
         run: |
           if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
@@ -34,6 +29,13 @@ jobs:
             exit 1
           fi
       - name: Create Pages project if missing
-        run: npx --yes wrangler@3 pages project create mdcat-qbank --production-branch=main || true
+        run: npx wrangler pages project create mdcat-qbank --production-branch=main || true
+      # Database changes in migrations/ go to the D1 database before the new code. Main only, since branch
+      # previews share the same database. Needs the API token to have "D1: Edit" (docs/auth-setup.md); if it
+      # doesn't, the site still deploys and this step shows the error.
+      - name: Apply database migrations
+        if: github.ref_name == 'main'
+        continue-on-error: true
+        run: npx wrangler d1 migrations apply mdcat-qbank --remote
       - name: Deploy
-        run: npx --yes wrangler@3 pages deploy out --project-name=mdcat-qbank --branch="${GITHUB_REF_NAME}" --commit-dirty=true
+        run: npx wrangler pages deploy --project-name=mdcat-qbank --branch="${GITHUB_REF_NAME}" --commit-dirty=true

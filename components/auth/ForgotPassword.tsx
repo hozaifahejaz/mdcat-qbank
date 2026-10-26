@@ -1,40 +1,44 @@
 "use client";
 
-import { useState } from "react";
-import { authConfigured, supabase } from "@/lib/supabase";
+import { useEffect, useState } from "react";
+import { type AuthConfig, api, getAuthConfig } from "@/lib/api";
 import { friendlyError } from "@/lib/auth";
 import AuthFrame from "@/components/auth/AuthFrame";
 import NotConfigured from "@/components/auth/NotConfigured";
-import Turnstile, { captchaOn } from "@/components/auth/Turnstile";
+import Turnstile from "@/components/auth/Turnstile";
 
 /* Email a reset link. The reply is the same whether or not the email has an account, so this page
    can't be used to find out who has signed up. */
 export default function ForgotPassword() {
+  const [config, setConfig] = useState<AuthConfig | null | undefined>(undefined);
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
   const [captcha, setCaptcha] = useState("");
   const [captchaReset, setCaptchaReset] = useState(0);
+  const siteKey = config?.turnstileSiteKey ?? "";
+
+  useEffect(() => { getAuthConfig().then(setConfig); }, []);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!supabase || busy) return;
-    if (captchaOn && !captcha) return setError("Please complete the check above.");
+    if (busy) return;
+    if (siteKey && !captcha) return setError("Please complete the check above.");
     setBusy(true); setError("");
-    const token = captcha || undefined;
+    const token = captcha;
     setCaptchaReset((n) => n + 1);
-    const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
-      redirectTo: `${window.location.origin}/reset-password`,
-      captchaToken: token,
-    });
+    try {
+      await api("/api/auth/forgot", { body: { email: email.trim().toLowerCase(), captcha: token } });
+      setSent(true);
+    } catch (err) {
+      setError(friendlyError(err));
+    }
     setBusy(false);
-    if (error && error.status === 429) return setError(friendlyError(error));
-    setSent(true);
   }
 
   const top = { hint: "Remembered it?", label: "Sign in", href: "/signin?method=email" };
-  if (!authConfigured) return <AuthFrame top={top}><NotConfigured /></AuthFrame>;
+  if (config === null || config?.email === false) return <AuthFrame top={top}><NotConfigured /></AuthFrame>;
 
   return (
     <AuthFrame top={top}>
@@ -51,12 +55,12 @@ export default function ForgotPassword() {
               <span>Email</span>
               <input className="input" type="email" inputMode="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" required />
             </label>
-            <Turnstile onToken={setCaptcha} resetKey={captchaReset} />
+            <Turnstile siteKey={siteKey} onToken={setCaptcha} resetKey={captchaReset} />
             {error && <p className="note bad" role="alert">{error}</p>}
             <button className="pill pill-dark block" disabled={busy || !email}>{busy ? "Sending…" : "Send reset link"}</button>
           </form>
         )}
-        <p className="fine">Signed up with your phone number, Google or Apple? You don&apos;t have a password. <a href="/signin">Sign in that way</a> instead.</p>
+        <p className="fine">Signed up with your phone number, Google or Apple? You don&apos;t need a password. <a href="/signin">Sign in that way</a> instead.</p>
       </div>
     </AuthFrame>
   );
