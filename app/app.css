@@ -159,6 +159,8 @@
 .guard-body { transition: filter .15s; }
 .guard-body.hidden { filter: blur(14px); pointer-events: none; }
 .wm { position: absolute; inset: 0; pointer-events: none; border-radius: var(--r-lg); background-repeat: repeat; z-index: 2; mix-blend-mode: difference; }
+.wm-code { position: fixed; inset: 0; pointer-events: none; z-index: 70; background: var(--wm-light) repeat; mix-blend-mode: difference; }
+:root[data-theme="dark"] .wm-code { background-image: var(--wm-dark); }
 .guard-cover { position: absolute; inset: 0; z-index: 3; display: grid; place-content: center; justify-items: center; gap: 8px; text-align: center; padding: 24px; }
 .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 60; background: var(--pill); color: var(--on-pill); padding: 12px 16px; border-radius: 14px; display: flex; gap: 14px; align-items: center; font-size: .875rem; box-shadow: var(--shadow); max-width: calc(100vw - 32px); box-sizing: border-box; }
 .toast .link { color: inherit !important; text-decoration: underline; }
@@ -361,3 +363,4 @@
 .action-bar .grow { flex: 1; min-width: 0; }
 .action-bar input.grow { border-radius: 999px !important; }
 .reveal-out { width: 100%; height: auto; border-radius: var(--r-md); background: #808080; }
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 1.125rem; letter-spacing: .04em; }

@@ -4,20 +4,23 @@ import { useEffect, useMemo, useState } from "react";
 import { formatPhone } from "@/lib/auth";
 import { site } from "@/lib/site";
 import type { AccountUser } from "@/lib/user";
+import { shortId, tileUrl } from "@/lib/watermark";
 
 /* The student's mark on every question: phone (or email) and a short account ID, so a leaked screenshot traces back. */
 export function markFor(user: AccountUser) {
   const who = user.phone ? formatPhone(user.phone) : user.email ?? "";
-  return [who, `ID ${user.id.replace(/-/g, "").slice(0, 8).toUpperCase()}`].filter(Boolean).join(" · ");
+  return [who, `ID ${shortId(user.id)}`].filter(Boolean).join(" · ");
 }
 
-/* The watermark is hidden from the eye: white text at about 1% opacity, blended with "difference" (see .wm in app.css),
-   moves each pixel it covers by about 2 brightness levels out of 255, in light and dark mode alike. A screenshot keeps
-   those levels, and /admin/reveal brings the text back out. Straight lines of text so it reads cleanly once revealed. */
-function tile(text: string) {
+/* Two marks, both hidden from the eye. Each is white at well under 1% opacity, blended with "difference" (see .wm in
+   app.css), so it moves the pixels it covers by about 1 brightness level out of 255, in light and dark mode alike.
+   - Text: the phone number and ID, readable once /admin/reveal amplifies a clean screenshot.
+   - Code: the ID as repeating blocks over the whole screen (lib/watermark.ts), which /admin/reveal decodes even after
+     compression or resizing. */
+function textTile(text: string) {
   const t = text.replace(/[<&>]/g, "");
   const line = (x: number, y: number) => `<text x="${x}" y="${y}">${t}</text>`;
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="440" height="120"><g font-family="Arial, sans-serif" font-size="17" font-weight="700" fill="#fff" fill-opacity="0.008">${line(8, 38)}${line(-212, 98)}${line(228, 98)}</g></svg>`;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="440" height="120"><g font-family="Arial, sans-serif" font-size="17" font-weight="700" fill="#fff" fill-opacity="0.005">${line(8, 38)}${line(-212, 98)}${line(228, 98)}</g></svg>`;
   return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
 }
 
@@ -26,7 +29,8 @@ function tile(text: string) {
 export default function Protected({ user, children }: { user: AccountUser; children: React.ReactNode }) {
   const [hidden, setHidden] = useState(false);
   const [warned, setWarned] = useState(false);
-  const bg = useMemo(() => tile(markFor(user)), [user]);
+  const text = useMemo(() => textTile(markFor(user)), [user]);
+  const code = useMemo(() => ({ "--wm-light": tileUrl(shortId(user.id)), "--wm-dark": tileUrl(shortId(user.id), 0.01) }) as React.CSSProperties, [user]);
 
   useEffect(() => {
     const hide = () => setHidden(true);
@@ -52,7 +56,9 @@ export default function Protected({ user, children }: { user: AccountUser; child
   return (
     <div className="guard" onCopy={block} onCut={block} onContextMenu={block} onDragStart={block}>
       <div className={`guard-body${hidden ? " hidden" : ""}`} aria-hidden={hidden || undefined}>{children}</div>
-      <div className="wm" style={{ backgroundImage: bg }} aria-hidden="true" />
+      <div className="wm" style={{ backgroundImage: text }} aria-hidden="true" />
+      {/* The code covers the whole screen, not just the question: more repeats in a screenshot, sturdier decoding. */}
+      <div className="wm-code" style={code} aria-hidden="true" />
       {hidden && (
         <div className="guard-cover">
           <p><b>Question hidden</b></p>
