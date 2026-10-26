@@ -1,5 +1,5 @@
-/* The signed-in student. Sign-in fills this from the Supabase session (auth user + public.profiles):
-   name <- profiles.full_name, planExpiresAt <- profiles.plan_expires_at, email <- auth user (null for phone-only accounts). */
+/* The signed-in student. Sign-in fills this from the session and the student's profile.
+   Email is missing for accounts made with a phone number. */
 export type Plan = "free" | "season" | "bundle" | "monthly";
 
 export type StudentUser = {
