@@ -66,7 +66,35 @@ Quality pipeline: writer drafts, second expert reviews, question goes live, then
 | AI tutor | Phase 3 |
 | Teacher and academy accounts | Phase 3 |
 
-Anti-piracy: per-user watermark, copy blocking, two-device limit, rate-limited question loading.
+## Anti-piracy and account sharing
+
+A website cannot reliably detect screenshots, so enforcement rests on tracing leaks back to an account and stopping one paid account being shared.
+
+### Devices: two registered, one active at a time
+
+- Each account can register at most 2 devices. Logging in on a third device asks the student to remove one first. A removed device can be replaced at most once every 30 days; further swaps go through support.
+- Only one device can use the account at any moment. Opening the app on device B shows "Your account is active on another device. Use it here?" Confirming makes B active, and device A is locked within about 30 seconds with the same prompt.
+- A test in progress is saved when its device is locked and can be resumed on the active device.
+- Frequent switching (for example, more than 6 takeovers in a day) signals sharing and counts as a strike.
+- Implementation: each device gets a stored device ID at login. The server keeps the account's registered devices and its single active session. Clients check in every 30 seconds and on every question load; a check-in from a non-active device receives a "locked" response.
+
+### Screenshots and leaks
+
+| Where | What we do | Phase |
+| --- | --- | --- |
+| All platforms | Faint watermark on every question with the student's phone number or account ID | MVP |
+| Website | Blur questions on focus loss; block copy, right-click and selection; detect PrintScreen on Windows | MVP |
+| Website | Rate-limit question loading to prevent scraping | MVP |
+| Android app | Block screenshots and screen recording (FLAG_SECURE) | Phase 2 |
+| iPhone app | Hide questions during screen recording; strike on each screenshot | Phase 2 |
+
+### Strike policy (in the Terms accepted at sign-up)
+
+1. First strike: on-screen warning and email.
+2. Second strike: account restricted for 7 days.
+3. Third strike: account banned, no refund.
+
+A leaked screenshot traced by its watermark is an immediate ban. Website detections (PrintScreen, focus loss) only show a warning, never a strike, because switching tabs looks the same.
 
 ## Pricing and payments
 
