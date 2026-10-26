@@ -68,7 +68,10 @@ async function sendVerifyEmail(c: Ctx, userId: string, to: string, next: string)
 const routes: Record<string, (c: Ctx) => Promise<Response>> = {
   "GET /api/auth/config": async ({ env }) =>
     json({
-      email: mailConfigured(env),
+      // Email + password always works. Confirmation emails and password reset switch on with email sending.
+      email: true,
+      emailVerification: mailConfigured(env),
+      passwordReset: mailConfigured(env),
       phone: smsConfigured(env),
       google: googleConfigured(env),
       apple: appleConfigured(env),
@@ -99,6 +102,12 @@ const routes: Record<string, (c: Ctx) => Promise<Response>> = {
     await checkCaptcha(c.env, b.captcha, c.ip);
 
     const existing = await userByEmail(c.db, addr);
+    if (!mailConfigured(c.env)) {
+      // No email sending yet, so no confirmation step: the account works straight away.
+      if (existing) throw fail(409, "user_already_exists", "An account with this email already exists. Sign in instead.");
+      const userId = await createUser(c.db, { name: fullName, email: addr, passwordHash: await hashPassword(pw) });
+      return signedIn(await createSession(c.db, userId, c.request), { status: "signed_in" });
+    }
     if (existing?.email_verified_at) {
       // Same answer as a new sign-up, so this can't be used to check who has an account. The owner gets a heads-up.
       const m = linkEmail("You already have an account", "Someone (hopefully you) tried to sign up with this email. You can sign in, or reset your password if you've forgotten it.", "Sign in", `${c.origin}/signin?method=email`);
@@ -124,7 +133,7 @@ const routes: Record<string, (c: Ctx) => Promise<Response>> = {
     await rateLimit(c.db, `resend:email:${addr}`, 3, HOUR);
     await checkCaptcha(c.env, b.captcha, c.ip);
     const u = await userByEmail(c.db, addr);
-    if (u && !u.email_verified_at) await sendVerifyEmail(c, u.id, addr, safeNext(b.next));
+    if (u && !u.email_verified_at && mailConfigured(c.env)) await sendVerifyEmail(c, u.id, addr, safeNext(b.next));
     return json({ status: "check_email" });
   },
 
@@ -145,7 +154,7 @@ const routes: Record<string, (c: Ctx) => Promise<Response>> = {
     const u = await userByEmail(c.db, addr);
     const ok = await verifyPassword(typeof b.password === "string" ? b.password : "", u?.password_hash ?? null);
     if (!u || !ok) throw fail(401, "invalid_credentials", "That email and password don't match. Check them, or reset your password.");
-    if (!u.email_verified_at) throw fail(403, "email_not_confirmed", "Please confirm your email first. We sent you a link when you signed up.");
+    if (!u.email_verified_at && mailConfigured(c.env)) throw fail(403, "email_not_confirmed", "Please confirm your email first. We sent you a link when you signed up.");
     return signedIn(await createSession(c.db, u.id, c.request));
   },
 
@@ -155,6 +164,7 @@ const routes: Record<string, (c: Ctx) => Promise<Response>> = {
     await rateLimit(c.db, `forgot:ip:${c.ip}`, 10, HOUR);
     await rateLimit(c.db, `forgot:email:${addr}`, 3, HOUR);
     await checkCaptcha(c.env, b.captcha, c.ip);
+    if (!mailConfigured(c.env)) throw fail(503, "email_off", "Password reset by email isn't switched on yet. Please contact support.");
     const u = await userByEmail(c.db, addr);
     if (u) {
       const token = await newToken(c.db, u.id, "reset_password", HOUR);

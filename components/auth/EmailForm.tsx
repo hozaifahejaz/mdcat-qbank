@@ -7,8 +7,9 @@ import Turnstile from "@/components/auth/Turnstile";
 
 type Mode = "signin" | "signup";
 
-/* Email and password. Sign-up emails a confirmation link (it lands on /auth/callback); sign-in is immediate. */
-export default function EmailForm({ mode, next, siteKey, onSignedIn }: { mode: Mode; next: string; siteKey: string; onSignedIn: () => void }) {
+/* Email and password. Sign-up signs straight in, or, once email sending is on, emails a confirmation link first
+   (it lands on /auth/callback). Sign-in is immediate. */
+export default function EmailForm({ mode, next, siteKey, passwordReset, onSignedIn }: { mode: Mode; next: string; siteKey: string; passwordReset: boolean; onSignedIn: () => void }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -35,7 +36,8 @@ export default function EmailForm({ mode, next, siteKey, onSignedIn }: { mode: M
     const addr = email.trim().toLowerCase();
     try {
       if (mode === "signup") {
-        await api("/api/auth/signup", { body: { name: name.trim(), email: addr, password, next, captcha: spend() } });
+        const res = await api<{ status: string }>("/api/auth/signup", { body: { name: name.trim(), email: addr, password, next, captcha: spend() } });
+        if (res.status === "signed_in") return onSignedIn();
         setSentTo(addr);
       } else {
         await api("/api/auth/signin", { body: { email: addr, password, captcha: spend() } });
@@ -88,7 +90,7 @@ export default function EmailForm({ mode, next, siteKey, onSignedIn }: { mode: M
       <div className="field">
         <div className="row">
           <label htmlFor="pw" style={{ fontSize: "0.8125rem", fontWeight: 600 }}>Password</label>
-          {mode === "signin" && <a href="/forgot-password">Forgot password?</a>}
+          {mode === "signin" && passwordReset && <a href="/forgot-password">Forgot password?</a>}
         </div>
         <div className="pw">
           <input id="pw" className="input" type={show ? "text" : "password"} autoComplete={mode === "signup" ? "new-password" : "current-password"}

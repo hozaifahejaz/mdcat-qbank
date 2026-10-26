@@ -66,7 +66,7 @@ export async function publicUser(db: D1Database, u: UserRow) {
   return {
     id: u.id,
     name: u.name,
-    email: u.email && u.email_verified_at ? u.email : undefined,
+    email: u.email ?? undefined,
     phone: u.phone ?? undefined,
     plan: u.plan,
     planExpiresAt: u.plan_expires_at ? new Date(u.plan_expires_at).toISOString() : undefined,
