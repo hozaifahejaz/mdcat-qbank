@@ -134,7 +134,7 @@ A leaked screenshot traced by its watermark is an immediate ban. Website detecti
 | Auth | Supabase Auth or Auth.js (email, Google, phone OTP) |
 | Storage | Cloudflare R2 or Supabase Storage |
 | Formulas | KaTeX |
-| Hosting | Vercel or Render |
+| Hosting | Cloudflare Pages |
 | Payments | Safepay / PayFast / Simpaisa |
 | Email | Resend; local SMS provider for OTP |
 | Product analytics | PostHog |
