@@ -22,11 +22,7 @@ export default function SampleQuestion() {
   return (
     <div className="card app" id="try" aria-label="Try a sample question">
       <div className="app-head">
-        <div>
-          <h2>Try a question</h2>
-          <p>Free, no sign-up needed</p>
-        </div>
-        <span className="live"><i />Explained</span>
+        <h2>Try a question</h2>
       </div>
 
       <div className="app-in">
@@ -62,12 +58,10 @@ export default function SampleQuestion() {
         {!done ? (
           <>
             <div className="res-top"><strong>Pick an answer</strong></div>
-            <p className="muted">You'll see the same explanation every question in the bank comes with:</p>
             <ul className="ticks-list">
-              <li>Why the right answer is right</li>
+              <li>Why the answer is right</li>
               <li>Why each wrong option is wrong</li>
-              <li>The chapter and topic it's from on the PMDC syllabus</li>
-              <li>A report button if you think something's off</li>
+              <li>Its chapter and topic on the PMDC syllabus</li>
             </ul>
           </>
         ) : (
@@ -91,15 +85,10 @@ export default function SampleQuestion() {
               <button type="button" className="pill pill-light small" onClick={() => choose((at + 1) % samples.length)}>
                 Next question
               </button>
-              <span className="muted">Spot a mistake? Every question has a report button.</span>
             </div>
           </>
         )}
       </div>
-
-      <p className="sample">
-        Sample questions. In the full bank, a second subject expert solves every question blind and checks it against the textbook before it goes live.
-      </p>
     </div>
   );
 }

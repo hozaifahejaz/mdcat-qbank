@@ -4,7 +4,6 @@ export const site = {
   name: "MDCAT Pilot",
   url: "https://example.com",
   season: "2027",
-  examMonth: "August 2027",
 };
 
 export const prices = {

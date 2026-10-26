@@ -52,11 +52,8 @@ export default function Home() {
         <div className="wrap">
           <header className="hero">
             <div className="hero-copy">
-              <span className="tag"><i />PMDC MDCAT · {site.season} season</span>
               <h1>Practise the MCQs that <span>decide your seat.</span></h1>
-              <p className="sub muted">
-                Chapter-wise MDCAT questions with a full explanation on every one, plus timed mocks built like the real paper. One payment covers the whole season.
-              </p>
+              <p className="sub muted">MDCAT MCQs with a full explanation on every one, and mocks built like the real paper.</p>
               <div className="ctas">
                 <a className="pill pill-dark" href="#try">Try a question</a>
                 <a className="pill pill-light" href="#pricing">See pricing</a>
@@ -71,10 +68,7 @@ export default function Home() {
           </header>
 
           <section id="how">
-            <div className="center rv">
-              <span className="tag"><i />How it works</span>
-              <h2>Practise, test, fix. Repeat until August.</h2>
-            </div>
+            <div className="center rv"><h2>Practise, test, fix.</h2></div>
             <div className="steps">
               <div className="step rv" style={{ background: "var(--sky)" }}>
                 <span className="n">1</span>
@@ -104,11 +98,7 @@ export default function Home() {
           </section>
 
           <section id="quality">
-            <div className="center rv">
-              <span className="tag"><i />Quality</span>
-              <h2>Every question is checked six times.</h2>
-              <p className="muted">A wrong answer key costs you marks you've already earned. So nothing reaches you until two experts agree on it.</p>
-            </div>
+            <div className="center rv"><h2>Every question is checked six times.</h2></div>
             <div className="checks">
               {checks.map((c, i) => (
                 <div className="card check rv" key={c.title}>
@@ -118,21 +108,13 @@ export default function Home() {
                 </div>
               ))}
             </div>
-            <div className="card source rv">
-              <span>Every question is original and written for the PMDC syllabus. <b>Nothing is copied from academy books, past-paper PDFs or other apps.</b></span>
-            </div>
           </section>
 
           <section id="pricing">
-            <div className="center rv">
-              <span className="tag"><i />Pricing</span>
-              <h2>One payment. The whole season.</h2>
-              <p className="muted">No subscription and no add-ons. A season pass covers you from the day you join until the {site.examMonth} MDCAT.</p>
-            </div>
+            <div className="center rv"><h2>One payment. The whole season.</h2></div>
             <div className="plans">
               <div className="card plan rv">
                 <h3>Free</h3>
-                <p className="for">Try the questions and explanations before you pay anything.</p>
                 <div className="price"><small>Rs.</small><b>0</b></div>
                 <ul>
                   <li>About 300 questions across all subjects</li>
@@ -144,7 +126,6 @@ export default function Home() {
               <div className="card plan best rv">
                 <span className="badge">Best for most</span>
                 <h3>MDCAT season pass</h3>
-                <p className="for">Everything you need to practise for MDCAT, until exam day.</p>
                 <div className="price"><small>Rs.</small><b>{prices.seasonPass}</b><span>per season</span></div>
                 <span className="early">Early bird Rs. {prices.earlyBird} until {prices.earlyBirdUntil}</span>
                 <ul>
@@ -159,7 +140,6 @@ export default function Home() {
               </div>
               <div className="card plan rv">
                 <h3>Monthly</h3>
-                <p className="for">For students who want to start small or only need a few weeks.</p>
                 <div className="price"><small>Rs.</small><b>{prices.monthly}</b><span>per month</span></div>
                 <ul>
                   <li className="plus">Everything in the season pass</li>
@@ -169,19 +149,12 @@ export default function Home() {
                 <a className="pill pill-dark" href="/signup">Go monthly</a>
               </div>
             </div>
-            <div className="price-notes rv">
-              <span>JazzCash, Easypaisa or card</span>
-              <span>Pay once, no renewal</span>
-              <span>Free questions, no card needed</span>
-            </div>
           </section>
 
           <section id="devices" aria-labelledby="devices-h">
             <div className="card apps rv">
               <div className="apps-copy">
-                <span className="tag"><i />Fair use</span>
                 <h2 id="devices-h">Your pass, on your phone and laptop.</h2>
-                <p className="muted">One pass is for one student. Keeping it that way is what keeps the price at Rs. {prices.seasonPass} instead of a coaching fee.</p>
                 <ul>
                   <li>Register two devices and use one at a time</li>
                   <li>Switch in one tap, and pick up an unfinished test where you left off</li>
@@ -219,7 +192,6 @@ export default function Home() {
 
           <div className="final rv" id="join">
             <h2>Start practising before MDCAT {site.season}.</h2>
-            <p>Make a free account and try the questions. Upgrade when you're ready, and your progress carries over.</p>
             <div className="ctas">
               <a className="pill pill-dark" href="/signup">Start free</a>
               <a className="pill pill-light" href="#try">Try a question</a>
