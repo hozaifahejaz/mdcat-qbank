@@ -11,3 +11,8 @@ dist/
 # Next.js
 next-env.d.ts
 *.tsbuildinfo
+
+# Cloudflare local dev
+.dev.vars
+.wrangler/
+!.dev.vars.example

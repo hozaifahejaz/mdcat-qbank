@@ -1,0 +1,4 @@
+# Local development only (npm run preview). Copy to .dev.vars.
+# Prints SMS codes and emails to the terminal instead of sending them.
+DEV_MODE=1
+# Any production secret from docs/auth-setup.md can also be set here to try it locally.

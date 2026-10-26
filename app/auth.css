@@ -1,0 +1,131 @@
+/* Sign up, sign in, account and the device lock. Same tokens and shapes as the landing page:
+   grey canvas, white rounded card, black pill buttons, a pastel side panel. */
+h1, h2, h3, p { margin: 0; }
+h1, h2 { font-weight: 800; letter-spacing: -0.04em; line-height: 1.05; text-wrap: balance; }
+a { color: inherit; text-decoration: none; }
+.muted { color: var(--muted); }
+.card { background: var(--card); border-radius: var(--r-lg); box-shadow: var(--shadow); }
+[hidden] { display: none !important; }
+
+.pill { display: inline-flex; align-items: center; justify-content: center; gap: 10px; height: 48px; padding-inline: 24px; border-radius: 999px; font-weight: 600; font-size: 0.9375rem; border: 0; cursor: pointer; font-family: inherit; white-space: nowrap; transition: transform .15s, opacity .15s; text-decoration: none; }
+.pill:not(:disabled):hover { transform: translateY(-1px); }
+.pill:disabled { opacity: .55; cursor: default; }
+.pill-dark { background: var(--pill); color: var(--on-pill); }
+.pill-light { background: var(--card); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); }
+.pill.small { height: 40px; padding-inline: 18px; font-size: 0.875rem; }
+.pill.block { width: 100%; }
+.pill svg { flex: none; }
+
+.logo { display: flex; align-items: center; gap: 10px; font-weight: 800; letter-spacing: -0.03em; font-size: 1.0625rem; min-width: 0; }
+.logo svg { flex: none; }
+.theme-toggle { width: 40px; height: 40px; display: grid; place-items: center; border: 0; border-radius: 999px; background: var(--card); color: var(--ink); cursor: pointer; flex: none; box-shadow: inset 0 0 0 1px var(--line); transition: transform .2s; }
+.theme-toggle:hover { transform: rotate(-15deg); }
+
+/* Page frame */
+.auth { min-height: 100dvh; display: grid; grid-template-rows: auto 1fr auto; }
+.auth-wrap { width: 100%; max-width: 1080px; margin-inline: auto; padding-inline: 24px; box-sizing: border-box; }
+@media (max-width: 520px) { .auth-wrap { padding-inline: 16px; } }
+.auth-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-block: 20px; }
+.auth-top .end { display: flex; align-items: center; gap: 14px; font-size: 0.9375rem; }
+.auth-top .end a { font-weight: 600; }
+.auth-top .end a:hover { color: var(--blue); }
+@media (max-width: 440px) { .auth-top .end .hint { display: none; } }
+.auth-main { display: grid; grid-template-columns: minmax(0, 460px) minmax(0, 1fr); gap: 20px; align-items: stretch; padding-block: 12px 40px; }
+.auth-main.solo { grid-template-columns: minmax(0, 520px); justify-content: center; }
+@media (max-width: 900px) { .auth-main { grid-template-columns: minmax(0, 1fr); max-width: 520px; margin-inline: auto; } }
+.auth-foot { padding-block: 0 28px; font-size: 0.8125rem; color: var(--muted); text-align: center; }
+
+/* The form card */
+.auth-card { padding: 34px 32px; display: grid; gap: 20px; align-content: start; }
+@media (max-width: 520px) { .auth-card { padding: 26px 20px; border-radius: 24px; } }
+.auth-card h1 { font-size: clamp(1.875rem, 1.5rem + 1.4vw, 2.375rem); }
+.auth-card .lede { color: var(--muted); margin-top: 8px; }
+.auth-card .switch { font-size: 0.9375rem; color: var(--muted); text-align: center; }
+.auth-card .switch a { color: var(--ink); font-weight: 700; }
+.auth-card .switch a:hover { color: var(--blue); }
+
+.providers { display: grid; gap: 10px; }
+.or { display: flex; align-items: center; gap: 14px; font-size: 0.8125rem; font-weight: 600; color: var(--muted); }
+.or::before, .or::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+
+.tabs { display: grid; grid-template-columns: 1fr 1fr; background: var(--bg); border-radius: 14px; padding: 4px; gap: 2px; }
+.tabs button { font: inherit; font-size: 0.875rem; font-weight: 600; padding: 9px 4px; border: 0; border-radius: 10px; cursor: pointer; color: var(--muted); background: transparent; transition: background-color .2s, color .2s, box-shadow .2s; }
+.tabs button:hover { color: var(--ink); }
+.tabs button[aria-selected="true"] { background: var(--card); color: var(--ink); box-shadow: 0 1px 3px rgba(17,18,20,.12); }
+
+form.stack, .stack { display: grid; gap: 14px; }
+.field { display: grid; gap: 6px; }
+.field > span { font-size: 0.8125rem; font-weight: 600; }
+.field .row { display: flex; justify-content: space-between; align-items: baseline; }
+.field .row a { font-size: 0.8125rem; font-weight: 600; color: var(--blue); }
+.input { width: 100%; box-sizing: border-box; height: 48px; border: 0; border-radius: 14px; padding-inline: 16px; font: inherit; font-size: 1rem; color: var(--ink); background: var(--bg); box-shadow: inset 0 0 0 1.5px transparent; transition: box-shadow .15s, background-color .15s; }
+.input::placeholder { color: color-mix(in srgb, var(--muted) 70%, transparent); }
+.input:hover { box-shadow: inset 0 0 0 1.5px var(--line); }
+.input:focus { outline: none; background: var(--card); box-shadow: inset 0 0 0 1.5px var(--blue); }
+.phone-in { display: grid; grid-template-columns: auto minmax(0, 1fr); background: var(--bg); border-radius: 14px; box-shadow: inset 0 0 0 1.5px transparent; transition: box-shadow .15s, background-color .15s; }
+.phone-in:focus-within { background: var(--card); box-shadow: inset 0 0 0 1.5px var(--blue); }
+.phone-in b { display: flex; align-items: center; gap: 6px; padding-inline: 16px 12px; font-weight: 700; font-size: 0.9375rem; border-right: 1px solid var(--line); margin-block: 10px; }
+.phone-in .input { background: transparent; box-shadow: none; }
+.otp { text-align: center; letter-spacing: 0.5em; font-size: 1.375rem; font-weight: 700; font-variant-numeric: tabular-nums; padding-left: calc(16px + 0.5em); }
+.pw { position: relative; }
+.pw .input { padding-right: 64px; }
+.pw button { position: absolute; right: 6px; top: 6px; height: 36px; padding-inline: 12px; border: 0; border-radius: 10px; background: transparent; color: var(--muted); font: inherit; font-size: 0.8125rem; font-weight: 600; cursor: pointer; }
+.pw button:hover { color: var(--ink); }
+
+.note { font-size: 0.875rem; line-height: 1.5; padding: 12px 14px; border-radius: 14px; }
+.note.bad { background: var(--rose); color: var(--bad); }
+.note.good { background: var(--mint); color: var(--good); }
+.note.info { background: var(--blue-soft); color: var(--blue); }
+.fine { font-size: 0.8125rem; color: var(--muted); line-height: 1.5; }
+.fine a { text-decoration: underline; text-underline-offset: 2px; }
+.linkish { border: 0; background: none; padding: 0; font: inherit; font-weight: 600; color: var(--blue); cursor: pointer; }
+.linkish:disabled { color: var(--muted); cursor: default; }
+.sent-to { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 0.875rem; color: var(--muted); }
+.sent-to b { color: var(--ink); }
+
+/* Side panel: what an account gets, and the two-device rule up front */
+.auth-side { border-radius: var(--r-lg); background: var(--lilac); padding: 40px; display: grid; gap: 18px; align-content: center; }
+@media (max-width: 900px) { .auth-side { display: none; } }
+.auth-side h2 { font-size: clamp(1.875rem, 1.2rem + 1.8vw, 2.625rem); max-width: 16ch; }
+.auth-side ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.auth-side li { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 10px; }
+.auth-side li::before { content: "✓"; color: var(--good); font-weight: 800; }
+.devices-sketch { display: flex; gap: 12px; align-items: flex-end; margin-top: 8px; }
+.devices-sketch div { background: var(--card); border-radius: 18px; box-shadow: var(--shadow); padding: 14px; display: grid; gap: 8px; font-size: 0.8125rem; font-weight: 600; }
+.devices-sketch .lap { width: 200px; }
+.devices-sketch .ph { width: 110px; }
+.devices-sketch i { display: block; height: 7px; border-radius: 99px; background: var(--line); }
+.devices-sketch .st { display: inline-flex; align-items: center; gap: 6px; font-size: 0.75rem; }
+.devices-sketch .st::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--good); }
+.devices-sketch .off .st::before { background: var(--muted); }
+.devices-sketch .off { opacity: .7; }
+
+/* Device list, used on the device-limit screen and the account page */
+.device-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.device-list li { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 12px; border-radius: var(--r-md); background: var(--bg); }
+.device-list .ic { width: 40px; height: 40px; border-radius: 12px; background: var(--card); display: grid; place-items: center; }
+.device-list b { display: block; font-weight: 700; font-size: 0.9375rem; }
+.device-list small { font-size: 0.8125rem; color: var(--muted); }
+.device-list .here { display: inline-block; margin-left: 6px; font-size: 0.6875rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: var(--mint); color: var(--good); vertical-align: 2px; }
+
+/* Full-screen states: loading, locked, not configured */
+.center-state { min-height: 60dvh; display: grid; place-items: center; padding-block: 24px; }
+.state-card { max-width: 460px; width: 100%; box-sizing: border-box; padding: 34px 30px; display: grid; gap: 16px; justify-items: start; }
+.state-card h1 { font-size: 1.875rem; }
+.state-card .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
+.lock-ic { width: 52px; height: 52px; border-radius: 16px; display: grid; place-items: center; background: var(--blue-soft); color: var(--blue); }
+.spinner { width: 28px; height: 28px; border-radius: 50%; border: 3px solid var(--line); border-top-color: var(--blue); animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 2.4s; } }
+
+/* Account page */
+.acct { display: grid; gap: 14px; }
+.acct section { padding: 28px; display: grid; gap: 16px; }
+@media (max-width: 520px) { .acct section { padding: 22px 18px; } }
+.acct h2 { font-size: 1.375rem; letter-spacing: -0.03em; }
+.acct .kv { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 10px 16px; font-size: 0.9375rem; }
+@media (max-width: 520px) { .acct .kv { grid-template-columns: minmax(0, 1fr); gap: 2px; } .acct .kv dd { margin-bottom: 10px; } }
+.acct .kv dt { color: var(--muted); }
+.acct .kv dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+.acct .inline { display: flex; gap: 10px; }
+.acct .inline .input { flex: 1; min-width: 0; }
