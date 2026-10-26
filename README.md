@@ -19,8 +19,8 @@ npm run build      # production build
 npm run typecheck
 ```
 
-- `app/page.tsx` and `app/landing.css`: the landing page, an answer-sheet design with its own tokens under `.lp`.
-- `components/landing/AnswerSheet.tsx`: the sample question in the hero, with questions in `lib/sample-questions.ts`.
+- `app/page.tsx` and `app/landing.css`: the landing page. Its look matches residencypilot.com (same tokens in `app/globals.css`).
+- `components/SampleQuestion.tsx`: the "Try a question" card, with sample questions in `lib/sample-questions.ts`.
 - `lib/site.ts`: the brand name (Examwise), prices and the paper's subject split.
 
 ## Hosting
