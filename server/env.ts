@@ -21,7 +21,7 @@ export interface Env {
 
   CF_ACCOUNT_ID?: string;
   CF_EMAIL_API_TOKEN?: string; // Cloudflare API token with "Email Sending: Edit"
-  EMAIL_FROM?: string; // e.g. "MDCAT Pilot <no-reply@yourdomain.com>"
+  EMAIL_FROM?: string; // e.g. "Examwise <no-reply@yourdomain.com>"
 
   TURNSTILE_SITE_KEY?: string;
   TURNSTILE_SECRET_KEY?: string;

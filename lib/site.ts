@@ -1,8 +1,9 @@
-/* Site-wide names and numbers. The brand is a working name until the real one is chosen (see docs/plan.md, open questions),
-   so it lives here and nowhere else. Prices follow the plan's pricing table. */
+/* Site-wide names and numbers. The brand lives here and nowhere else. Prices follow the plan's pricing table. */
 export const site = {
-  name: "MDCAT Pilot",
+  name: "Examwise",
   url: "https://example.com",
+  /* On the examwise.pk domain once it's bought. */
+  supportEmail: "support@examwise.pk",
   season: "2027",
   examMonth: "August 2027",
   /* Expected date for the dashboard countdown. PMDC announces the real one; 2026 was 16 August. Update when it does. */

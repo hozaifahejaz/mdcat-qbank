@@ -1,42 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Logo from "@/components/Logo";
-import ThemeToggle from "@/components/ThemeToggle";
+import { AppNav } from "@/components/app/AppShell";
 import ScoreTrend from "@/components/dashboard/ScoreTrend";
-import { type Device, friendlyError, myDevices, removeDevice, signOut } from "@/lib/auth";
+import { type Device, friendlyError, myDevices, removeDevice } from "@/lib/auth";
 import { getDashboard, type Dashboard as Data, type SubjectStat, type TestResult } from "@/lib/dashboard-data";
 import { paper, prices, site } from "@/lib/site";
-import { getCurrentUser, type StudentUser } from "@/lib/user";
-
-type Plan = StudentUser["plan"];
-
-const links = [
-  { href: "/dashboard", label: "Home" },
-  { href: "/practice", label: "Practice" },
-  { href: "/mocks", label: "Mocks" },
-  { href: "/past-papers", label: "Past papers" },
-  { href: "/mistakes", label: "My mistakes" },
-];
-
-const planNames: Record<Plan, string> = {
-  free: "Free plan",
-  season: "MDCAT Season Pass",
-  bundle: "MDCAT + NUMS Bundle",
-  monthly: "Monthly",
-};
-
-const kindNames: Record<TestResult["kind"], string> = {
-  mock: "Mock",
-  timed: "Timed test",
-  practice: "Practice",
-  "past-paper": "Past paper",
-};
-
-const tz = "Asia/Karachi";
-const day = (iso: string) => new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: tz });
-const fullDay = (iso: string) => new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: tz });
-const pct = (n: number, d: number) => (d ? Math.round((n / d) * 100) : 0);
+import { band, day, fullDay, kindNames, pct, planNames, tz } from "@/lib/format";
+import { type AccountUser, getCurrentUser, type StudentUser } from "@/lib/user";
 
 function greeting() {
   const h = Number(new Date().toLocaleString("en-GB", { hour: "numeric", hour12: false, timeZone: tz }));
@@ -51,13 +22,8 @@ function sumChapters(s: SubjectStat) {
   return s.chapters.reduce((t, c) => ({ answered: t.answered + c.answered, available: t.available + c.available, correct: t.correct + c.correct }), { answered: 0, available: 0, correct: 0 });
 }
 
-/* Accuracy band, always shown with its words so it never rests on colour alone. */
-function band(p: number) {
-  return p >= 75 ? { cls: "good", word: "Strong" } : p >= 60 ? { cls: "warn", word: "Getting there" } : { cls: "bad", word: "Needs work" };
-}
-
 export default function Dashboard() {
-  const [user, setUser] = useState<StudentUser | null>(null);
+  const [user, setUser] = useState<AccountUser | null>(null);
   const [data, setData] = useState<Data | null>(null);
 
   useEffect(() => {
@@ -76,35 +42,13 @@ export default function Dashboard() {
 
   return (
     <div className="dash">
-      <header className="dnav-wrap">
-        <div className="dwrap">
-          <div className="dnav">
-            <Logo href="/dashboard" />
-            <nav aria-label="Main">
-              <ul>
-                {links.map((l) => (
-                  <li key={l.href}><a href={l.href} aria-current={l.href === "/dashboard" ? "page" : undefined}>{l.label}</a></li>
-                ))}
-              </ul>
-            </nav>
-            <div className="dnav-end">
-              <ThemeToggle />
-              <button type="button" className="signout" onClick={async () => { await signOut(); window.location.replace("/"); }}>Sign out</button>
-              <a className="avatar" href="/account" title="Account" aria-label="Account">{user ? initials(user.name) : ""}</a>
-            </div>
-          </div>
-        </div>
-      </header>
+      <AppNav active="/dashboard" user={user} />
 
       <main className="dwrap">
         {user && data ? <Body user={user} data={data} /> : <Skeleton />}
       </main>
     </div>
   );
-}
-
-function initials(name: string) {
-  return (name || "?").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]!.toUpperCase()).join("");
 }
 
 function Skeleton() {
@@ -256,7 +200,7 @@ function Body({ user, data }: { user: StudentUser; data: Data }) {
                     <td><span className="kind">{kindNames[t.kind]}</span></td>
                     <td>{day(t.date)}</td>
                     <td className="num">{t.minutes} min</td>
-                    <td className="num"><a className="link" href={`/review/${t.id}`}>Review</a></td>
+                    <td className="num"><a className="link" href={`/review?id=${t.id}`}>Review</a></td>
                   </tr>
                 );
               })}
