@@ -11,12 +11,17 @@ export function markFor(user: AccountUser) {
   return [who, `ID ${user.id.replace(/-/g, "").slice(0, 8).toUpperCase()}`].filter(Boolean).join(" · ");
 }
 
+/* The watermark is hidden from the eye: white text at about 1% opacity, blended with "difference" (see .wm in app.css),
+   moves each pixel it covers by about 2 brightness levels out of 255, in light and dark mode alike. A screenshot keeps
+   those levels, and /admin/reveal brings the text back out. Straight lines of text so it reads cleanly once revealed. */
 function tile(text: string) {
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="170"><text x="0" y="110" transform="rotate(-24 160 85)" font-family="Arial, sans-serif" font-size="13" font-weight="700" fill="#888" fill-opacity="0.16">${text.replace(/[<&>]/g, "")}</text></svg>`;
+  const t = text.replace(/[<&>]/g, "");
+  const line = (x: number, y: number) => `<text x="${x}" y="${y}">${t}</text>`;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="440" height="120"><g font-family="Arial, sans-serif" font-size="17" font-weight="700" fill="#fff" fill-opacity="0.008">${line(8, 38)}${line(-212, 98)}${line(228, 98)}</g></svg>`;
   return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
 }
 
-/* Question protection from the plan's anti-piracy section: a faint watermark, no copy, cut, right-click or drag,
+/* Question protection from the plan's anti-piracy section: an invisible watermark, no copy, cut, right-click or drag,
    questions blurred while the page is in the background, and a warning (never a strike) on PrintScreen. */
 export default function Protected({ user, children }: { user: AccountUser; children: React.ReactNode }) {
   const [hidden, setHidden] = useState(false);

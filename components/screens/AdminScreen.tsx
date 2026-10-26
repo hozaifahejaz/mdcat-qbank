@@ -47,6 +47,7 @@ export default function AdminScreen() {
           <div className="dnav">
             <span className="admin-brand"><Logo href="/admin" /><span className="badge">Admin</span></span>
             <div className="dnav-end">
+              <a className="dpill light small" href="/admin/reveal">Reveal watermark</a>
               <button type="button" className="dpill light small" onClick={() => setToast("CSV import opens a file picker once saving is connected.")}>Import CSV</button>
               <button type="button" className="dpill dark small" onClick={() => setToast("New questions open a blank template once saving is connected.")}>New question</button>
               <ThemeToggle />
