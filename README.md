@@ -22,6 +22,7 @@ npm run typecheck
 - `app/page.tsx` and `app/landing.css`: the landing page. Its look matches residencypilot.com (same tokens in `app/globals.css`).
 - `components/SampleQuestion.tsx`: the "Try a question" card, with sample questions in `lib/sample-questions.ts`.
 - `lib/site.ts`: the brand name (a working name for now), prices and the paper's subject split.
+- `app/signin`, `app/signup`, `app/account` and `components/auth/`: accounts, with the two-device rule. Database schema in `supabase/migrations/`. Setup steps (Supabase, Google, Apple, SMS) are in [docs/auth-setup.md](docs/auth-setup.md).
 
 ## Hosting
 
@@ -31,6 +32,8 @@ It needs two repository secrets (Settings > Secrets and variables > Actions):
 
 - `CLOUDFLARE_API_TOKEN`: a token with Cloudflare Pages Edit permission
 - `CLOUDFLARE_ACCOUNT_ID`
+
+Sign-in also needs the repository variables `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (and optionally `NEXT_PUBLIC_TURNSTILE_SITE_KEY`); see [docs/auth-setup.md](docs/auth-setup.md).
 
 ## Exams
 
@@ -44,7 +47,7 @@ It needs two repository secrets (Settings > Secrets and variables > Actions):
 
 - Next.js (TypeScript) with Tailwind CSS
 - PostgreSQL (Supabase or Neon)
-- Supabase Auth or Auth.js (email, Google, phone OTP)
+- Supabase Auth (email, phone OTP, Google, Apple)
 - KaTeX for formulas and equations
 - Payments via a Pakistani aggregator (Safepay, PayFast or Simpaisa) for JazzCash, Easypaisa and cards
 - Hosting on Cloudflare Pages
