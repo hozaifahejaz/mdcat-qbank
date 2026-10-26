@@ -5,6 +5,8 @@ export const site = {
   url: "https://example.com",
   season: "2027",
   examMonth: "August 2027",
+  /* Expected date for the dashboard countdown. PMDC announces the real one; 2026 was 16 August. Update when it does. */
+  examDate: "2027-08-15",
 };
 
 export const prices = {
