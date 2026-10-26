@@ -12,7 +12,7 @@ Build a focused, practice-first question bank for PMDC MDCAT first, sold as a se
 - **Price:** Around Rs. 2,500 to 4,000 for a season pass, with a free tier of a few hundred questions.
 - **Payments:** A Pakistani payment aggregator covering JazzCash, Easypaisa and cards in one integration, with manual transfer as a launch fallback.
 - **Timeline:** About 3 to 4 months to an MVP. Live by March 2027 for the August 2027 exam.
-- **Budget:** Roughly Rs. 1 to 2.25 million for year one. The site is built in-house, so almost all of it is content writing and marketing.
+- **Budget:** Roughly Rs. 1.1 to 2.6 million for year one. The site is built in-house, so almost all of it is content writing and marketing.
 
 ## Exams covered
 
@@ -45,7 +45,20 @@ Target 8,000 to 10,000 reviewed MCQs at launch (about 45% Biology), growing to 2
 
 Do not scrape or copy from KIPS, STEP, Maqsad or other apps and books.
 
-Quality pipeline: writer drafts, second expert reviews, question goes live, then a "report this question" button and per-question accuracy stats flag bad items.
+### Question quality control
+
+Every question and explanation passes six checks. Target: fewer than 0.5% of live questions with a confirmed error.
+
+1. **Write to a template.** Stem, options in the real paper's format, key, syllabus tag (subject, chapter, topic), difficulty guess, and source reference (textbook, chapter, page). The explanation states why the key is right and why each wrong option is wrong.
+2. **Automatic checks.** The admin tool blocks questions with missing fields, duplicates, key-position bias, or text matching online sources (plagiarism check).
+3. **Blind solve.** A second subject expert answers without seeing the key. A different answer, or two defensible answers, sends the question back to the writer.
+4. **Checklist review.** The reviewer verifies against the textbook: facts and numbers, exactly one correct answer, accurate and complete explanation, on the PMDC syllabus, clear English, sensible difficulty label.
+5. **Subject lead sign-off.** One senior reviewer per subject settles disputes and re-checks a random 10% of approved questions weekly. Over 2% errors in the sample triggers a full re-review of that writer's batch.
+6. **Soft launch and live statistics.** New questions go to beta and free users first. Flag for review if under 20% answer correctly, if top scorers prefer a wrong option over the key, or on any student report.
+
+After launch: student reports answered within 48 hours; 3 open reports auto-hide a question until checked; every fix is logged with a date and affected students' stats are corrected.
+
+Writers: paid only for approved questions; each writer has an error score, and anyone above 2% confirmed errors is retrained or dropped.
 
 ## Product features
 
@@ -143,14 +156,14 @@ Core data model: exams, subjects, chapters, topics, questions (stem, options, an
 | Item | Low (PKR) | High (PKR) |
 | --- | --- | --- |
 | Question writing (8,000 MCQs) | 400,000 | 800,000 |
-| Expert review | 160,000 | 320,000 |
+| Expert review (blind solve, checklist, audit; Rs. 40 to 80 per question) | 320,000 | 640,000 |
 | Development (built in-house) | 0 | 0 |
 | Hosting, database, email, domain | 60,000 | 250,000 |
 | Business setup and legal | 30,000 | 80,000 |
 | Marketing | 300,000 | 800,000 |
-| **Total** | **~950,000** | **~2,250,000** |
+| **Total** | **~1,110,000** | **~2,570,000** |
 
-Break-even at Rs. 2,999 per pass: about 330 paying students (low case) to 780 (high case).
+Break-even at Rs. 2,999 per pass: about 380 paying students (low case) to 890 (high case).
 
 ## Risks
 
