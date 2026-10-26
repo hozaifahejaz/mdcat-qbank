@@ -6,14 +6,14 @@ Everything runs on Cloudflare. The site is still a static export on Cloudflare P
 
 | Method | How |
 | --- | --- |
-| Email and password | Sign-up emails a confirmation link (sent with Cloudflare Email Service). "Forgot password" emails a reset link. Passwords are stored as PBKDF2-SHA256 hashes. |
+| Email and password | Works now, with no setup. For the time being sign-up signs straight in without a confirmation email, and there's no "Forgot password". Once email sending is switched on (step 3), sign-up sends a confirmation link and "Forgot password" appears. Passwords are stored as PBKDF2-SHA256 hashes. |
 | Phone | A 6-digit code by SMS through Twilio Verify. Pakistani numbers can be typed any usual way (`0300 1234567`, `300-1234567`, `+92 300...`) and are saved as `+923001234567`. The same screen signs in an existing number or creates an account. |
 | Google | Our API does the OAuth exchange with Google directly. |
 | Apple | Same, with Apple. The API signs Apple's client secret itself on every sign-in, so there's no 6-month secret to renew by hand. |
 
 A signed-in browser holds a random session id in an `HttpOnly`, `Secure`, `SameSite=Lax` cookie. D1 stores only its SHA-256, so even a copy of the database can't be used to sign in. Sessions last 60 days and extend while in use.
 
-Pages: `/signup`, `/signin`, `/forgot-password`, `/reset-password`, `/auth/callback` (where Google, Apple and email links land) and `/account` (name, sign-in methods, devices, sign out). After signing in, students go to `/dashboard`, or to the page in `?next=`. A sign-in method only appears once its settings below are in place, so you can switch them on one at a time.
+Pages: `/signup`, `/signin`, `/forgot-password`, `/reset-password`, `/auth/callback` (where Google, Apple and email links land) and `/account` (name, sign-in methods, devices, sign out). After signing in, students go to `/dashboard`, or to the page in `?next=`. Every method shows on the pages from day one. Until its settings below are in place, a method says "coming soon" and points students to email, so you can switch them on one at a time.
 
 ### The device rule
 
@@ -59,7 +59,9 @@ Cloudflare doesn't send SMS, so this goes through Twilio. Twilio Verify uses sen
 
 ### 3. Email sign-in (Cloudflare Email Service)
 
-Email Sending needs the **Workers Paid** plan (USD 5 a month) and a domain whose DNS is on Cloudflare. Until the real domain exists, email sign-up stays hidden and phone, Google and Apple still work.
+Email Sending needs the **Workers Paid** plan (USD 5 a month) and a domain whose DNS is on Cloudflare. Until then email sign-up still works, just without the confirmation email and password reset.
+
+When you switch this on, accounts made before then are unconfirmed. They'll be asked to confirm their email (with a link sent automatically) the next time they sign in. Also note that if someone later uses Google or Apple with the same email as an unconfirmed account, that account's password is removed, so nobody can hold on to an address that isn't theirs. They then sign in with Google or Apple instead.
 
 1. Add your domain to Cloudflare, then go to **Compute > Email Service > Email Sending > Onboard Domain**.
 2. Create an API token with **Account > Email Sending > Edit**.

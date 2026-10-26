@@ -20,7 +20,7 @@ const copy = {
 };
 
 /* Sign in and sign up share one screen: Google and Apple on top, then phone (SMS code) or email and password.
-   Methods that aren't switched on yet (docs/auth-setup.md) are simply not shown. */
+   Every method always shows; one that isn't switched on yet (docs/auth-setup.md) says it's coming soon. */
 export default function AuthPage({ mode }: { mode: Mode }) {
   const [next, setNext] = useState("/dashboard");
   const [config, setConfig] = useState<AuthConfig | null | undefined>(undefined);
@@ -44,10 +44,8 @@ export default function AuthPage({ mode }: { mode: Mode }) {
   const top = { hint: c.switchText, label: c.switchLabel, href: switchHref };
 
   if (signedIn) return <AuthFrame><AfterSignIn next={next} /></AuthFrame>;
-  const anyMethod = config && (config.phone || config.email || config.google || config.apple);
-  if (config === null || (config && !anyMethod)) return <AuthFrame top={top}><NotConfigured /></AuthFrame>;
+  if (config === null) return <AuthFrame top={top}><NotConfigured /></AuthFrame>;
 
-  const both = Boolean(config?.phone && config?.email);
   const siteKey = config?.turnstileSiteKey ?? "";
   return (
     <AuthFrame side top={top}>
@@ -58,18 +56,16 @@ export default function AuthPage({ mode }: { mode: Mode }) {
         </div>
         {config && (
           <>
-            <ProviderButtons next={next} google={config.google} apple={config.apple} />
-            {(config.google || config.apple) && (config.phone || config.email) && <div className="or">or</div>}
-            {both && (
-              <div className="tabs" role="tablist" aria-label="Sign-in method">
-                <button type="button" role="tab" aria-selected={method === "phone"} onClick={() => { setMethod("phone"); setError(""); }}>Phone</button>
-                <button type="button" role="tab" aria-selected={method === "email"} onClick={() => { setMethod("email"); setError(""); }}>Email</button>
-              </div>
-            )}
+            <ProviderButtons next={next} google={config.google} apple={config.apple} onUnavailable={setError} />
+            <div className="or">or</div>
+            <div className="tabs" role="tablist" aria-label="Sign-in method">
+              <button type="button" role="tab" aria-selected={method === "phone"} onClick={() => { setMethod("phone"); setError(""); }}>Phone</button>
+              <button type="button" role="tab" aria-selected={method === "email"} onClick={() => { setMethod("email"); setError(""); }}>Email</button>
+            </div>
             {error && <p className="note bad" role="alert">{error}</p>}
-            <div role={both ? "tabpanel" : undefined}>
-              {method === "phone" && config.phone && <PhoneForm key={`p-${mode}`} mode={mode} siteKey={siteKey} onSignedIn={() => setSignedIn(true)} />}
-              {method === "email" && config.email && <EmailForm key={`e-${mode}`} mode={mode} next={next} siteKey={siteKey} onSignedIn={() => setSignedIn(true)} />}
+            <div role="tabpanel">
+              {method === "phone" && <PhoneForm key={`p-${mode}`} mode={mode} siteKey={siteKey} available={config.phone} onSignedIn={() => setSignedIn(true)} />}
+              {method === "email" && <EmailForm key={`e-${mode}`} mode={mode} next={next} siteKey={siteKey} passwordReset={config.passwordReset} onSignedIn={() => setSignedIn(true)} />}
             </div>
           </>
         )}

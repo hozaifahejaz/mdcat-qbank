@@ -10,7 +10,7 @@ const RESEND_AFTER = 60;
 
 /* Phone number and a 6-digit SMS code. The same flow signs in an existing number or creates a new account,
    so a student who picks the "wrong" page still gets in. */
-export default function PhoneForm({ mode, siteKey, onSignedIn }: { mode: Mode; siteKey: string; onSignedIn: () => void }) {
+export default function PhoneForm({ mode, siteKey, available, onSignedIn }: { mode: Mode; siteKey: string; available: boolean; onSignedIn: () => void }) {
   const [name, setName] = useState("");
   const [raw, setRaw] = useState("");
   const [phone, setPhone] = useState("");
@@ -108,10 +108,11 @@ export default function PhoneForm({ mode, siteKey, onSignedIn }: { mode: Mode; s
             placeholder="300 1234567" aria-describedby="phone-hint" required />
         </div>
       </label>
+      {!available && <p className="note info" role="status">Sign-in by SMS code is coming soon. Please use your email for now.</p>}
       <p id="phone-hint" className="fine">We&apos;ll text you a 6-digit code. Outside Pakistan? Type your number with its country code, like +44.</p>
       <Turnstile siteKey={siteKey} onToken={setCaptcha} resetKey={captchaReset} />
       {error && <p className="note bad" role="alert">{error}</p>}
-      <button className="pill pill-dark block" disabled={busy || !raw}>{busy ? "Sending…" : "Send code"}</button>
+      <button className="pill pill-dark block" disabled={busy || !raw || !available}>{busy ? "Sending…" : "Send code"}</button>
     </form>
   );
 }

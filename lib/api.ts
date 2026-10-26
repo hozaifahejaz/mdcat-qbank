@@ -26,7 +26,10 @@ export async function api<T>(path: string, init: { method?: string; body?: unkno
   return data as T;
 }
 
-export type AuthConfig = { email: boolean; phone: boolean; google: boolean; apple: boolean; turnstileSiteKey: string };
+export type AuthConfig = {
+  email: boolean; emailVerification: boolean; passwordReset: boolean;
+  phone: boolean; google: boolean; apple: boolean; turnstileSiteKey: string;
+};
 
 /* Which sign-in methods are switched on. Null when the API isn't there at all (for example under `next dev`,
    which serves pages only; use `npm run preview` for the full site). */

@@ -38,7 +38,7 @@ export default function ForgotPassword() {
   }
 
   const top = { hint: "Remembered it?", label: "Sign in", href: "/signin?method=email" };
-  if (config === null || config?.email === false) return <AuthFrame top={top}><NotConfigured /></AuthFrame>;
+  if (config === null || config?.passwordReset === false) return <AuthFrame top={top}><NotConfigured /></AuthFrame>;
 
   return (
     <AuthFrame top={top}>
