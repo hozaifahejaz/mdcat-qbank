@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AppNav } from "@/components/app/AppShell";
-import ScoreTrend from "@/components/dashboard/ScoreTrend";
-import { type Device, friendlyError, myDevices, removeDevice } from "@/lib/auth";
-import { getDashboard, type Dashboard as Data, type SubjectStat, type TestResult } from "@/lib/dashboard-data";
-import { paper, prices, site } from "@/lib/site";
-import { band, day, fullDay, kindNames, pct, planNames, tz } from "@/lib/format";
-import { type AccountUser, getCurrentUser, type StudentUser } from "@/lib/user";
+import { AppFrame } from "@/components/app/AppShell";
+import Icon from "@/components/app/Icon";
+import BarChart from "@/components/dashboard/BarChart";
+import { getDashboard, type Dashboard as Data, type SubjectStat } from "@/lib/dashboard-data";
+import { band, day, fullDay, kindNames, pct, tz } from "@/lib/format";
+import { paper, site } from "@/lib/site";
+import { type AccountUser, getCurrentUser } from "@/lib/user";
 
 function greeting() {
   const h = Number(new Date().toLocaleString("en-GB", { hour: "numeric", hour12: false, timeZone: tz }));
@@ -22,11 +22,15 @@ function sumChapters(s: SubjectStat) {
   return s.chapters.reduce((t, c) => ({ answered: t.answered + c.answered, available: t.available + c.available, correct: t.correct + c.correct }), { answered: 0, available: 0, correct: 0 });
 }
 
+const COACH_KEY = "dash-coach-hidden";
+
 export default function Dashboard() {
   const [user, setUser] = useState<AccountUser | null>(null);
   const [data, setData] = useState<Data | null>(null);
+  const [coach, setCoach] = useState(true);
 
   useEffect(() => {
+    try { setCoach(localStorage.getItem(COACH_KEY) !== "1"); } catch {}
     let live = true;
     (async () => {
       const u = await getCurrentUser();
@@ -40,167 +44,115 @@ export default function Dashboard() {
     return () => { live = false; };
   }, []);
 
-  return (
-    <div className="dash">
-      <AppNav active="/dashboard" user={user} />
+  function toggleCoach(show: boolean) {
+    setCoach(show);
+    try { localStorage.setItem(COACH_KEY, show ? "0" : "1"); } catch {}
+  }
 
-      <main className="dwrap">
-        {user && data ? <Body user={user} data={data} /> : <Skeleton />}
-      </main>
-    </div>
+  const aside = user && data && coach ? <Coach user={user} data={data} onHide={() => toggleCoach(false)} /> : null;
+  return (
+    <AppFrame active="/dashboard" user={user} aside={aside}>
+      {user && data ? <Body data={data} coachHidden={!coach} onShowCoach={() => toggleCoach(true)} /> : <Skeleton />}
+    </AppFrame>
   );
 }
 
 function Skeleton() {
   return (
     <div className="dgrid" aria-busy="true" aria-label="Loading your dashboard">
-      <div className="sk" style={{ height: 120 }} />
+      <div className="sk" style={{ height: 80 }} />
       <div className="sk" style={{ height: 160 }} />
-      <div className="sk" style={{ height: 360 }} />
+      <div className="sk" style={{ height: 320 }} />
     </div>
   );
 }
 
-function Body({ user, data }: { user: StudentUser; data: Data }) {
+function Body({ data, coachHidden, onShowCoach }: { data: Data; coachHidden: boolean; onShowCoach: () => void }) {
   const totals = data.subjects.map(sumChapters).reduce((t, s) => ({ answered: t.answered + s.answered, available: t.available + s.available, correct: t.correct + s.correct }), { answered: 0, available: 0, correct: 0 });
+  const month = data.daily.slice(-30).reduce((t, d) => ({ answered: t.answered + d.answered, correct: t.correct + d.correct }), { answered: 0, correct: 0 });
   const mocks = data.recent.filter((t) => t.total === 180).sort((a, b) => a.date.localeCompare(b.date));
   const lastMock = mocks.at(-1);
   const prevMock = mocks.at(-2);
-  const days = daysUntil(site.examDate);
-  const firstName = user.name.split(/\s+/)[0] || "there";
+  const change = lastMock && prevMock ? lastMock.score - prevMock.score : null;
 
   return (
-    <div className="dgrid">
-      <section className="hello" aria-labelledby="hello-h">
+    <div className="dgrid home">
+      <section className="home-head" aria-labelledby="home-h">
         <div>
-          <p className="demo"><i />Sample stats until the question bank is live</p>
-          <h1 id="hello-h">{greeting()}, {firstName}.</h1>
-          <p className="muted">
-            <b>{days} days</b> to MDCAT (expected {fullDay(site.examDate)}) · {data.streakDays}-day practice streak
-          </p>
+          <div className="title-row">
+            <h1 id="home-h">MDCAT {site.season}</h1>
+            <span className="status-chip good"><i />{daysUntil(site.examDate)} days to go</span>
+          </div>
+          <p className="muted">Exam expected {fullDay(site.examDate)} · {data.streakDays}-day practice streak</p>
         </div>
         <div className="hello-ctas">
-          <a className="dpill dark" href="/mocks/new">Start a full mock</a>
-          <a className="dpill light" href="/practice">Practise a chapter</a>
+          {coachHidden && <button type="button" className="dpill light small" onClick={onShowCoach}><Icon name="spark" size={16} />Study coach</button>}
+          <a className="dpill light small" href="/practice">Practise</a>
+          <a className="dpill dark small" href="/mocks/new">Start a full mock</a>
         </div>
       </section>
 
-      <section className="quick" aria-label="Start">
-        {data.resume && (
-          <a className="tile" href={data.resume.href} style={{ background: "var(--sky)" }}>
-            <span className="tile-k">Continue</span>
-            <b>{data.resume.title}</b>
-            <span className="meter" role="img" aria-label={`${data.resume.done} of ${data.resume.total} done`}><i style={{ width: `${pct(data.resume.done, data.resume.total)}%` }} /></span>
-            <span className="tile-s">{data.resume.done} of {data.resume.total} questions</span>
-          </a>
-        )}
-        <a className="tile" href="/mocks/new" style={{ background: "var(--mint)" }}>
-          <span className="tile-k">Full mock</span>
-          <b>180 MCQs · 3 hours</b>
-          <span className="tile-s">Real paper split, no negative marking</span>
-        </a>
-        <a className="tile" href="/practice?mode=timed" style={{ background: "var(--lemon)" }}>
-          <span className="tile-k">Timed test</span>
-          <b>Pick chapters, set a clock</b>
-          <span className="tile-s">1 minute per question, like the exam</span>
-        </a>
-        <a className="tile" href="/mistakes" style={{ background: "var(--rose)" }}>
-          <span className="tile-k">My mistakes</span>
-          <b>{data.mistakesToRetry} to retry</b>
-          <span className="tile-s">{data.bookmarks} bookmarked questions</span>
-        </a>
-      </section>
+      <p className="demo"><i />Sample stats until the question bank is live</p>
 
-      <section className="stats" aria-label="Your numbers">
-        <div className="dcard stat">
-          <span className="stat-k">Questions answered</span>
-          <strong>{totals.answered.toLocaleString("en-GB")}</strong>
-          <span className="muted">{pct(totals.answered, totals.available)}% of the bank</span>
+      <section className="kpis" aria-label="Your numbers">
+        <div className="kpi">
+          <h2><span className="kpi-ic" style={{ color: "var(--blue)" }}><Icon name="practice" /></span>Answered</h2>
+          <strong>{month.answered.toLocaleString("en-GB")}</strong>
+          <p className="muted">Questions in the <b>last 30 days</b></p>
         </div>
-        <div className="dcard stat">
-          <span className="stat-k">Accuracy</span>
-          <strong>{pct(totals.correct, totals.answered)}%</strong>
-          <span className="muted">{totals.correct.toLocaleString("en-GB")} correct</span>
+        <div className="kpi">
+          <h2><span className="kpi-ic" style={{ color: "var(--good)" }}><Icon name="check" /></span>Accuracy</h2>
+          <strong>{pct(month.correct, month.answered)}%</strong>
+          <p className="muted">Right in the <b>last 30 days</b> · {pct(totals.correct, totals.answered)}% overall</p>
         </div>
-        <div className="dcard stat">
-          <span className="stat-k">Latest mock</span>
+        <div className="kpi">
+          <h2><span className="kpi-ic" style={{ color: "var(--warn)" }}><Icon name="mock" /></span>Latest mock</h2>
           <strong>{lastMock ? <>{lastMock.score}<small>/180</small></> : "–"}</strong>
-          <span className="muted">
-            {lastMock && prevMock ? <><span className={lastMock.score >= prevMock.score ? "up" : "down"}>{lastMock.score >= prevMock.score ? "+" : ""}{lastMock.score - prevMock.score}</span> on the one before</> : "Sit one to see your score"}
-          </span>
-        </div>
-        <div className="dcard stat">
-          <span className="stat-k">Mocks taken</span>
-          <strong>{mocks.length}</strong>
-          <span className="muted">Including past papers</span>
+          <p className="muted">
+            {change !== null ? <><b className={change >= 0 ? "up" : "down"}>{change >= 0 ? "+" : ""}{change}</b> on the mock before</> : "Sit one to see your score"}
+          </p>
         </div>
       </section>
 
-      <div className="cols">
-        <section className="dcard panel" aria-labelledby="subj-h">
-          <div className="panel-h">
-            <h2 id="subj-h">Progress by subject</h2>
-            <span className="muted">Tap a subject for chapters</span>
-          </div>
-          <div className="subjects">
-            {data.subjects.map((s) => <SubjectRow key={s.subject} s={s} />)}
-          </div>
-        </section>
+      <section className="box" aria-labelledby="prog-h">
+        <BarChart daily={data.daily} />
+      </section>
 
-        <div className="stack">
-          <section className="dcard panel" aria-labelledby="trend-h">
-            <div className="panel-h">
-              <h2 id="trend-h">Mock scores</h2>
-              <span className="muted">out of 180</span>
-            </div>
-            <ScoreTrend tests={mocks} />
-          </section>
-
-          <section className="dcard panel" aria-labelledby="weak-h">
-            <div className="panel-h">
-              <h2 id="weak-h">Weak topics</h2>
-              <span className="muted">Lowest accuracy, 10+ answered</span>
-            </div>
-            <ul className="weak">
-              {[...data.weakTopics].sort((a, b) => a.correct / a.answered - b.correct / b.answered).map((w) => {
-                const p = pct(w.correct, w.answered);
-                return (
-                  <li key={w.topic}>
-                    <div>
-                      <b>{w.topic}</b>
-                      <span className="muted">{w.subject} · {w.chapter}</span>
-                    </div>
-                    <span className={`acc ${band(p).cls}`}>{p}%</span>
-                    <a className="dpill light small" href={`/practice?topic=${encodeURIComponent(w.topic)}`} aria-label={`Practise ${w.topic}`}>Practise</a>
-                  </li>
-                );
-              })}
-            </ul>
-          </section>
-        </div>
-      </div>
-
-      <section className="dcard panel" aria-labelledby="recent-h">
+      <section className="box" aria-labelledby="subj-h">
         <div className="panel-h">
-          <h2 id="recent-h">Recent tests</h2>
-          <a className="link" href="/history">See all</a>
+          <h2 id="subj-h">Subjects</h2>
+          <div className="hello-ctas">
+            <a className="dpill light small" href="/mistakes">Retry mistakes</a>
+            <a className="dpill light small" href="/practice">Choose chapters</a>
+          </div>
         </div>
         <div className="table-scroll">
-          <table className="recent">
+          <table className="dtable">
             <thead>
-              <tr><th scope="col">Test</th><th scope="col" className="num">Score</th><th scope="col">Type</th><th scope="col">Date</th><th scope="col" className="num">Time</th><th scope="col"><span className="sr">Review</span></th></tr>
+              <tr><th scope="col">Subject</th><th scope="col" className="num">On paper</th><th scope="col" className="num">Answered</th><th scope="col" className="num">Accuracy</th><th scope="col" className="cover-h">Coverage</th></tr>
             </thead>
             <tbody>
-              {data.recent.slice(0, 6).map((t) => {
-                const p = pct(t.score, t.total);
+              {data.subjects.map((s) => {
+                const t = sumChapters(s);
+                const acc = pct(t.correct, t.answered);
+                const p = paper.find((x) => x.subject === s.subject)!;
+                const b = band(acc);
                 return (
-                  <tr key={t.id}>
-                    <th scope="row">{t.title}</th>
-                    <td className="num"><b>{t.score}</b>/{t.total} <span className={`acc ${band(p).cls}`}>{p}%</span></td>
-                    <td><span className="kind">{kindNames[t.kind]}</span></td>
-                    <td>{day(t.date)}</td>
-                    <td className="num">{t.minutes} min</td>
-                    <td className="num"><a className="link" href={`/review?id=${t.id}`}>Review</a></td>
+                  <tr key={s.subject}>
+                    <th scope="row">
+                      <a className="row-link" href={`/practice?subject=${encodeURIComponent(s.subject)}`}>
+                        <span className="row-ic" style={{ background: p.tone, color: p.solid }}>{s.subject[0]}</span>
+                        {s.subject}
+                        <span className={`status-chip ${b.cls}`}><i />{b.word}</span>
+                      </a>
+                    </th>
+                    <td className="num">{p.count}</td>
+                    <td className="num">{t.answered.toLocaleString("en-GB")}</td>
+                    <td className="num"><b>{acc}%</b></td>
+                    <td className="cover"><div>
+                      <span className="meter" style={{ ["--c" as string]: p.solid }} role="img" aria-label={`${pct(t.answered, t.available)}% of ${s.subject} answered`}><i style={{ width: `${pct(t.answered, t.available)}%` }} /></span>
+                      <span className="muted">{pct(t.answered, t.available)}%</span>
+                    </div></td>
                   </tr>
                 );
               })}
@@ -209,126 +161,77 @@ function Body({ user, data }: { user: StudentUser; data: Data }) {
         </div>
       </section>
 
-      <div className="cols even">
-        <PlanCard user={user} />
-        <Devices />
-      </div>
+      <section className="box" aria-labelledby="recent-h">
+        <div className="panel-h">
+          <h2 id="recent-h">Recent tests</h2>
+          <a className="dpill light small" href="/history">See all</a>
+        </div>
+        <div className="table-scroll">
+          <table className="dtable">
+            <thead>
+              <tr><th scope="col">Test</th><th scope="col">Type</th><th scope="col">Date</th><th scope="col" className="num">Time</th><th scope="col" className="num">Score</th></tr>
+            </thead>
+            <tbody>
+              {data.recent.slice(0, 5).map((t) => {
+                const p = pct(t.score, t.total);
+                return (
+                  <tr key={t.id}>
+                    <th scope="row"><a className="row-link" href={`/review?id=${t.id}`}>{t.title}</a></th>
+                    <td><span className="kind">{kindNames[t.kind]}</span></td>
+                    <td>{day(t.date)}</td>
+                    <td className="num">{t.minutes} min</td>
+                    <td className="num"><b>{t.score}</b>/{t.total} <span className={`acc ${band(p).cls}`}>{p}%</span></td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </section>
     </div>
   );
 }
 
-function SubjectRow({ s }: { s: SubjectStat }) {
-  const t = sumChapters(s);
-  const acc = pct(t.correct, t.answered);
-  const cover = pct(t.answered, t.available);
-  const onPaper = paper.find((p) => p.subject === s.subject)!;
-  return (
-    <details className="subj" style={{ ["--c" as string]: onPaper.solid, ["--tone" as string]: onPaper.tone }}>
-      <summary>
-        <span className="subj-name"><i />{s.subject}<em>{onPaper.count} on the paper</em></span>
-        <span className="subj-acc"><b>{t.answered ? `${acc}%` : "–"}</b><span className="muted">accuracy</span></span>
-        <span className="subj-cover">
-          <span className="meter" role="img" aria-label={`${cover}% of ${s.subject} questions answered`}><i style={{ width: `${cover}%` }} /></span>
-          <span className="muted">{t.answered} of {t.available} answered</span>
-        </span>
-        <svg className="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
-      </summary>
-      <ul className="chapters">
-        {s.chapters.map((c) => {
-          const p = pct(c.correct, c.answered);
-          return (
-            <li key={c.chapter}>
-              <span>{c.chapter}</span>
-              <span className="muted">{c.answered}/{c.available}</span>
-              {c.answered ? <span className={`acc ${band(p).cls}`} title={band(p).word}>{p}%</span> : <span className="acc none">Not started</span>}
-              <a className="link" href={`/practice?subject=${encodeURIComponent(s.subject)}&chapter=${encodeURIComponent(c.chapter)}`} aria-label={`Practise ${c.chapter}`}>Practise</a>
-            </li>
-          );
-        })}
-      </ul>
-    </details>
-  );
-}
+/* The right-hand panel: what to do next, worked out from the student's own numbers. Every suggestion is a link
+   into practice, not a chat; an AI tutor is a later phase of the plan. */
+function Coach({ user, data, onHide }: { user: AccountUser; data: Data; onHide: () => void }) {
+  const firstName = user.name.split(/\s+/)[0] || "there";
+  const weakest = [...data.weakTopics].sort((a, b) => a.correct / a.answered - b.correct / b.answered).slice(0, 2);
+  const nextMock = data.recent.filter((t) => t.kind === "mock").length + 1;
+  const today = data.daily.at(-1)?.answered ?? 0;
 
-function PlanCard({ user }: { user: StudentUser }) {
-  const paid = user.plan !== "free";
+  const tips = [
+    ...weakest.map((w) => ({ href: `/practice?topic=${encodeURIComponent(w.topic)}`, icon: "target", tone: "var(--bad)", label: `${w.topic} · ${pct(w.correct, w.answered)}%` })),
+    ...(data.resume ? [{ href: data.resume.href, icon: "play", tone: "var(--blue)", label: `Finish ${data.resume.title.split(" · ").at(-1)}` }] : []),
+    { href: "/mistakes", icon: "retry", tone: "var(--warn)", label: `Retry ${data.mistakesToRetry} mistakes` },
+    { href: "/mocks/new", icon: "mock", tone: "var(--good)", label: `Sit full mock ${nextMock}` },
+    { href: "/practice?mode=timed", icon: "bolt", tone: "#8a63ff", label: "Timed test, 25 questions" },
+  ];
+
   return (
-    <section className={`dcard panel plan ${paid ? "" : "free"}`} aria-labelledby="plan-h">
-      <div className="panel-h">
-        <h2 id="plan-h">Your plan</h2>
-        <span className={`badge ${paid ? "good" : ""}`}>{paid ? "Active" : "Free"}</span>
+    <aside className="coach" aria-labelledby="coach-h">
+      <div className="coach-top">
+        <h2 id="coach-h">Study coach</h2>
+        <button type="button" className="icon-btn" onClick={onHide} aria-label="Hide study coach" title="Hide"><Icon name="panel" /></button>
       </div>
-      <p className="plan-name">{planNames[user.plan]}</p>
-      {paid ? (
-        <p className="muted">
-          Full question bank, mocks, past papers and analytics
-          {user.planExpiresAt ? <> until <b>{fullDay(user.planExpiresAt)}</b>.</> : "."}
-          {user.plan === "monthly" ? " Renews monthly." : " One payment, no renewal."}
-        </p>
-      ) : (
-        <>
-          <p className="muted">About 300 questions, one mini-mock and basic stats. The Season Pass opens the full bank, every mock and past paper until the exam.</p>
-          <a className="dpill dark" href="/pricing">Get the Season Pass · Rs. {prices.seasonPass}</a>
-        </>
-      )}
-      <a className="link" href="/account/billing">Receipts and billing</a>
-    </section>
-  );
-}
-
-function Devices() {
-  const [devices, setDevices] = useState<Device[] | null>(null);
-  const [msg, setMsg] = useState<string | null>(null);
-
-  useEffect(() => {
-    myDevices().then(setDevices).catch((e) => setMsg(friendlyError(e)));
-  }, []);
-
-  async function remove(d: Device) {
-    if (!window.confirm(`Remove ${d.label}? It will be signed out, and you can only replace a device once every 30 days.`)) return;
-    setMsg(null);
-    try {
-      const res = await removeDevice(d.id);
-      if (res.status === "removed") setDevices(res.devices);
-      else if (res.status === "swap_limit") setMsg(`You've already removed a device in the last 30 days. You can remove one again on ${fullDay(res.next_allowed_at)}.`);
-      else setDevices((ds) => ds?.filter((x) => x.id !== d.id) ?? null);
-    } catch (e) {
-      setMsg(friendlyError(e));
-    }
-  }
-
-  return (
-    <section className="dcard panel" aria-labelledby="dev-h">
-      <div className="panel-h">
-        <h2 id="dev-h">Devices</h2>
-        {devices && <span className="muted">{devices.length} of 2 registered</span>}
-      </div>
-      {devices && (
-        <ul className="devices">
-          {devices.map((d) => (
-            <li key={d.id}>
-              <span className="dev-ico" aria-hidden="true">
-                {/android|phone|iphone|ipad/i.test(d.label) ? (
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="6" y="2" width="12" height="20" rx="3" /><path d="M11 18h2" /></svg>
-                ) : (
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="4" width="18" height="12" rx="2" /><path d="M2 20h20" /></svg>
-                )}
-              </span>
-              <div>
-                {/* This page only shows while this device is the active one, so the active device is this one. */}
-                <b>{d.label}{d.active && <em> · this device</em>}</b>
-                <span className="muted">{d.active ? "Active now" : `Last used ${day(new Date(d.last_seen_at).toISOString())}`}</span>
-              </div>
-              {d.active ? <span className="badge good">Active</span> : <button type="button" className="link" onClick={() => remove(d)}>Remove</button>}
-            </li>
+      <div className="coach-body">
+        <span className="coach-mark"><Icon name="spark" size={22} /></span>
+        <p className="coach-hi">{greeting()}, {firstName}</p>
+        <p className="muted">Here&apos;s what would help most today.</p>
+        <ul className="coach-tips">
+          {tips.map((t) => (
+            <li key={t.label}><a href={t.href}><span style={{ color: t.tone }}><Icon name={t.icon} size={16} /></span>{t.label}</a></li>
           ))}
         </ul>
-      )}
-      <p className="muted small">
-        Only one device can be in use at a time. Opening {site.name} on the other one moves your session there, and an unfinished test picks up where you left off.
-        A removed device can be replaced once every 30 days.
-      </p>
-      {msg && <p className="small" role="status">{msg}</p>}
-    </section>
+      </div>
+      <div className="goal">
+        <div className="goal-h">
+          <span><Icon name="flame" size={16} />Today</span>
+          <b>{today} / {data.dailyGoal}</b>
+        </div>
+        <span className="meter" role="img" aria-label={`${today} of ${data.dailyGoal} questions today`}><i style={{ width: `${Math.min(100, pct(today, data.dailyGoal))}%` }} /></span>
+        <p className="muted small">{today >= data.dailyGoal ? "Daily goal done. Anything more is a bonus." : `${data.dailyGoal - today} more questions to hit your daily goal.`}</p>
+      </div>
+    </aside>
   );
 }
