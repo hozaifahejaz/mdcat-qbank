@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { PageHead } from "@/components/app/AppShell";
 import Empty from "@/components/app/Empty";
 import { friendlyError } from "@/lib/auth";
 import {
@@ -76,7 +77,10 @@ export default function Questions({ user }: { user: AccountUser }) {
   ];
 
   return (
-    <>
+    <div className="dgrid">
+      <PageHead title="Questions" sub="Write questions and take each one through the quality check before students see it.">
+        <button type="button" className="dpill dark small" onClick={() => setSel("new")}>New question</button>
+      </PageHead>
       <div className="q-head">
         <nav className="stage-tabs" aria-label="Stage">
           {tabList.map((t) => (
@@ -85,7 +89,6 @@ export default function Questions({ user }: { user: AccountUser }) {
             </button>
           ))}
         </nav>
-        <button type="button" className="dpill dark small" onClick={() => setSel("new")}>New question</button>
       </div>
 
       {err && <p className="note-bad">{err}</p>}
@@ -133,7 +136,7 @@ export default function Questions({ user }: { user: AccountUser }) {
           : <div className="sk" style={{ height: 480 }} />}
       </div>
       {toast && <div className="toast" role="status">{toast}</div>}
-    </>
+    </div>
   );
 }
 

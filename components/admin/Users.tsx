@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { PageHead } from "@/components/app/AppShell";
 import Empty from "@/components/app/Empty";
 import { friendlyError } from "@/lib/auth";
 import { type AdminUser, type UserDetail, actionNames, getUser, listUsers, resetDevices, setPlan, setRole, signOutUser } from "@/lib/admin";
@@ -38,7 +39,8 @@ export default function Users({ user: me }: { user: AccountUser }) {
   useEffect(() => { if (toast) { const t = setTimeout(() => setToast(""), 3000); return () => clearTimeout(t); } }, [toast]);
 
   return (
-    <>
+    <div className="dgrid">
+      <PageHead title="Users and plans" sub="Find an account to change its plan or role, or clear its devices." />
       <div className="q-head">
         <nav className="stage-tabs" aria-label="Filter">
           {filters.map((f) => <button key={f.id} type="button" className="stab" aria-pressed={filter === f.id} onClick={() => setFilter(f.id)}>{f.label}</button>)}
@@ -78,7 +80,7 @@ export default function Users({ user: me }: { user: AccountUser }) {
         {sel && <Detail key={sel} id={sel} me={me} onClose={() => setSel(null)} onChanged={(m) => { setToast(m); load(); }} />}
       </div>
       {toast && <div className="toast" role="status">{toast}</div>}
-    </>
+    </div>
   );
 }
 

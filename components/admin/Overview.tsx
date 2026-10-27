@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { PageHead } from "@/components/app/AppShell";
 import Empty from "@/components/app/Empty";
 import { friendlyError } from "@/lib/auth";
 import { type Overview as Data, actionNames, getOverview } from "@/lib/admin";
@@ -17,8 +18,8 @@ export default function Overview({ user }: { user: AccountUser }) {
   const [err, setErr] = useState("");
   useEffect(() => { getOverview().then(setD, (e) => setErr(friendlyError(e))); }, []);
 
-  if (err) return <section className="dcard panel admin-sec"><p className="note-bad">{err}</p></section>;
-  if (!d) return <div className="sk" style={{ height: 420, marginTop: 20 }} />;
+  if (err) return <div className="dgrid"><PageHead title="Overview" /><p className="note-bad">{err}</p></div>;
+  if (!d) return <div className="dgrid"><PageHead title="Overview" /><div className="sk" style={{ height: 420 }} /></div>;
 
   const total = Object.values(d.byStage).reduce((a, b) => a + b, 0);
   const todo = [
@@ -30,9 +31,13 @@ export default function Overview({ user }: { user: AccountUser }) {
   ].filter(Boolean) as { n: number; text: string; href: string }[];
 
   return (
-    <div className="admin-sec ov">
+    <div className="dgrid">
+      <PageHead title="Overview" sub={`Signed in as ${user.name || user.email}. Here's what needs doing and where the bank stands.`}>
+        <a className="dpill dark small" href="/admin/questions?new=1">New question</a>
+      </PageHead>
+    <div className="ov">
       <section className="dcard panel">
-        <div className="panel-h"><h2>To do</h2><a className="dpill dark small" href="/admin/questions?new=1">New question</a></div>
+        <div className="panel-h"><h2>To do</h2></div>
         {todo.length ? (
           <ul className="todo">
             {todo.map((t) => <li key={t.href}><a href={t.href}><b>{t.n}</b> {t.n === 1 ? t.text.replace("questions were", "question was") : t.text}</a></li>)}
@@ -93,6 +98,7 @@ export default function Overview({ user }: { user: AccountUser }) {
           </section>
         </>
       )}
+    </div>
     </div>
   );
 }

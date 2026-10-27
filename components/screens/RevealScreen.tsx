@@ -62,7 +62,7 @@ export default function RevealScreen() {
   }, [img]);
 
   return (
-    <div className="dgrid admin-sec">
+    <div className="dgrid">
       <section className="hello page-head">
         <div>
           <h1>Reveal watermark</h1>
