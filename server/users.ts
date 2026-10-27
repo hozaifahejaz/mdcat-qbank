@@ -3,10 +3,10 @@ import type { OAuthProfile, Provider } from "./oauth";
 
 export type UserRow = {
   id: string; name: string; email: string | null; email_verified_at: number | null; phone: string | null;
-  password_hash: string | null; plan: string; plan_expires_at: number | null;
+  password_hash: string | null; plan: string; plan_expires_at: number | null; role: string;
 };
 
-const COLUMNS = "id, name, email, email_verified_at, phone, password_hash, plan, plan_expires_at";
+const COLUMNS = "id, name, email, email_verified_at, phone, password_hash, plan, plan_expires_at, role";
 
 export const userById = (db: D1Database, id: string) => db.prepare(`SELECT ${COLUMNS} FROM users WHERE id = ?`).bind(id).first<UserRow>();
 export const userByEmail = (db: D1Database, email: string) => db.prepare(`SELECT ${COLUMNS} FROM users WHERE email = ?`).bind(email).first<UserRow>();
@@ -69,6 +69,7 @@ export async function publicUser(db: D1Database, u: UserRow) {
     email: u.email ?? undefined,
     phone: u.phone ?? undefined,
     plan: u.plan,
+    role: u.role,
     planExpiresAt: u.plan_expires_at ? new Date(u.plan_expires_at).toISOString() : undefined,
     methods,
   };

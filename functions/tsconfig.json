@@ -10,5 +10,5 @@
     "skipLibCheck": true,
     "isolatedModules": true
   },
-  "include": ["./**/*.ts", "../server/**/*.ts", "../lib/phone.ts"]
+  "include": ["./**/*.ts", "../server/**/*.ts", "../lib/phone.ts", "../lib/qc.ts"]
 }

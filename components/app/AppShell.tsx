@@ -7,6 +7,7 @@ import Logo from "@/components/Logo";
 import ThemeToggle from "@/components/ThemeToggle";
 import { signOut } from "@/lib/auth";
 import { planNames } from "@/lib/format";
+import { isStaff } from "@/lib/qc";
 import { site } from "@/lib/site";
 import { type AccountUser, getCurrentUser } from "@/lib/user";
 
@@ -84,6 +85,7 @@ export function AppFrame({ active, title, user, aside, children }: { active?: st
         </nav>
         <div className="side-foot">
           <ul>
+            {isStaff(user?.role) && <li><a href="/admin"><Icon name="shield" />Admin panel</a></li>}
             <li><a href={`mailto:${site.supportEmail}`}><Icon name="help" />Help</a></li>
             <li>
               <button type="button" onClick={async () => { await signOut(); window.location.replace("/"); }}><Icon name="signout" />Sign out</button>
@@ -153,6 +155,7 @@ export function AppFrame({ active, title, user, aside, children }: { active?: st
               {moreLinks.map((l) => (
                 <li key={l.href}><a href={l.href} aria-current={l.href === active ? "page" : undefined}><Icon name={l.icon} />{l.label}<span className="chev"><Icon name="chevron" size={16} /></span></a></li>
               ))}
+              {isStaff(user?.role) && <li><a href="/admin"><Icon name="shield" />Admin panel<span className="chev"><Icon name="chevron" size={16} /></span></a></li>}
               <li><a href={`mailto:${site.supportEmail}`}><Icon name="help" />Help<span className="chev"><Icon name="chevron" size={16} /></span></a></li>
               <li><button type="button" className="danger" onClick={async () => { await signOut(); window.location.replace("/"); }}><Icon name="signout" />Sign out</button></li>
             </ul>

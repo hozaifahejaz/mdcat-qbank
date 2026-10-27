@@ -6,6 +6,7 @@ import { linkEmail, mailConfigured, sendMail } from "./mail";
 import { type Provider, appleConfigured, clearStateCookie, finishOAuth, googleConfigured, startOAuth } from "./oauth";
 import { rateLimit } from "./ratelimit";
 import { type Session, clearSessionCookie, createSession, getSession, requireSession } from "./session";
+import { adminRoutes } from "./admin";
 import { checkCode, sendCode, smsConfigured } from "./sms";
 import { checkCaptcha } from "./turnstile";
 import { createUser, publicUser, userByEmail, userById, userByPhone, userForOAuth } from "./users";
@@ -278,7 +279,8 @@ export async function handle(request: Request, env: Env): Promise<Response> {
       if (step === "start" && request.method !== "GET") throw fail(405, "method", "Method not allowed.");
       return await oauth(c, o[1] as Provider, step);
     }
-    const route = routes[`${request.method} ${url.pathname}`];
+    const key = `${request.method} ${url.pathname}`;
+    const route = routes[key] ?? adminRoutes[key];
     if (!route) throw fail(404, "not_found", "Not found.");
     if (request.method !== "GET") assertSameOrigin(request);
     return await route(c);

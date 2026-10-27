@@ -1,8 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Logo from "@/components/Logo";
-import ThemeToggle from "@/components/ThemeToggle";
 import { decode, luminance, residual } from "@/lib/watermark";
 
 /* /admin/reveal — read the hidden marks in a leaked screenshot (see components/test/Protected.tsx).
@@ -64,47 +62,35 @@ export default function RevealScreen() {
   }, [img]);
 
   return (
-    <div className="dash admin">
-      <header className="dnav-wrap">
-        <div className="dwrap wide">
-          <div className="dnav">
-            <span className="admin-brand"><Logo href="/admin" /><span className="badge">Admin</span></span>
-            <div className="dnav-end"><a className="dpill light small" href="/admin">Question review</a><ThemeToggle /></div>
+    <div className="dgrid admin-sec">
+      <section className="hello page-head">
+        <div>
+          <h1>Reveal watermark</h1>
+          <p className="muted">Drop in a leaked screenshot to read the account ID hidden in it.</p>
+        </div>
+      </section>
+      <section className="dcard panel">
+        <label className="fld upload" onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); load(e.dataTransfer.files[0]); }}>
+          <span>Screenshot</span>
+          <input type="file" accept="image/*" onChange={(e) => load(e.target.files?.[0])} />
+          <span className="drop">{img ? "Choose another image" : "Choose or drop an image"}</span>
+        </label>
+        {found && (
+          <div className={found === "reading" ? "note-chip" : found === "none" ? "note-warn" : "note-good"} role="status">
+            {found === "reading" ? "Reading the code…"
+              : found === "none" ? "No code found. The image may be a photo of a screen or cropped to less than a question; check the text below."
+              : <>Account ID <b className="mono">{found.id}</b> · checksum matches · <a className="link" href={`/admin/users?q=${found.id}`}>Find the account</a></>}
           </div>
-        </div>
-      </header>
-      <main className="dwrap wide">
-        <div className="dgrid">
-          <section className="hello page-head">
-            <div>
-              <h1>Reveal watermark</h1>
-              <p className="muted">Drop in a leaked screenshot to read the account ID hidden in it.</p>
-            </div>
-          </section>
-          <section className="dcard panel">
-            <label className="fld upload" onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); load(e.dataTransfer.files[0]); }}>
-              <span>Screenshot</span>
-              <input type="file" accept="image/*" onChange={(e) => load(e.target.files?.[0])} />
-              <span className="drop">{img ? "Choose another image" : "Choose or drop an image"}</span>
-            </label>
-            {found && (
-              <div className={found === "reading" ? "note-chip" : found === "none" ? "note-warn" : "note-good"} role="status">
-                {found === "reading" ? "Reading the code…"
-                  : found === "none" ? "No code found. The image may be a photo of a screen or cropped to less than a question; check the text below."
-                  : <>Account ID <b className="mono">{found.id}</b> · checksum matches</>}
-              </div>
-            )}
-            {img && <p className="muted small">Below: the hidden phone number and ID as text. It only shows on clean screenshots, not compressed ones.</p>}
-            {img && (
-              <label className="fld">
-                <span>Strength</span>
-                <input type="range" min={10} max={90} value={gain} onChange={(e) => setGain(Number(e.target.value))} />
-              </label>
-            )}
-            <canvas ref={out} className="reveal-out" hidden={!img} aria-label="Screenshot with the watermark brought out" />
-          </section>
-        </div>
-      </main>
+        )}
+        {img && <p className="muted small">Below: the hidden phone number and ID as text. It only shows on clean screenshots, not compressed ones.</p>}
+        {img && (
+          <label className="fld">
+            <span>Strength</span>
+            <input type="range" min={10} max={90} value={gain} onChange={(e) => setGain(Number(e.target.value))} />
+          </label>
+        )}
+        <canvas ref={out} className="reveal-out" hidden={!img} aria-label="Screenshot with the watermark brought out" />
+      </section>
     </div>
   );
 }
