@@ -15,7 +15,7 @@ import type { AccountUser } from "@/lib/user";
 type Filter = "all" | "wrong" | "skipped" | "flagged" | "correct";
 
 export default function ReviewScreen() {
-  return <AppShell>{(user) => <Review user={user} />}</AppShell>;
+  return <AppShell title="Results">{(user) => <Review user={user} />}</AppShell>;
 }
 
 /* /review?id=… — the result of one test, then every question with the student's answer and the explanation. */

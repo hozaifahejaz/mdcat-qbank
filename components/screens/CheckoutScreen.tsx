@@ -9,7 +9,7 @@ import { site } from "@/lib/site";
 import type { AccountUser } from "@/lib/user";
 
 export default function CheckoutScreen() {
-  return <AppShell>{(user) => <Checkout user={user} />}</AppShell>;
+  return <AppShell title="Checkout">{(user) => <Checkout user={user} />}</AppShell>;
 }
 
 const methods: { id: Method; hint: string }[] = [

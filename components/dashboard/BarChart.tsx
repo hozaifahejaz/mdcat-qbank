@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { DayActivity } from "@/lib/dashboard-data";
 
 type Metric = "answered" | "correct";
@@ -8,15 +8,24 @@ type Range = "daily" | "weekly";
 
 const fmt = (iso: string, o: Intl.DateTimeFormatOptions) => new Date(iso + "T12:00:00").toLocaleDateString("en-GB", o);
 
-/* Questions practised over time as bars. Daily shows the last 30 days, weekly the last 12 weeks.
+/* Questions practised over time as bars. Daily shows the last 30 days (14 on phones), weekly the last 12 weeks.
    Hover or tab to a bar for its numbers; a hidden table carries the same data. */
 export default function BarChart({ daily }: { daily: DayActivity[] }) {
   const [metric, setMetric] = useState<Metric>("answered");
   const [range, setRange] = useState<Range>("daily");
   const [hover, setHover] = useState<number | null>(null);
+  // Phones show two weeks of days, so each bar stays wide enough to tap.
+  const [narrow, setNarrow] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 760px)");
+    const on = () => setNarrow(mq.matches);
+    on();
+    mq.addEventListener("change", on);
+    return () => mq.removeEventListener("change", on);
+  }, []);
 
   const cols = range === "daily"
-    ? daily.slice(-30).map((d) => ({ key: d.date, label: fmt(d.date, { day: "numeric", month: "short" }), long: fmt(d.date, { weekday: "short", day: "numeric", month: "short" }), answered: d.answered, correct: d.correct }))
+    ? daily.slice(narrow ? -14 : -30).map((d) => ({ key: d.date, label: fmt(d.date, { day: "numeric", month: "short" }), long: fmt(d.date, { weekday: "short", day: "numeric", month: "short" }), answered: d.answered, correct: d.correct }))
     : Array.from({ length: Math.floor(daily.length / 7) }, (_, w) => {
         const days = daily.slice(daily.length - (Math.floor(daily.length / 7) - w) * 7).slice(0, 7);
         return {
@@ -52,8 +61,8 @@ export default function BarChart({ daily }: { daily: DayActivity[] }) {
           <label className="sel">
             <span className="sr">Range</span>
             <select value={range} onChange={(e) => { setRange(e.target.value as Range); setHover(null); }}>
-              <option value="daily">Daily</option>
-              <option value="weekly">Weekly</option>
+              <option value="daily">{narrow ? "14 days" : "Daily"}</option>
+              <option value="weekly">{narrow ? "12 weeks" : "Weekly"}</option>
             </select>
           </label>
         </div>

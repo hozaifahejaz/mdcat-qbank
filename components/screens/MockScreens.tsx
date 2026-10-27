@@ -83,7 +83,7 @@ function Mocks({ user }: { user: AccountUser }) {
 
 /* /mocks/new — the rules before a mock starts. */
 export function MockIntroScreen() {
-  return <AppShell active="/mocks">{() => <MockIntro />}</AppShell>;
+  return <AppShell active="/mocks" title="New mock">{() => <MockIntro />}</AppShell>;
 }
 
 function MockIntro() {
@@ -153,7 +153,7 @@ function PastPapers({ user }: { user: AccountUser }) {
 
 /* /history — every test taken. */
 export function HistoryScreen() {
-  return <AppShell>{(user) => <History user={user} />}</AppShell>;
+  return <AppShell active="/history">{(user) => <History user={user} />}</AppShell>;
 }
 
 function History({ user }: { user: AccountUser }) {

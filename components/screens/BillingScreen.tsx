@@ -8,7 +8,7 @@ import { site } from "@/lib/site";
 import type { AccountUser } from "@/lib/user";
 
 export default function BillingScreen() {
-  return <AppShell>{(user) => <Billing user={user} />}</AppShell>;
+  return <AppShell active="/account/billing">{(user) => <Billing user={user} />}</AppShell>;
 }
 
 const statusNames: Record<Receipt["status"], { word: string; cls: string }> = {
