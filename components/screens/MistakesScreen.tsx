@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import AppShell, { PageHead } from "@/components/app/AppShell";
+import Empty from "@/components/app/Empty";
 import Explanation from "@/components/test/Explanation";
 import Protected from "@/components/test/Protected";
 import { getBookmarks, getMistakes, type Mistake } from "@/lib/attempts";
@@ -70,7 +71,7 @@ function Mistakes({ user }: { user: AccountUser }) {
                 )}
               </li>
             ))}
-            {!rows.length && <li className="muted">Nothing here yet.</li>}
+            {!rows.length && <li><Empty title={tab === "wrong" ? "No mistakes yet" : "No bookmarks yet"} text={tab === "wrong" ? "Questions you get wrong land here so you can retry them." : "Bookmark a question while you practise to keep it here."} /></li>}
           </ul>
         </Protected>
       </section>

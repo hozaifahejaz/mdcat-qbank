@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Empty from "@/components/app/Empty";
 import Logo from "@/components/Logo";
 import ThemeToggle from "@/components/ThemeToggle";
 import { type AdminQuestion, checklist, getAdminQueue, keySpread, type StageId, stages } from "@/lib/admin-data";
@@ -14,7 +15,7 @@ const stageIndex = (s: StageId) => stages.findIndex((x) => x.id === s);
 
 /* /admin — the writers' and reviewers' tool: a queue by quality-check stage, and an editor that shows each question's
    automatic checks, blind solve, textbook checklist, live statistics and student reports.
-   Sample data and local state only; staff roles and saving come with the backend. */
+   The queue is empty until questions are saved to D1; staff roles and saving come with the backend. */
 export default function AdminScreen() {
   const [qs, setQs] = useState<AdminQuestion[] | null>(null);
   const [view, setView] = useState<View>("review");
@@ -93,7 +94,9 @@ export default function AdminScreen() {
             </ul>
           </aside>
 
-          {current ? <Editor key={current.id} q={current} all={qs!} onChange={update} onToast={setToast} /> : <div className="sk" style={{ height: 480 }} />}
+          {current ? <Editor key={current.id} q={current} all={qs!} onChange={update} onToast={setToast} />
+            : qs && !qs.length ? <section className="dcard panel"><Empty title="No questions yet" text="Questions appear here as writers add them, and move through each quality-check stage until they go live." /></section>
+            : <div className="sk" style={{ height: 480 }} />}
         </div>
       </main>
       {toast && <div className="toast" role="status">{toast}</div>}
@@ -163,14 +166,14 @@ function Editor({ q: initial, all, onChange, onToast }: { q: AdminQuestion; all:
           <div className="form-grid">
             <label className="fld">
               <span>Subject</span>
-              <select value={q.subject} onChange={(e) => { const s = e.target.value as Subject; setQ((x) => ({ ...x, subject: s, chapter: syllabus[s][0]!.chapter })); }}>
+              <select value={q.subject} onChange={(e) => { const s = e.target.value as Subject; setQ((x) => ({ ...x, subject: s, chapter: syllabus[s][0]! })); }}>
                 {subjects.map((s) => <option key={s}>{s}</option>)}
               </select>
             </label>
             <label className="fld">
               <span>Chapter</span>
               <select value={q.chapter} onChange={(e) => set("chapter", e.target.value)}>
-                {syllabus[q.subject].map((c) => <option key={c.chapter}>{c.chapter}</option>)}
+                {syllabus[q.subject].map((c) => <option key={c}>{c}</option>)}
               </select>
             </label>
             <label className="fld"><span>Topic</span><input value={q.topic} onChange={(e) => set("topic", e.target.value)} /></label>

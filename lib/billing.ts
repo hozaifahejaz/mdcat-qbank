@@ -1,5 +1,6 @@
 /* Plans, prices and payments as the checkout and billing screens see them. Prices come from lib/site.ts (the plan's
-   pricing table). Nothing here charges anyone: pay() pretends to, until the payment aggregator is connected. */
+   pricing table). Payments aren't open yet: there is no charge call and no receipts until the aggregator
+   (Safepay, PayFast or Simpaisa) is connected. */
 import { prices } from "@/lib/site";
 import type { StudentUser } from "@/lib/user";
 
@@ -33,16 +34,6 @@ export const methodNames: Record<Method, string> = {
 
 export type Receipt = { id: string; date: string; item: string; method: Method; amount: number; status: "paid" | "pending" | "refunded" };
 
-export async function getReceipts(user: StudentUser): Promise<Receipt[]> {
-  if (user.plan === "free") return [];
-  return [
-    { id: "EW-26-000184", date: "2026-10-02T14:12:00+05:00", item: "MDCAT Season Pass · early bird", method: "jazzcash", amount: rs(prices.earlyBird), status: "paid" },
-    { id: "EW-26-000097", date: "2026-09-14T19:40:00+05:00", item: "Monthly", method: "easypaisa", amount: rs(prices.monthly), status: "paid" },
-  ];
-}
-
-/* Stand-in for the aggregator call (Safepay, PayFast or Simpaisa). Wallets wait for the student to approve on their phone. */
-export async function pay(_plan: PlanId, method: Method): Promise<{ receiptId: string }> {
-  await new Promise((r) => setTimeout(r, method === "jazzcash" || method === "easypaisa" ? 2400 : 1400));
-  return { receiptId: `EW-26-${String(Math.floor(Math.random() * 900000) + 100000)}` };
+export async function getReceipts(_user: StudentUser): Promise<Receipt[]> {
+  return [];
 }

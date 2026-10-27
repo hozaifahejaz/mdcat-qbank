@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import AppShell from "@/components/app/AppShell";
+import Empty from "@/components/app/Empty";
 import TestPlayer from "@/components/test/TestPlayer";
 import type { Mode } from "@/lib/attempts";
 import { bank, paperOrder, pickQuestions, type Question } from "@/lib/bank";
@@ -11,7 +12,7 @@ type Setup = { mode: Mode; kind: TestResult["kind"]; title: string; questions: Q
 
 /* /test?mode=tutor|timed|mock plus what to ask:
    subject, chapters (separated by |), ids (comma-separated), count, title, paper (a past-paper year).
-   Until the bank is live, every set comes from the sample questions; a full mock is 180 MCQs in 180 minutes. */
+   A full mock is the whole bank in paper order, one minute a question. With no questions to ask, it says so instead. */
 function readSetup(): Setup {
   const p = new URLSearchParams(window.location.search);
   const mode = (["tutor", "timed", "mock"].includes(p.get("mode") ?? "") ? p.get("mode") : "tutor") as Mode;
@@ -20,7 +21,7 @@ function readSetup(): Setup {
   const count = Number(p.get("count")) || undefined;
   if (mode === "mock") {
     const qs = paperOrder(bank);
-    return { mode, kind: paper ? "past-paper" : "mock", title: p.get("title") ?? (paper ? `PMDC MDCAT ${paper}` : "Full mock 6"), questions: qs, minutes: qs.length };
+    return { mode, kind: paper ? "past-paper" : "mock", title: p.get("title") ?? (paper ? `PMDC MDCAT ${paper}` : "Full mock"), questions: qs, minutes: qs.length };
   }
   const subject = p.get("subject");
   const chapters = p.get("chapters")?.split("|") ?? [];
@@ -32,5 +33,20 @@ function readSetup(): Setup {
 export default function TestScreen() {
   const [setup, setSetup] = useState<Setup | null>(null);
   useEffect(() => setSetup(readSetup()), []);
+  if (setup && !setup.questions.length) {
+    return (
+      <AppShell title="Test">
+        {() => (
+          <div className="dgrid narrow">
+            <section className="dcard panel">
+              <Empty title="Questions coming soon" text="Every question is checked by a second expert against the textbook before it goes live. This test opens when they're ready.">
+                <a className="dpill dark small" href="/dashboard">Back to dashboard</a>
+              </Empty>
+            </section>
+          </div>
+        )}
+      </AppShell>
+    );
+  }
   return <AppShell bare>{(user) => setup && <TestPlayer user={user} {...setup} />}</AppShell>;
 }

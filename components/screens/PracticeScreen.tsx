@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import AppShell, { PageHead } from "@/components/app/AppShell";
-import { subjects, syllabus } from "@/lib/bank";
+import { available, subjects, syllabus } from "@/lib/bank";
 import { getDashboard, type Subject, type SubjectStat } from "@/lib/dashboard-data";
 import { band, pct } from "@/lib/format";
 import { paper } from "@/lib/site";
@@ -39,7 +39,7 @@ function Practice({ user }: { user: AccountUser }) {
 
   const chapters = syllabus[subject];
   const stat = (c: string) => stats.find((s) => s.subject === subject)?.chapters.find((x) => x.chapter === c);
-  const pool = useMemo(() => chapters.filter((c) => !picked.size || picked.has(c.chapter)).reduce((t, c) => t + c.available, 0), [chapters, picked]);
+  const pool = useMemo(() => available(subject, [...picked]), [subject, picked]);
   const allOn = picked.size === chapters.length;
 
   const switchSubject = (s: Subject) => { setSubject(s); setPicked(new Set()); setTopic(null); };
@@ -71,22 +71,23 @@ function Practice({ user }: { user: AccountUser }) {
         <section className="dcard panel" aria-labelledby="ch-h">
           <div className="panel-h">
             <h2 id="ch-h">{subject} chapters</h2>
-            <button type="button" className="link" onClick={() => setPicked(allOn ? new Set() : new Set(chapters.map((c) => c.chapter)))}>{allOn ? "Clear" : "Select all"}</button>
+            <button type="button" className="link" onClick={() => setPicked(allOn ? new Set() : new Set(chapters))}>{allOn ? "Clear" : "Select all"}</button>
           </div>
           {topic && (
             <p className="note-chip">Topic: <b>{topic}</b> <button type="button" className="link" onClick={() => setTopic(null)}>Remove</button></p>
           )}
           <ul className="picklist">
             {chapters.map((c) => {
-              const s = stat(c.chapter);
+              const s = stat(c);
               const p = s?.answered ? pct(s.correct, s.answered) : null;
+              const n = available(subject, [c]);
               return (
-                <li key={c.chapter}>
+                <li key={c}>
                   <label>
-                    <input type="checkbox" checked={picked.has(c.chapter)} onChange={() => toggle(c.chapter)} />
-                    <span className="pk-name">{c.chapter}</span>
-                    <span className="muted pk-n">{s?.answered ?? 0}/{c.available}</span>
-                    {p === null ? <span className="acc none">Not started</span> : <span className={`acc ${band(p).cls}`} title={band(p).word}>{p}%</span>}
+                    <input type="checkbox" checked={picked.has(c)} onChange={() => toggle(c)} />
+                    <span className="pk-name">{c}</span>
+                    <span className="muted pk-n">{n ? `${s?.answered ?? 0}/${n}` : ""}</span>
+                    {!n ? <span className="acc none">Coming soon</span> : p === null ? <span className="acc none">Not started</span> : <span className={`acc ${band(p).cls}`} title={band(p).word}>{p}%</span>}
                   </label>
                 </li>
               );
@@ -123,9 +124,9 @@ function Practice({ user }: { user: AccountUser }) {
           </div>
 
           <div className="setup-sum">
-            <span className="muted">{picked.size && !allOn ? `${picked.size} chapter${picked.size > 1 ? "s" : ""}` : "All chapters"} · {pool.toLocaleString("en-GB")} questions in the bank</span>
-            <a className="dpill dark block" href={href}>Start {count} questions</a>
-            {mode === "timed" && <span className="muted small">Clock: {count} minutes</span>}
+            <span className="muted">{picked.size && !allOn ? `${picked.size} chapter${picked.size > 1 ? "s" : ""}` : "All chapters"} · {pool ? `${pool.toLocaleString("en-GB")} questions in the bank` : "questions coming soon"}</span>
+            {pool ? <a className="dpill dark block" href={href}>Start {Math.min(count, pool)} questions</a> : <button type="button" className="dpill dark block" disabled>Questions coming soon</button>}
+            {pool > 0 && mode === "timed" && <span className="muted small">Clock: {Math.min(count, pool)} minutes</span>}
           </div>
         </section>
       </div>
