@@ -2,49 +2,123 @@
 
 import { useEffect, useState } from "react";
 import DeviceGate from "@/components/auth/DeviceGate";
+import Icon from "@/components/app/Icon";
 import Logo from "@/components/Logo";
 import ThemeToggle from "@/components/ThemeToggle";
 import { signOut } from "@/lib/auth";
+import { planNames } from "@/lib/format";
+import { site } from "@/lib/site";
 import { type AccountUser, getCurrentUser } from "@/lib/user";
 
-export const links = [
-  { href: "/dashboard", label: "Home" },
-  { href: "/practice", label: "Practice" },
-  { href: "/mocks", label: "Mocks" },
-  { href: "/past-papers", label: "Past papers" },
-  { href: "/mistakes", label: "My mistakes" },
+/* The sidebar, grouped like the study loop: practise, then review what went wrong. */
+const groups: { label?: string; links: { href: string; label: string; icon: string }[] }[] = [
+  { links: [{ href: "/dashboard", label: "Home", icon: "home" }] },
+  {
+    label: "Practise",
+    links: [
+      { href: "/practice", label: "Practice", icon: "practice" },
+      { href: "/mocks", label: "Mocks", icon: "mock" },
+      { href: "/past-papers", label: "Past papers", icon: "paper" },
+    ],
+  },
+  {
+    label: "Review",
+    links: [
+      { href: "/mistakes", label: "My mistakes", icon: "mistakes" },
+      { href: "/history", label: "Results", icon: "results" },
+    ],
+  },
+  {
+    label: "Account",
+    links: [
+      { href: "/account/billing", label: "Plan and billing", icon: "billing" },
+      { href: "/account", label: "Account", icon: "account" },
+    ],
+  },
 ];
+
+export const links = groups.flatMap((g) => g.links);
 
 export function initials(name: string) {
   return (name || "?").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]!.toUpperCase()).join("");
 }
 
-/* The pill nav every signed-in screen shares. `active` is the link to highlight, if any. */
-export function AppNav({ active, user }: { active?: string; user: AccountUser | null }) {
+/* The frame every signed-in screen shares: sidebar on the left, a white work surface with a top bar, and an optional
+   side panel on the right (the dashboard's study coach). On phones the sidebar slides in from the menu button. */
+export function AppFrame({ active, user, aside, children }: { active?: string; user: AccountUser | null; aside?: React.ReactNode; children: React.ReactNode }) {
+  const [open, setOpen] = useState(false);
+  const here = links.find((l) => l.href === active);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open]);
+
   return (
-    <header className="dnav-wrap">
-      <div className="dwrap">
-        <div className="dnav">
+    <div className={`dash frame ${aside ? "has-aside" : ""}`}>
+      <aside className={`side ${open ? "open" : ""}`} aria-label="Sidebar">
+        <div className="side-top">
           <Logo href="/dashboard" />
-          <nav aria-label="Main">
-            <ul>
-              {links.map((l) => (
-                <li key={l.href}><a href={l.href} aria-current={l.href === active ? "page" : undefined}>{l.label}</a></li>
-              ))}
-            </ul>
-          </nav>
-          <div className="dnav-end">
+          <button type="button" className="icon-btn side-close" onClick={() => setOpen(false)} aria-label="Close menu"><Icon name="close" /></button>
+        </div>
+        <nav aria-label="Main" className="side-nav">
+          {groups.map((g, i) => (
+            <div key={i} className="side-group">
+              {g.label && <span className="side-label">{g.label}</span>}
+              <ul>
+                {g.links.map((l) => (
+                  <li key={l.href}>
+                    <a href={l.href} aria-current={l.href === active ? "page" : undefined}><Icon name={l.icon} />{l.label}</a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </nav>
+        <div className="side-foot">
+          <ul>
+            <li><a href={`mailto:${site.supportEmail}`}><Icon name="help" />Help</a></li>
+            <li>
+              <button type="button" onClick={async () => { await signOut(); window.location.replace("/"); }}><Icon name="signout" />Sign out</button>
+            </li>
+          </ul>
+          <a className="me" href="/account">
+            <span className="avatar">{user ? initials(user.name) : ""}</span>
+            <span className="me-name">{user?.name || "Your account"}</span>
+            {user && (user.plan === "free"
+              ? <span className="plan-chip free">Free</span>
+              : <span className="plan-chip" title={planNames[user.plan]}>Pass</span>)}
+          </a>
+        </div>
+      </aside>
+      {open && <button type="button" className="scrim" aria-label="Close menu" onClick={() => setOpen(false)} />}
+
+      <div className="surface">
+        <header className="topbar">
+          <button type="button" className="icon-btn menu-btn" onClick={() => setOpen(true)} aria-label="Open menu" aria-expanded={open}><Icon name="menu" /></button>
+          <p className="crumbs">
+            <span className="muted">{site.name}</span>
+            <span className="dot" aria-hidden="true">·</span>
+            <b>{here?.label ?? "Study"}</b>
+          </p>
+          <div className="topbar-end">
+            {user?.plan === "free" && <a className="dpill dark small hide-xs" href="/pricing">Upgrade</a>}
+            <a className="help-link hide-xs" href={`mailto:${site.supportEmail}`}>Need help?</a>
             <ThemeToggle />
-            <button type="button" className="signout" onClick={async () => { await signOut(); window.location.replace("/"); }}>Sign out</button>
-            <a className="avatar" href="/account" title="Account" aria-label="Account">{user ? initials(user.name) : ""}</a>
           </div>
+        </header>
+        <div className="surface-body">
+          <main className="dwrap">{children}</main>
+          {aside}
         </div>
       </div>
-    </header>
+    </div>
   );
 }
 
-/* A signed-in screen: device lock, nav, and the page body once the student is known. */
+/* A signed-in screen: device lock, frame, and the page body once the student is known. */
 export default function AppShell({ active, bare, children }: { active?: string; bare?: boolean; children: (user: AccountUser) => React.ReactNode }) {
   return (
     <DeviceGate>
@@ -60,14 +134,11 @@ function Shell({ active, bare, children }: { active?: string; bare?: boolean; ch
   // The test player brings its own focused top bar.
   if (bare) return <div className="dash">{user ? children(user) : <div className="sk" style={{ height: "100dvh", borderRadius: 0 }} />}</div>;
   return (
-    <div className="dash">
-      <AppNav active={active} user={user} />
-      <main className="dwrap">
-        {user ? children(user) : (
-          <div className="dgrid" aria-busy="true"><div className="sk" style={{ height: 120 }} /><div className="sk" style={{ height: 360 }} /></div>
-        )}
-      </main>
-    </div>
+    <AppFrame active={active} user={user}>
+      {user ? children(user) : (
+        <div className="dgrid" aria-busy="true"><div className="sk" style={{ height: 120 }} /><div className="sk" style={{ height: 360 }} /></div>
+      )}
+    </AppFrame>
   );
 }
 

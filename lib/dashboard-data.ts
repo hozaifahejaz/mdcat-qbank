@@ -19,8 +19,13 @@ export type TestResult = {
   minutes: number;
 };
 
+/* Questions answered (and how many were right) on one day, Pakistan time. Oldest first, ending today. */
+export type DayActivity = { date: string; answered: number; correct: number };
+
 export type Dashboard = {
   streakDays: number;
+  dailyGoal: number;
+  daily: DayActivity[];
   bookmarks: number;
   mistakesToRetry: number;
   resume?: { title: string; done: number; total: number; href: string };
@@ -31,8 +36,27 @@ export type Dashboard = {
 
 const ch = (chapter: string, answered: number, available: number, correct: number): ChapterStat => ({ chapter, answered, available, correct });
 
+/* 12 weeks of made-up daily practice: weekday sessions, lighter weekends, a few days off, rising slowly. */
+function sampleDaily(days = 84): DayActivity[] {
+  let seed = 7;
+  const rand = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  const today = new Date();
+  return Array.from({ length: days }, (_, i) => {
+    const d = new Date(today);
+    d.setDate(today.getDate() - (days - 1 - i));
+    const dow = d.getDay();
+    const off = rand() < 0.12 && i < days - 7;
+    const base = (dow === 0 || dow === 6 ? 14 : 24) + i * 0.25;
+    const answered = off ? 0 : Math.round(base * (0.45 + rand() * 1.1));
+    const correct = Math.round(answered * (0.6 + rand() * 0.2 + i * 0.0012));
+    return { date: d.toISOString().slice(0, 10), answered, correct };
+  });
+}
+
 const mock: Dashboard = {
   streakDays: 6,
+  dailyGoal: 40,
+  daily: sampleDaily(),
   bookmarks: 23,
   mistakesToRetry: 148,
   resume: { title: "Chemistry · Chemical equilibrium", done: 14, total: 25, href: "/practice" },
