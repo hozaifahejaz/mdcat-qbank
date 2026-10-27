@@ -7,7 +7,6 @@ import Protected from "@/components/test/Protected";
 import { ReportDialog } from "@/components/test/TestPlayer";
 import { type Attempt, getAttempt, type Scored, score } from "@/lib/attempts";
 import { type Question, subjects } from "@/lib/bank";
-import { getDashboard } from "@/lib/dashboard-data";
 import { band, clock, day, kindNames, letters, pct } from "@/lib/format";
 import { paper } from "@/lib/site";
 import type { AccountUser } from "@/lib/user";
@@ -23,8 +22,8 @@ function Review({ user }: { user: AccountUser }) {
   const [attempt, setAttempt] = useState<Attempt | null | undefined>(undefined);
   useEffect(() => {
     const id = new URLSearchParams(window.location.search).get("id") ?? "last";
-    getDashboard(user).then((d) => setAttempt(getAttempt(id, d.recent)));
-  }, [user]);
+    setAttempt(getAttempt(id));
+  }, []);
 
   if (attempt === undefined) return <div className="dgrid"><div className="sk" style={{ height: 240 }} /></div>;
   if (attempt === null) {
@@ -32,7 +31,7 @@ function Review({ user }: { user: AccountUser }) {
       <div className="dgrid">
         <section className="dcard panel empty">
           <h1>We couldn&apos;t find that test</h1>
-          <p className="muted">It may have been from another session. Your full history is on the history page.</p>
+          <p className="muted">Results are kept on this device until you close the tab. Saved history comes with the full bank.</p>
           <a className="dpill dark" href="/history">See test history</a>
         </section>
       </div>

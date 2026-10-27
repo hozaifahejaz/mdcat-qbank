@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { AppFrame } from "@/components/app/AppShell";
+import Empty from "@/components/app/Empty";
 import Icon from "@/components/app/Icon";
 import BarChart from "@/components/dashboard/BarChart";
+import { bank } from "@/lib/bank";
 import { getDashboard, type Dashboard as Data, type SubjectStat } from "@/lib/dashboard-data";
 import { band, day, fullDay, kindNames, pct, tz } from "@/lib/format";
 import { paper, site } from "@/lib/site";
@@ -83,7 +85,7 @@ function Body({ data, coachHidden, onShowCoach }: { data: Data; coachHidden: boo
             <h1 id="home-h">MDCAT {site.season}</h1>
             <span className="status-chip good"><i />{daysUntil(site.examDate)} days to go</span>
           </div>
-          <p className="muted">Exam expected {fullDay(site.examDate)} · {data.streakDays}-day practice streak</p>
+          <p className="muted">Exam expected {fullDay(site.examDate)}{data.streakDays > 0 && <> · {data.streakDays}-day practice streak</>}</p>
         </div>
         <div className="hello-ctas">
           {coachHidden && <button type="button" className="dpill light small hide-m" onClick={onShowCoach}><Icon name="spark" size={16} />Study coach</button>}
@@ -92,7 +94,7 @@ function Body({ data, coachHidden, onShowCoach }: { data: Data; coachHidden: boo
         </div>
       </section>
 
-      <p className="demo"><i />Sample stats until the question bank is live</p>
+      {!bank.length && <p className="demo"><i />Questions coming soon. Your stats fill in as you practise.</p>}
 
       <section className="kpis" aria-label="Your numbers">
         <div className="kpi">
@@ -102,8 +104,8 @@ function Body({ data, coachHidden, onShowCoach }: { data: Data; coachHidden: boo
         </div>
         <div className="kpi">
           <h2><span className="kpi-ic" style={{ color: "var(--good)" }}><Icon name="check" /></span>Accuracy</h2>
-          <strong>{pct(month.correct, month.answered)}%</strong>
-          <p className="muted">Right in the <b>last 30 days</b><span className="overall"> · {pct(totals.correct, totals.answered)}% overall</span></p>
+          <strong>{month.answered ? `${pct(month.correct, month.answered)}%` : "–"}</strong>
+          <p className="muted">Right in the <b>last 30 days</b>{totals.answered > 0 && <span className="overall"> · {pct(totals.correct, totals.answered)}% overall</span>}</p>
         </div>
         <div className="kpi">
           <h2><span className="kpi-ic" style={{ color: "var(--warn)" }}><Icon name="mock" /></span>Latest mock</h2>
@@ -133,7 +135,7 @@ function Body({ data, coachHidden, onShowCoach }: { data: Data; coachHidden: boo
             const t = sumChapters(s);
             const acc = pct(t.correct, t.answered);
             const p = paper.find((x) => x.subject === s.subject)!;
-            const b = band(acc);
+            const b = t.answered ? band(acc) : { cls: "", word: "Not started" };
             return (
               <li key={s.subject}>
                 <a href={`/practice?subject=${encodeURIComponent(s.subject)}`}>
@@ -144,7 +146,7 @@ function Body({ data, coachHidden, onShowCoach }: { data: Data; coachHidden: boo
                     <span className="muted">{t.answered} answered · {p.count} on the paper</span>
                   </span>
                   <span className="m-side">
-                    <b>{acc}%</b>
+                    <b>{t.answered ? `${acc}%` : "–"}</b>
                     <span className={`status-chip ${b.cls}`}><i />{b.word}</span>
                   </span>
                 </a>
@@ -162,7 +164,7 @@ function Body({ data, coachHidden, onShowCoach }: { data: Data; coachHidden: boo
                 const t = sumChapters(s);
                 const acc = pct(t.correct, t.answered);
                 const p = paper.find((x) => x.subject === s.subject)!;
-                const b = band(acc);
+                const b = t.answered ? band(acc) : { cls: "", word: "Not started" };
                 return (
                   <tr key={s.subject}>
                     <th scope="row">
@@ -174,7 +176,7 @@ function Body({ data, coachHidden, onShowCoach }: { data: Data; coachHidden: boo
                     </th>
                     <td className="num">{p.count}</td>
                     <td className="num">{t.answered.toLocaleString("en-GB")}</td>
-                    <td className="num"><b>{acc}%</b></td>
+                    <td className="num"><b>{t.answered ? `${acc}%` : "–"}</b></td>
                     <td className="cover"><div>
                       <span className="meter" style={{ ["--c" as string]: p.solid }} role="img" aria-label={`${pct(t.answered, t.available)}% of ${s.subject} answered`}><i style={{ width: `${pct(t.answered, t.available)}%` }} /></span>
                       <span className="muted">{pct(t.answered, t.available)}%</span>
@@ -190,8 +192,10 @@ function Body({ data, coachHidden, onShowCoach }: { data: Data; coachHidden: boo
       <section className="box" aria-labelledby="recent-h">
         <div className="panel-h">
           <h2 id="recent-h">Recent tests</h2>
-          <a className="dpill light small" href="/history">See all</a>
+          {data.recent.length > 0 && <a className="dpill light small" href="/history">See all</a>}
         </div>
+        {data.recent.length === 0 && <Empty title="No tests yet" text="Practice sets, timed tests and mocks you finish will show here." />}
+        {data.recent.length > 0 && <>
         <ul className="m-list show-m">
           {data.recent.slice(0, 5).map((t) => {
             const p = pct(t.score, t.total);
@@ -232,6 +236,7 @@ function Body({ data, coachHidden, onShowCoach }: { data: Data; coachHidden: boo
             </tbody>
           </table>
         </div>
+        </>}
       </section>
     </div>
   );
@@ -240,12 +245,13 @@ function Body({ data, coachHidden, onShowCoach }: { data: Data; coachHidden: boo
 /* The right-hand panel: what to do next, worked out from the student's own numbers. Every suggestion is a link
    into practice, not a chat; an AI tutor is a later phase of the plan. */
 function coachTips(data: Data) {
+  if (!bank.length) return [];
   const weakest = [...data.weakTopics].sort((a, b) => a.correct / a.answered - b.correct / b.answered).slice(0, 2);
   const nextMock = data.recent.filter((t) => t.kind === "mock").length + 1;
   return [
     ...weakest.map((w) => ({ href: `/practice?topic=${encodeURIComponent(w.topic)}`, icon: "target", tone: "var(--bad)", label: `${w.topic} · ${pct(w.correct, w.answered)}%` })),
     ...(data.resume ? [{ href: data.resume.href, icon: "play", tone: "var(--blue)", label: `Finish ${data.resume.title.split(" · ").at(-1)}` }] : []),
-    { href: "/mistakes", icon: "retry", tone: "var(--warn)", label: `Retry ${data.mistakesToRetry} mistakes` },
+    ...(data.mistakesToRetry ? [{ href: "/mistakes", icon: "retry", tone: "var(--warn)", label: `Retry ${data.mistakesToRetry} mistakes` }] : []),
     { href: "/mocks/new", icon: "mock", tone: "var(--good)", label: `Sit full mock ${nextMock}` },
     { href: "/practice?mode=timed", icon: "bolt", tone: "#8a63ff", label: "Timed test, 25 questions" },
   ];
@@ -265,7 +271,7 @@ function Coach({ user, data, onHide }: { user: AccountUser; data: Data; onHide: 
       <div className="coach-body">
         <span className="coach-mark"><Icon name="spark" size={22} /></span>
         <p className="coach-hi">{greeting()}, {firstName}</p>
-        <p className="muted">Here&apos;s what would help most today.</p>
+        <p className="muted">{tips.length ? "Here’s what would help most today." : "Questions are being written and checked. Suggestions show here once you can practise."}</p>
         <ul className="coach-tips">
           {tips.map((t) => (
             <li key={t.label}><a href={t.href}><span style={{ color: t.tone }}><Icon name={t.icon} size={16} /></span>{t.label}</a></li>
@@ -297,6 +303,7 @@ function CoachStrip({ data }: { data: Data }) {
       <div className="m-coach-h">
         <h2 id="mcoach-h"><span className="coach-dot"><Icon name="spark" size={14} /></span>Up next</h2>
       </div>
+      {!bank.length && <p className="muted small">Questions are being written and checked. Suggestions show here once you can practise.</p>}
       <ul className="m-tips">
         {coachTips(data).map((t) => (
           <li key={t.label}><a href={t.href}><span style={{ color: t.tone }}><Icon name={t.icon} size={18} /></span>{t.label}</a></li>

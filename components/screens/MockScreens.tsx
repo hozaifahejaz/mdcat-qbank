@@ -2,12 +2,17 @@
 
 import { useEffect, useState } from "react";
 import AppShell, { PageHead } from "@/components/app/AppShell";
+import Empty from "@/components/app/Empty";
+import { bank } from "@/lib/bank";
 import { getDashboard, type TestResult } from "@/lib/dashboard-data";
 import { band, day, kindNames, pct } from "@/lib/format";
 import { paper } from "@/lib/site";
 import type { AccountUser } from "@/lib/user";
 
 const MOCKS = 12;
+
+/* Mocks and past papers are built from the bank, so they open once it has questions. */
+const ready = () => bank.length > 0;
 
 function useRecent(user: AccountUser) {
   const [recent, setRecent] = useState<TestResult[] | null>(null);
@@ -43,13 +48,18 @@ function Mocks({ user }: { user: AccountUser }) {
   return (
     <div className="dgrid">
       <PageHead title="Full mocks" sub="180 MCQs in 3 hours, with the real paper's split and difficulty mix.">
-        <a className="dpill dark" href="/mocks/new">Start the next mock</a>
+        {ready() && <a className="dpill dark" href="/mocks/new">Start the next mock</a>}
       </PageHead>
       <section className="dcard panel">
         <Split />
         <SplitLegend />
       </section>
-      <section className="mock-grid" aria-label="Mocks">
+      {!ready() && (
+        <section className="dcard panel">
+          <Empty title="Mocks open soon" text="Full-length mocks open once the question bank is live. Your scores and reviews will show here." />
+        </section>
+      )}
+      {ready() && <section className="mock-grid" aria-label="Mocks">
         {Array.from({ length: MOCKS }, (_, k) => {
           const title = `Full mock ${k + 1}`;
           const t = byTitle.get(title);
@@ -76,7 +86,7 @@ function Mocks({ user }: { user: AccountUser }) {
             </article>
           );
         })}
-      </section>
+      </section>}
     </div>
   );
 }
@@ -108,8 +118,9 @@ function MockIntro() {
           <li>Answers and explanations open when you submit.</li>
           <li>If you switch devices, the test picks up where you left off.</li>
         </ul>
-        <a className="dpill dark block" href={`/test?mode=mock&title=${encodeURIComponent(title)}`}>Start mock</a>
-        <p className="muted small center">Until the bank is live, mocks use the 18 sample questions.</p>
+        {ready()
+          ? <a className="dpill dark block" href={`/test?mode=mock&title=${encodeURIComponent(title)}`}>Start mock</a>
+          : <button type="button" className="dpill dark block" disabled>Mocks open soon</button>}
       </section>
     </div>
   );
@@ -128,7 +139,8 @@ function PastPapers({ user }: { user: AccountUser }) {
     <div className="dgrid">
       <PageHead title="Past papers" sub="PMDC MDCAT papers, rebuilt in our own words with a full explanation on every question." />
       <section className="dcard panel">
-        <ul className="pp">
+        {!ready() && <Empty title="Past papers coming soon" text={`PMDC MDCAT ${years.at(-1)} to ${years[0]}, each with a full explanation on every question.`} />}
+        {ready() && <ul className="pp">
           {years.map((y) => {
             const t = recent?.find((r) => r.kind === "past-paper" && r.title.endsWith(String(y)));
             return (
@@ -145,7 +157,7 @@ function PastPapers({ user }: { user: AccountUser }) {
               </li>
             );
           })}
-        </ul>
+        </ul>}
       </section>
     </div>
   );
@@ -162,14 +174,15 @@ function History({ user }: { user: AccountUser }) {
   const rows = (recent ?? []).filter((t) => kind === "all" || t.kind === kind);
   return (
     <div className="dgrid">
-      <PageHead title="Test history" sub={recent ? `${recent.length} tests` : undefined} />
+      <PageHead title="Test history" sub={recent?.length ? `${recent.length} test${recent.length > 1 ? "s" : ""}` : undefined} />
       <section className="dcard panel">
         <div className="chips" role="group" aria-label="Type">
           {(["all", "mock", "past-paper", "timed", "practice"] as const).map((k) => (
             <button key={k} type="button" className="chip" aria-pressed={kind === k} onClick={() => setKind(k)}>{k === "all" ? "All" : kindNames[k]}</button>
           ))}
         </div>
-        <div className="table-scroll">
+        {recent && !rows.length && <Empty title={recent.length ? "No tests of this type yet" : "No tests yet"} text="Every practice set, timed test and mock you finish is listed here with its review." />}
+        {rows.length > 0 && <div className="table-scroll">
           <table className="recent">
             <thead>
               <tr><th scope="col">Test</th><th scope="col" className="num">Score</th><th scope="col">Type</th><th scope="col">Date</th><th scope="col" className="num">Time</th><th scope="col"><span className="sr">Review</span></th></tr>
@@ -190,7 +203,7 @@ function History({ user }: { user: AccountUser }) {
               })}
             </tbody>
           </table>
-        </div>
+        </div>}
       </section>
     </div>
   );

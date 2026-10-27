@@ -235,8 +235,6 @@
 .intro-facts b { font-size: 1.75rem; font-weight: 800; letter-spacing: -0.04em; }
 .intro-facts .muted { font-size: .8125rem; }
 .rules { margin: 0; padding-left: 20px; display: grid; gap: 6px; color: var(--muted); }
-.big-tick { width: 68px; height: 68px; border-radius: 50%; display: grid; place-items: center; background: color-mix(in srgb, var(--good) 14%, var(--card)); color: var(--good); }
-.big-tick.wait { background: color-mix(in srgb, var(--warn) 14%, var(--card)); color: var(--warn); }
 
 /* Past papers */
 .pp { list-style: none; margin: 0; padding: 0; display: grid; }
@@ -286,6 +284,8 @@
 .m-transfer .m-logo { background: var(--ink); color: var(--card); font-size: 1.125rem; }
 .method b { font-size: .9375rem; }
 .method .muted { font-size: .8125rem; }
+.methods { list-style: none; margin: 0; padding: 0; }
+.method.static { cursor: default; }
 .method[aria-checked="true"] { background: var(--card); box-shadow: inset 0 0 0 2px var(--ink); }
 .upload input { position: absolute; opacity: 0; width: 1px; height: 1px; }
 .upload .drop { display: grid; place-items: center; min-height: 92px; border-radius: 14px; border: 2px dashed var(--line); color: var(--muted); font-weight: 600; font-size: .875rem; cursor: pointer; }
