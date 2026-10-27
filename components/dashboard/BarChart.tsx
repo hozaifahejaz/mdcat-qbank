@@ -8,10 +8,9 @@ type Range = "daily" | "weekly";
 
 const fmt = (iso: string, o: Intl.DateTimeFormatOptions) => new Date(iso + "T12:00:00").toLocaleDateString("en-GB", o);
 
-/* Questions practised over time as columns of dots: each filled dot is a fixed number of questions, and the faint
-   dots behind show the full height. Daily shows the last 30 days, weekly the last 12 weeks. Hover or tab to a column
-   for its numbers; a hidden table carries the same data. */
-export default function DotChart({ daily }: { daily: DayActivity[] }) {
+/* Questions practised over time as bars. Daily shows the last 30 days, weekly the last 12 weeks.
+   Hover or tab to a bar for its numbers; a hidden table carries the same data. */
+export default function BarChart({ daily }: { daily: DayActivity[] }) {
   const [metric, setMetric] = useState<Metric>("answered");
   const [range, setRange] = useState<Range>("daily");
   const [hover, setHover] = useState<number | null>(null);
@@ -29,17 +28,17 @@ export default function DotChart({ daily }: { daily: DayActivity[] }) {
         };
       });
 
-  const rows = 12;
+  // Three gridlines above zero, on round numbers that clear the tallest bar.
   const max = Math.max(1, ...cols.map((c) => c.answered));
-  const steps = range === "daily" ? [1, 2, 3, 4, 5, 6, 8, 10, 15, 20] : [5, 10, 15, 20, 25, 30, 40, 50, 75, 100];
-  const unit = steps.find((s) => s * rows >= max) ?? steps.at(-1)!;
-  const top = unit * rows;
-  const ticks = [0, rows / 3, (rows * 2) / 3, rows].map((r) => r * unit);
+  const steps = [1, 2, 5, 10, 15, 20, 25, 50, 75, 100, 150, 200, 250, 500];
+  const step = steps.find((s) => s * 3 >= max) ?? Math.ceil(max / 3);
+  const top = step * 3;
+  const ticks = [0, step, step * 2, top];
   const every = Math.ceil(cols.length / 5);
   const h = hover === null ? null : cols[hover];
 
   return (
-    <div className="dotchart">
+    <div className="barchart">
       <div className="panel-h">
         <h2 id="prog-h">Progress</h2>
         <div className="chart-ctl">
@@ -64,17 +63,17 @@ export default function DotChart({ daily }: { daily: DayActivity[] }) {
         <div className="dc-y" aria-hidden="true">
           {ticks.map((t) => <span key={t} style={{ bottom: `calc(${(t / top) * 100}% - 0.5em)` }}>{t}</span>)}
         </div>
-        <div className={`dc-cols ${range}`} style={{ ["--rows" as string]: rows }}>
+        <div className={`dc-cols ${range}`}>
+          {ticks.map((t) => <span key={t} className="dc-grid" style={{ bottom: `${(t / top) * 100}%` }} aria-hidden="true" />)}
           {cols.map((c, i) => {
             const v = c[metric];
-            const filled = v ? Math.max(1, Math.round(v / unit)) : 0;
             return (
               <button
                 key={c.key} type="button" className={`dc-col ${hover === i ? "on" : ""}`}
                 aria-label={`${c.long}: ${c.answered} answered, ${c.correct} correct`}
                 onMouseEnter={() => setHover(i)} onFocus={() => setHover(i)} onBlur={() => setHover(null)}
               >
-                {Array.from({ length: rows }, (_, r) => <i key={r} className={rows - r <= filled ? `f ${metric}` : ""} />)}
+                <i className={metric} style={{ height: `${(v / top) * 100}%` }} />
               </button>
             );
           })}
@@ -86,10 +85,9 @@ export default function DotChart({ daily }: { daily: DayActivity[] }) {
           )}
         </div>
         <div className="dc-x" aria-hidden="true">
-          {cols.map((c, i) => <span key={c.key}>{i % every === 0 || i === cols.length - 1 ? c.label : ""}</span>)}
+          {cols.map((c, i) => <span key={c.key}>{(i % every === 0 && cols.length - 1 - i >= every) || i === cols.length - 1 ? c.label : ""}</span>)}
         </div>
       </div>
-      <p className="muted small">Each dot is {unit} questions.</p>
 
       <table className="sr">
         <caption>Questions {metric}, {range}</caption>

@@ -261,8 +261,8 @@
 .dtable .cover .meter { flex: 1; height: 6px; }
 .dtable .cover .muted { font-size: .8125rem; font-variant-numeric: tabular-nums; width: 3ch; text-align: right; }
 
-/* Dotted progress chart */
-.dotchart { display: grid; gap: 12px; position: relative; }
+/* Progress bar chart */
+.barchart { display: grid; gap: 12px; position: relative; }
 .chart-ctl { display: flex; gap: 8px; flex-wrap: wrap; }
 .legend { display: flex; gap: 6px; }
 .lg { display: inline-flex; align-items: center; gap: 8px; font: inherit; font-size: .875rem; font-weight: 500; padding: 7px 12px; border-radius: 10px; border: 0; background: var(--card); box-shadow: inset 0 0 0 1px var(--line); color: var(--muted); cursor: pointer; }
@@ -274,14 +274,16 @@
 .dc-plot { display: grid; grid-template-columns: 34px minmax(0, 1fr); grid-template-rows: auto auto; column-gap: 8px; row-gap: 8px; }
 .dc-y { position: relative; font-size: .75rem; color: var(--muted); font-variant-numeric: tabular-nums; }
 .dc-y span { position: absolute; right: 0; line-height: 1; }
-.dc-cols { position: relative; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 3px; height: 216px; }
-.dc-col { display: grid; grid-template-rows: repeat(var(--rows), 1fr); justify-items: center; align-items: center; padding: 0; border: 0; background: none; cursor: default; border-radius: 4px; }
+.dc-cols { position: relative; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 4px; height: 216px; }
+.dc-grid { position: absolute; left: 0; right: 0; height: 0; border-top: 1px dashed var(--line); pointer-events: none; }
+.dc-grid:first-child { border-top-style: solid; }
+.dc-col { position: relative; display: flex; align-items: flex-end; justify-content: center; padding: 0; border: 0; background: none; cursor: default; border-radius: 4px; }
 .dc-col:focus-visible { outline-offset: 1px; }
 .dc-col.on { background: color-mix(in srgb, var(--ink) 5%, transparent); }
-.dc-col i { width: min(9px, 80%); aspect-ratio: 1; border-radius: 2.5px; background: color-mix(in srgb, var(--ink) 6%, transparent); }
-.dc-cols.weekly .dc-col i { width: min(26px, 80%); aspect-ratio: auto; height: 9px; }
-.dc-col i.f.answered { background: var(--blue); }
-.dc-col i.f.correct { background: var(--good); }
+.dc-col i { display: block; width: min(16px, 78%); min-height: 0; border-radius: 4px 4px 0 0; transition: height .25s ease; }
+.dc-cols.weekly .dc-col i { width: min(36px, 70%); }
+.dc-col i.answered { background: var(--blue); }
+.dc-col i.correct { background: var(--good); }
 .dc-x { grid-column: 2; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 3px; font-size: .75rem; color: var(--muted); }
 .dc-x span { white-space: nowrap; overflow: visible; text-align: left; }
 .dc-tip { top: 2px; transform: translate(-50%, 0); z-index: 2; }

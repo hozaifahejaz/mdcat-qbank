@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { AppFrame } from "@/components/app/AppShell";
 import Icon from "@/components/app/Icon";
-import DotChart from "@/components/dashboard/DotChart";
+import BarChart from "@/components/dashboard/BarChart";
 import { getDashboard, type Dashboard as Data, type SubjectStat } from "@/lib/dashboard-data";
 import { band, day, fullDay, kindNames, pct, tz } from "@/lib/format";
 import { paper, site } from "@/lib/site";
@@ -115,7 +115,7 @@ function Body({ data, coachHidden, onShowCoach }: { data: Data; coachHidden: boo
       </section>
 
       <section className="box" aria-labelledby="prog-h">
-        <DotChart daily={data.daily} />
+        <BarChart daily={data.daily} />
       </section>
 
       <section className="box" aria-labelledby="subj-h">
