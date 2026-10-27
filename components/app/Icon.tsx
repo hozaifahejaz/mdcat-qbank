@@ -20,6 +20,7 @@ const paths: Record<string, React.ReactNode> = {
   retry: <><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3M4.5 4.5v4h4" /></>,
   panel: <><rect x="3.5" y="4.5" width="17" height="15" rx="2" /><path d="M14.5 4.5v15" /></>,
   chevron: <><path d="m9 6 6 6-6 6" /></>,
+  shield: <><path d="M12 3.5 5 6.5v5c0 4.2 2.9 7.6 7 9 4.1-1.4 7-4.8 7-9v-5z" /><path d="m9 12 2.2 2.2L15.5 10" /></>,
   flame: <><path d="M12 3.5c.5 3-2.5 4.5-2.5 7.5a2.5 2.5 0 0 0 5 0c0-1-.5-1.8-1-2.5 2.5 1 4 3.6 4 6a5.5 5.5 0 0 1-11 0c0-4.5 4-6.5 5.5-11z" /></>,
 };
 
