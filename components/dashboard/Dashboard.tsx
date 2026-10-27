@@ -86,7 +86,7 @@ function Body({ data, coachHidden, onShowCoach }: { data: Data; coachHidden: boo
           <p className="muted">Exam expected {fullDay(site.examDate)} · {data.streakDays}-day practice streak</p>
         </div>
         <div className="hello-ctas">
-          {coachHidden && <button type="button" className="dpill light small" onClick={onShowCoach}><Icon name="spark" size={16} />Study coach</button>}
+          {coachHidden && <button type="button" className="dpill light small hide-m" onClick={onShowCoach}><Icon name="spark" size={16} />Study coach</button>}
           <a className="dpill light small" href="/practice">Practise</a>
           <a className="dpill dark small" href="/mocks/new">Start a full mock</a>
         </div>
@@ -103,7 +103,7 @@ function Body({ data, coachHidden, onShowCoach }: { data: Data; coachHidden: boo
         <div className="kpi">
           <h2><span className="kpi-ic" style={{ color: "var(--good)" }}><Icon name="check" /></span>Accuracy</h2>
           <strong>{pct(month.correct, month.answered)}%</strong>
-          <p className="muted">Right in the <b>last 30 days</b> · {pct(totals.correct, totals.answered)}% overall</p>
+          <p className="muted">Right in the <b>last 30 days</b><span className="overall"> · {pct(totals.correct, totals.answered)}% overall</span></p>
         </div>
         <div className="kpi">
           <h2><span className="kpi-ic" style={{ color: "var(--warn)" }}><Icon name="mock" /></span>Latest mock</h2>
@@ -113,6 +113,8 @@ function Body({ data, coachHidden, onShowCoach }: { data: Data; coachHidden: boo
           </p>
         </div>
       </section>
+
+      <CoachStrip data={data} />
 
       <section className="box" aria-labelledby="prog-h">
         <BarChart daily={data.daily} />
@@ -126,7 +128,31 @@ function Body({ data, coachHidden, onShowCoach }: { data: Data; coachHidden: boo
             <a className="dpill light small" href="/practice">Choose chapters</a>
           </div>
         </div>
-        <div className="table-scroll">
+        <ul className="m-list show-m">
+          {data.subjects.map((s) => {
+            const t = sumChapters(s);
+            const acc = pct(t.correct, t.answered);
+            const p = paper.find((x) => x.subject === s.subject)!;
+            const b = band(acc);
+            return (
+              <li key={s.subject}>
+                <a href={`/practice?subject=${encodeURIComponent(s.subject)}`}>
+                  <span className="row-ic" style={{ background: p.tone, color: p.solid }}>{s.subject[0]}</span>
+                  <span className="m-main">
+                    <b>{s.subject}</b>
+                    <span className="meter" style={{ ["--c" as string]: p.solid }} role="img" aria-label={`${pct(t.answered, t.available)}% answered`}><i style={{ width: `${pct(t.answered, t.available)}%` }} /></span>
+                    <span className="muted">{t.answered} answered · {p.count} on the paper</span>
+                  </span>
+                  <span className="m-side">
+                    <b>{acc}%</b>
+                    <span className={`status-chip ${b.cls}`}><i />{b.word}</span>
+                  </span>
+                </a>
+              </li>
+            );
+          })}
+        </ul>
+        <div className="table-scroll hide-m">
           <table className="dtable">
             <thead>
               <tr><th scope="col">Subject</th><th scope="col" className="num">On paper</th><th scope="col" className="num">Answered</th><th scope="col" className="num">Accuracy</th><th scope="col" className="cover-h">Coverage</th></tr>
@@ -166,7 +192,26 @@ function Body({ data, coachHidden, onShowCoach }: { data: Data; coachHidden: boo
           <h2 id="recent-h">Recent tests</h2>
           <a className="dpill light small" href="/history">See all</a>
         </div>
-        <div className="table-scroll">
+        <ul className="m-list show-m">
+          {data.recent.slice(0, 5).map((t) => {
+            const p = pct(t.score, t.total);
+            return (
+              <li key={t.id}>
+                <a href={`/review?id=${t.id}`}>
+                  <span className="m-main">
+                    <b>{t.title}</b>
+                    <span className="muted">{kindNames[t.kind]} · {day(t.date)} · {t.minutes} min</span>
+                  </span>
+                  <span className="m-side">
+                    <b>{t.score}<small>/{t.total}</small></b>
+                    <span className={`acc ${band(p).cls}`}>{p}%</span>
+                  </span>
+                </a>
+              </li>
+            );
+          })}
+        </ul>
+        <div className="table-scroll hide-m">
           <table className="dtable">
             <thead>
               <tr><th scope="col">Test</th><th scope="col">Type</th><th scope="col">Date</th><th scope="col" className="num">Time</th><th scope="col" className="num">Score</th></tr>
@@ -194,19 +239,22 @@ function Body({ data, coachHidden, onShowCoach }: { data: Data; coachHidden: boo
 
 /* The right-hand panel: what to do next, worked out from the student's own numbers. Every suggestion is a link
    into practice, not a chat; an AI tutor is a later phase of the plan. */
-function Coach({ user, data, onHide }: { user: AccountUser; data: Data; onHide: () => void }) {
-  const firstName = user.name.split(/\s+/)[0] || "there";
+function coachTips(data: Data) {
   const weakest = [...data.weakTopics].sort((a, b) => a.correct / a.answered - b.correct / b.answered).slice(0, 2);
   const nextMock = data.recent.filter((t) => t.kind === "mock").length + 1;
-  const today = data.daily.at(-1)?.answered ?? 0;
-
-  const tips = [
+  return [
     ...weakest.map((w) => ({ href: `/practice?topic=${encodeURIComponent(w.topic)}`, icon: "target", tone: "var(--bad)", label: `${w.topic} · ${pct(w.correct, w.answered)}%` })),
     ...(data.resume ? [{ href: data.resume.href, icon: "play", tone: "var(--blue)", label: `Finish ${data.resume.title.split(" · ").at(-1)}` }] : []),
     { href: "/mistakes", icon: "retry", tone: "var(--warn)", label: `Retry ${data.mistakesToRetry} mistakes` },
     { href: "/mocks/new", icon: "mock", tone: "var(--good)", label: `Sit full mock ${nextMock}` },
     { href: "/practice?mode=timed", icon: "bolt", tone: "#8a63ff", label: "Timed test, 25 questions" },
   ];
+}
+
+function Coach({ user, data, onHide }: { user: AccountUser; data: Data; onHide: () => void }) {
+  const firstName = user.name.split(/\s+/)[0] || "there";
+  const today = data.daily.at(-1)?.answered ?? 0;
+  const tips = coachTips(data);
 
   return (
     <aside className="coach" aria-labelledby="coach-h">
@@ -224,14 +272,37 @@ function Coach({ user, data, onHide }: { user: AccountUser; data: Data; onHide: 
           ))}
         </ul>
       </div>
-      <div className="goal">
-        <div className="goal-h">
-          <span><Icon name="flame" size={16} />Today</span>
-          <b>{today} / {data.dailyGoal}</b>
-        </div>
-        <span className="meter" role="img" aria-label={`${today} of ${data.dailyGoal} questions today`}><i style={{ width: `${Math.min(100, pct(today, data.dailyGoal))}%` }} /></span>
-        <p className="muted small">{today >= data.dailyGoal ? "Daily goal done. Anything more is a bonus." : `${data.dailyGoal - today} more questions to hit your daily goal.`}</p>
-      </div>
+      <Goal today={today} goal={data.dailyGoal} />
     </aside>
+  );
+}
+
+function Goal({ today, goal }: { today: number; goal: number }) {
+  return (
+    <div className="goal">
+      <div className="goal-h">
+        <span><Icon name="flame" size={16} />Today</span>
+        <b>{today} / {goal}</b>
+      </div>
+      <span className="meter" role="img" aria-label={`${today} of ${goal} questions today`}><i style={{ width: `${Math.min(100, pct(today, goal))}%` }} /></span>
+      <p className="muted small">{today >= goal ? "Daily goal done. Anything more is a bonus." : `${goal - today} more questions to hit your daily goal.`}</p>
+    </div>
+  );
+}
+
+/* Phones: the coach's suggestions as a swipeable row and the daily goal, near the top instead of in a side panel. */
+function CoachStrip({ data }: { data: Data }) {
+  return (
+    <section className="m-coach show-m" aria-labelledby="mcoach-h">
+      <div className="m-coach-h">
+        <h2 id="mcoach-h"><span className="coach-dot"><Icon name="spark" size={14} /></span>Up next</h2>
+      </div>
+      <ul className="m-tips">
+        {coachTips(data).map((t) => (
+          <li key={t.label}><a href={t.href}><span style={{ color: t.tone }}><Icon name={t.icon} size={18} /></span>{t.label}</a></li>
+        ))}
+      </ul>
+      <Goal today={data.daily.at(-1)?.answered ?? 0} goal={data.dailyGoal} />
+    </section>
   );
 }
