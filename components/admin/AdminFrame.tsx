@@ -6,8 +6,8 @@ import Empty from "@/components/app/Empty";
 import { isStaff } from "@/lib/qc";
 import { type AccountUser, getCurrentUser } from "@/lib/user";
 
-/* The admin panel in the same frame as the student app, with its own sidebar. Users, visitors and the watermark tool are
-   admins only, so writers and reviewers don't see them. */
+/* The admin panel in the same frame as the student app, with its own sidebar. Users, visitors, the watermark tool and
+   experiments are admins only, so writers and reviewers don't see them. */
 function adminNav(user: AccountUser): Nav {
   const admin = user.role === "admin";
   const groups: NavGroup[] = [
@@ -20,6 +20,9 @@ function adminNav(user: AccountUser): Nav {
         { href: "/admin/visitors", label: "Visitors", icon: "results" },
         { href: "/admin/reveal", label: "Reveal watermark", icon: "target", short: "Watermark" },
       ],
+    }, {
+      label: "Site",
+      links: [{ href: "/admin/experiments", label: "Experiments", icon: "spark" }],
     }] : []),
   ];
   return { kind: "admin", home: "/admin", groups, tabs: admin ? ["/admin", "/admin/questions", "/admin/users", "/admin/visitors"] : ["/admin", "/admin/questions"] };

@@ -1,6 +1,7 @@
 "use client";
 
 import AdminFrame from "@/components/admin/AdminFrame";
+import Experiments from "@/components/admin/Experiments";
 import Overview from "@/components/admin/Overview";
 import Questions from "@/components/admin/Questions";
 import Users from "@/components/admin/Users";
@@ -13,3 +14,4 @@ export const QuestionsPage = () => <AdminFrame active="/admin/questions">{(user)
 export const UsersPage = () => <AdminFrame active="/admin/users" adminOnly>{(user) => <Users user={user} />}</AdminFrame>;
 export const VisitorsPage = () => <AdminFrame active="/admin/visitors" adminOnly>{() => <Visitors />}</AdminFrame>;
 export const RevealPage = () => <AdminFrame active="/admin/reveal" adminOnly>{() => <RevealScreen />}</AdminFrame>;
+export const ExperimentsPage = () => <AdminFrame active="/admin/experiments" adminOnly>{() => <Experiments />}</AdminFrame>;
