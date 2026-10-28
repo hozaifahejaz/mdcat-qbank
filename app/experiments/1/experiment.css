@@ -1,4 +1,4 @@
-/* Experimental landing page (/experiment). Everything is scoped under .bx so it can't touch the live page.
+/* Experiment 1 (/experiments/1), beside.com-inspired landing page. Everything is scoped under .bx so it can't touch the live page.
    Inter, white canvas, soft grey surfaces, black buttons, one product frame doing most of the talking. */
 .bx {
   --x-bg: #ffffff; --x-soft: #f5f5f3; --x-soft2: #ececea; --x-ink: #0b0b0c; --x-muted: #6b6b70; --x-line: #e7e7e4;

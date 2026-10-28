@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import Logo from "@/components/Logo";
 import ThemeToggle from "@/components/ThemeToggle";
-import Showcase from "@/components/experiment/Showcase";
-import TryIt from "@/components/experiment/TryIt";
-import Rise from "@/components/experiment/Rise";
+import Showcase from "@/components/experiment1/Showcase";
+import TryIt from "@/components/experiment1/TryIt";
+import Rise from "@/components/experiment1/Rise";
 import { paper, prices, site } from "@/lib/site";
 import "./experiment.css";
 
@@ -12,7 +12,7 @@ import "./experiment.css";
    headline, alternating feature rows, numbered subject cards and a comparison table. The live page at / is untouched. */
 const inter = Inter({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-inter" });
 
-export const metadata: Metadata = { title: `${site.name} · MDCAT practice`, robots: { index: false } };
+export const metadata: Metadata = { title: `Experiment 1 · ${site.name}`, robots: { index: false } };
 
 const I = {
   check: <path d="m5 12.5 4.5 4.5L19 7.5" />,
