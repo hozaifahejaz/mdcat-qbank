@@ -19,7 +19,7 @@ const faqs = [
   { q: "Is this a coaching course?", a: "No. It's a practice tool: MCQs, explanations, timed mocks and past papers. Most students use it alongside their academy or self-study, and it costs a fraction of a course." },
   { q: "Where do the questions come from?", a: "Our own subject experts write them from the PMDC syllabus and the textbooks it's based on. Past-paper questions are rebuilt in our own words with our own explanations. Nothing is copied from academy books or other apps." },
   { q: "What if I find a mistake?", a: "Tap \"Report\" on the question. We answer every report within 48 hours, and if we were wrong we fix the question for everyone and correct your stats." },
-  { q: "Can I use it on my phone and laptop?", a: "Yes. You can register two devices and use one at a time. Switching takes one tap, and an unfinished test picks up where you left off." },
+  { q: "Can I use it on my phone and laptop?", a: "Yes. Your progress syncs between them, and an unfinished test picks up where you left off." },
   { q: "How do I pay?", a: "JazzCash, Easypaisa, debit or credit card, or bank transfer. It's a one-time payment for the season, with no renewal." },
   { q: "Do you cover NUMS, AKU or other tests?", a: "PMDC MDCAT first. NUMS is next, and we'll add other university tests after that." },
   { q: "Are you affiliated with PMDC?", a: `No. ${site.name} is independent and not affiliated with PMDC, NUMS or any university.` },
@@ -175,11 +175,10 @@ export default function Home() {
               <div className="apps-copy">
                 <span className="tag"><i />Your devices</span>
                 <h2 id="devices-h">Your pass, on your phone and laptop.</h2>
-                <p className="muted">One pass is for one student. That is how we keep it at Rs.&nbsp;{prices.seasonPass}.</p>
                 <ul>
-                  <li>Register two devices, use one at a time</li>
-                  <li>Switch in one tap, and unfinished tests carry over</li>
-                  <li>A faint personal watermark stops screenshot sharing</li>
+                  <li>Practise on your phone, then finish on your laptop</li>
+                  <li>Your progress, bookmarks and mistakes stay in sync</li>
+                  <li>Unfinished tests pick up where you left off</li>
                 </ul>
               </div>
               <div className="devices" aria-hidden="true">
@@ -190,10 +189,6 @@ export default function Home() {
                       <span className="ph-q"><i /><i /><i /></span>
                       <span className="lt-opts"><i /><i /><i /><i /></span>
                     </div>
-                    <div className="lt-paused">
-                      <b>Paused here</b>
-                      <span>Switch here</span>
-                    </div>
                   </div>
                   <span className="lt-base" />
                 </div>
@@ -201,8 +196,8 @@ export default function Home() {
                   <span className="notch" />
                   <span className="ph-title">Biology</span>
                   <span className="ph-alert">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="6" y="2" width="12" height="20" rx="3" /><path d="M11 18h2" /></svg>
-                    Active on this phone
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 0 1-15.5 6.2L3 16" /><path d="M3 12a9 9 0 0 1 15.5-6.2L21 8" /><path d="M21 3v5h-5" /><path d="M3 21v-5h5" /></svg>
+                    In sync
                   </span>
                   <span className="ph-q"><i /><i /><i /></span>
                   <span className="ph-opt"><b>A</b><i /></span>

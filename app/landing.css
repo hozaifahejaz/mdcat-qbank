@@ -195,13 +195,11 @@ section.tests { padding-top: 64px; }
 @media (max-width: 900px) { .devices { height: 330px; margin-bottom: 0; } }
 .laptop { position: absolute; left: 0; top: 34px; width: 82%; }
 .lt-screen { position: relative; aspect-ratio: 16 / 10; background: var(--card); border-radius: 16px 16px 4px 4px; box-shadow: 0 0 0 8px var(--pill), var(--shadow); overflow: hidden; }
-.lt-sketch { position: absolute; inset: 0; padding: 18px; display: grid; gap: 10px; align-content: start; filter: blur(1.5px); opacity: .55; }
+.lt-sketch { position: absolute; inset: 0; padding: 18px; display: grid; gap: 10px; align-content: start; }
 .lt-bar { width: 40%; height: 10px; border-radius: 99px; background: var(--ink); opacity: .7; }
 .lt-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .lt-opts i { height: 26px; border-radius: 10px; box-shadow: inset 0 0 0 1.5px var(--line); }
-.lt-paused { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 10px; text-align: center; padding: 0 70px 0 16px; }
-.lt-paused b { font-size: 0.9375rem; font-weight: 700; letter-spacing: -0.01em; }
-.lt-paused span { font-size: 0.75rem; font-weight: 600; padding: 7px 14px; border-radius: 999px; background: var(--pill); color: var(--on-pill); }
+.lt-opts i:nth-child(3) { box-shadow: inset 0 0 0 1.5px var(--good); background: color-mix(in srgb, var(--good) 9%, var(--card)); }
 .lt-base { display: block; height: 12px; margin: 8px -7% 0; border-radius: 3px 3px 12px 12px; background: var(--pill); }
 .phone { position: absolute; right: 0; top: 0; width: 176px; height: 340px; border-radius: 32px; background: var(--card); box-shadow: 0 0 0 7px var(--pill), 0 24px 48px rgba(17,18,20,.18); padding: 18px 13px; display: grid; align-content: start; gap: 8px; overflow: hidden; }
 .phone .notch { width: 58px; height: 15px; border-radius: 99px; background: var(--pill); justify-self: center; margin: -8px 0 6px; }
@@ -218,8 +216,6 @@ section.tests { padding-top: 64px; }
 @media (max-width: 440px) {
   .devices { height: 290px; }
   .phone { width: 148px; height: 290px; border-radius: 28px; }
-  .lt-paused { padding-right: 56px; }
-  .lt-paused b { font-size: 0.8125rem; }
 }
 
 /* FAQ */
