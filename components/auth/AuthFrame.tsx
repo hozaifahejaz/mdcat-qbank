@@ -38,12 +38,11 @@ function SidePanel() {
       <h2>One account, on your phone and laptop.</h2>
       <ul>
         <li>Free chapter-wise MCQs to start, with a full explanation on every one.</li>
-        <li>Register two devices. Use one at a time, and switch with one tap.</li>
         <li>Your progress, mocks and weak chapters follow you to either device.</li>
       </ul>
       <div className="devices-sketch" aria-hidden="true">
-        <div className="lap"><span className="st">Active</span><i /><i /><i style={{ width: "60%" }} /></div>
-        <div className="ph off"><span className="st">Locked</span><i /><i style={{ width: "70%" }} /></div>
+        <div className="lap"><i /><i /><i style={{ width: "60%" }} /></div>
+        <div className="ph"><i /><i style={{ width: "70%" }} /></div>
       </div>
     </aside>
   );

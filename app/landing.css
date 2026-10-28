@@ -76,10 +76,8 @@ nav { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 10; padding
 .seg button:hover { color: var(--ink); }
 .seg button[aria-checked="true"] { background: var(--card); color: var(--ink); box-shadow: 0 1px 3px rgba(17,18,20,.12); }
 
-/* The question itself: no selecting or copying, and a faint account watermark across it */
+/* The question itself */
 .qbox { position: relative; overflow: hidden; background: var(--bg); border-radius: var(--r-md); padding: 18px; display: grid; gap: 12px; user-select: none; -webkit-user-select: none; }
-.wm { position: absolute; inset: -40% -20%; display: flex; flex-wrap: wrap; gap: 34px 46px; align-content: center; justify-content: center; transform: rotate(-22deg); pointer-events: none; font-size: 0.75rem; font-weight: 700; letter-spacing: .04em; color: var(--ink); opacity: .06; z-index: 0; }
-.qbox > :not(.wm) { position: relative; z-index: 1; }
 .qtag { font-size: 0.75rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
 .stem { font-size: 1.125rem; font-weight: 700; letter-spacing: -0.015em; line-height: 1.4; }
 .opts { display: grid; gap: 8px; }

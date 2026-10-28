@@ -6,7 +6,7 @@ import { samples } from "@/lib/sample-questions";
 const LETTERS = ["A", "B", "C", "D"];
 
 /* The hero's "try a question" card: one free question per subject, answered in place, with the full explanation
-   and the reason each wrong option is wrong. The faint watermark is the same one every bank question carries. */
+   and the reason each wrong option is wrong. */
 export default function SampleQuestion() {
   const [at, setAt] = useState(0);
   const [picked, setPicked] = useState<number | null>(null);
@@ -39,9 +39,6 @@ export default function SampleQuestion() {
         </div>
 
         <div className="qbox">
-          <div className="wm" aria-hidden="true">
-            {Array.from({ length: 12 }, (_, i) => <span key={i}>ID 4821-0937</span>)}
-          </div>
           <p className="qtag">{q.subject} · {q.tag}</p>
           <p className="stem">{q.stem}</p>
           <div className="opts">

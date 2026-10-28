@@ -71,8 +71,7 @@ export default function AuthPage({ mode }: { mode: Mode }) {
         )}
         {mode === "signup" && (
           <p className="fine">
-            By creating an account you agree to our Terms and Fair Use policy: one account per student, up to two devices,
-            and no sharing or copying of questions.
+            By creating an account you agree to our Terms.
           </p>
         )}
         <p className="switch">{c.switchText} <a href={switchHref}>{c.switchLabel}</a></p>
