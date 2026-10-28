@@ -270,26 +270,46 @@
 .ticks li { display: flex; gap: 10px; align-items: center; font-size: .9375rem; }
 .ticks svg { color: var(--good); }
 .pay-strip { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; }
-.pay-strip span { font-size: .8125rem; font-weight: 700; padding: 8px 14px; border-radius: 999px; background: var(--card); box-shadow: inset 0 0 0 1px var(--line); color: var(--muted); }
 
 /* Checkout */
 .dash .demo { justify-self: start; }
-.methods { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-@media (max-width: 520px) { .methods { grid-template-columns: minmax(0, 1fr); } }
-.method { text-align: left; display: grid; grid-template-columns: 40px minmax(0, 1fr); column-gap: 12px; align-items: center; padding: 14px; border-radius: var(--r-md); border: 0; background: var(--bg); cursor: pointer; box-shadow: inset 0 0 0 2px transparent; }
-.method .m-logo { grid-row: span 2; width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; font-weight: 800; font-size: .875rem; color: #fff; }
-.m-jazzcash .m-logo { background: #c8102e; }
-.m-easypaisa .m-logo { background: #1fa64a; }
-.m-card .m-logo { background: #1a1f71; font-size: 1.25rem; }
-.m-transfer .m-logo { background: var(--ink); color: var(--card); font-size: 1.125rem; }
-.method b { font-size: .9375rem; }
-.method .muted { font-size: .8125rem; }
-.methods { list-style: none; margin: 0; padding: 0; }
-.method.static { cursor: default; }
-.method[aria-checked="true"] { background: var(--card); box-shadow: inset 0 0 0 2px var(--ink); }
-.upload input { position: absolute; opacity: 0; width: 1px; height: 1px; }
-.upload .drop { display: grid; place-items: center; min-height: 92px; border-radius: 14px; border: 2px dashed var(--line); color: var(--muted); font-weight: 600; font-size: .875rem; cursor: pointer; }
-.upload:focus-within .drop { border-color: var(--blue); }
+/* Brand marks (components/app/PayLogo.tsx): always on white so each logo keeps its own colours in dark mode. */
+.plogo { display: inline-grid; place-items: center; height: 30px; min-width: 46px; padding: 0 8px; border-radius: 7px; background: #fff; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .1); box-sizing: border-box; flex: none; }
+.plogo img { display: block; height: 14px; width: auto; }
+.plogo.b-mastercard img { height: 18px; }
+.plogo.b-unionpay img { height: 18px; }
+.plogo.sm { height: 24px; min-width: 38px; padding: 0 6px; border-radius: 6px; }
+.plogo.sm img { height: 11px; }
+.plogo.sm.b-mastercard img, .plogo.sm.b-unionpay img { height: 14px; }
+.plogo .wordmark { font-weight: 800; font-size: .8125rem; letter-spacing: -0.02em; white-space: nowrap; line-height: 1; }
+.plogo.sm .wordmark { font-size: .6875rem; }
+.b-jazzcash .wordmark { color: #d71920; }
+.b-easypaisa .wordmark { color: #00a651; text-transform: lowercase; }
+.b-raast .wordmark { color: #4b2a8a; }
+.paylist { display: grid; gap: 10px; }
+.payopt { border-radius: var(--r-md); background: var(--bg); box-shadow: inset 0 0 0 2px transparent; transition: box-shadow .15s, background .15s; }
+.payopt.on { background: var(--card); box-shadow: inset 0 0 0 2px var(--ink); }
+.payopt > button { width: 100%; text-align: left; display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; gap: 14px; align-items: center; padding: 14px 16px; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; border-radius: var(--r-md); }
+.payopt > button:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+.payopt .dot { width: 20px; height: 20px; border-radius: 50%; box-shadow: inset 0 0 0 2px var(--line); background: var(--card); }
+.payopt.on .dot { box-shadow: inset 0 0 0 6px var(--ink); }
+.payopt-t { display: grid; gap: 2px; min-width: 0; }
+.payopt-t b { font-size: .9375rem; }
+.payopt-t .muted { font-size: .8125rem; }
+.payopt-logos { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.paysteps { margin: 0; padding: 0 16px 16px 50px; display: grid; gap: 8px; list-style: none; counter-reset: s; }
+.paysteps li { counter-increment: s; display: flex; gap: 10px; align-items: center; font-size: .875rem; color: var(--muted); }
+.paysteps li::before { content: counter(s); flex: none; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: .75rem; font-weight: 800; background: var(--bg); color: var(--ink); }
+.trust { list-style: none; margin: 0; padding: 16px 0 0; border-top: 1px solid var(--line); display: grid; gap: 10px; }
+.trust li { display: flex; gap: 10px; align-items: center; font-size: .8125rem; color: var(--muted); }
+.trust svg { flex: none; color: var(--ink); }
+.seg-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.small-ticks li { font-size: .875rem; }
+@media (max-width: 520px) {
+  .payopt > button { grid-template-columns: 20px minmax(0, 1fr); padding: 14px; gap: 12px; }
+  .payopt-logos { grid-column: 2; justify-content: flex-start; }
+  .paysteps { padding: 0 14px 14px 46px; }
+}
 .summary { position: sticky; top: 96px; }
 .sum { margin: 0; display: grid; gap: 8px; }
 .sum div { display: flex; justify-content: space-between; gap: 12px; font-size: .9375rem; }

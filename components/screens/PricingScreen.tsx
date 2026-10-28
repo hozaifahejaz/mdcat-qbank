@@ -1,4 +1,5 @@
 import Logo from "@/components/Logo";
+import PayLogo from "@/components/app/PayLogo";
 import ThemeToggle from "@/components/ThemeToggle";
 import { money, plans } from "@/lib/billing";
 import { prices, site } from "@/lib/site";
@@ -77,7 +78,7 @@ export default function PricingScreen() {
             ))}
           </section>
           <section className="pay-strip" aria-label="Ways to pay">
-            {["JazzCash", "Easypaisa", "Visa", "Mastercard", "Raast"].map((m) => <span key={m}>{m}</span>)}
+            {(["jazzcash", "easypaisa", "visa", "mastercard", "unionpay", "raast"] as const).map((b) => <PayLogo key={b} brand={b} />)}
           </section>
           <p className="muted small center">{site.name} · iOS and Android apps coming soon</p>
         </div>
