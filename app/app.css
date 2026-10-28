@@ -427,3 +427,24 @@ fieldset.plain { border: 0; margin: 0; padding: 0; min-width: 0; display: grid; 
 .frame .admin-cols { grid-template-columns: 320px minmax(0, 1fr); }
 @media (max-width: 1080px) { .frame .admin-cols { grid-template-columns: minmax(0, 1fr); } }
 .frame .editor-cols { grid-template-columns: minmax(0, 1fr); }
+
+/* Admin visitors page */
+.range-tabs { padding: 2px; }
+.kpis .delta { font-size: .75rem; font-weight: 600; }
+.kpis .delta.up { color: var(--good); }
+.kpis .delta.down { color: var(--bad); }
+.kpis .delta .muted { font-weight: 400; }
+.kpis dd.live { display: flex; align-items: center; gap: 8px; }
+.kpis dd.live i { width: 9px; height: 9px; border-radius: 50%; background: var(--good); box-shadow: 0 0 0 4px color-mix(in srgb, var(--good) 22%, transparent); }
+.vchart { margin-top: 20px; }
+.lg.visitors[aria-checked="true"] i, .dc-col i.visitors { background: var(--blue); }
+.lg.views[aria-checked="true"] i, .dc-col i.views { background: var(--good); }
+.vblock { display: grid; gap: 10px; }
+.vblock + .vblock { padding-top: 16px; border-top: 1px solid var(--line); margin-top: 6px; }
+.vlist { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.vlist li { position: relative; display: flex; justify-content: space-between; gap: 12px; padding: 8px 10px; font-size: .875rem; border-radius: 8px; isolation: isolate; }
+.vlist li i { position: absolute; inset: 0 auto 0 0; background: var(--blue-soft); border-radius: 8px; z-index: -1; }
+.vlist li span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vlist li b { font-variant-numeric: tabular-nums; }
+.vlist.mono-list li span { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .8125rem; }
+.kpis.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }

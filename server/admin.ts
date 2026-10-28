@@ -1,6 +1,7 @@
 import { DUPLICATE_LIMIT, type QuestionFields, type Role, type StageId, checklist, missingFields, roles, similarity, stageIds, stageLabel, subjectCodes } from "../lib/qc";
 import { fail, json, body, str } from "./http";
 import { requireSession } from "./session";
+import { visitSummary } from "./visits";
 
 /* The admin panel's API (/api/admin/*). Every route checks the caller's role here, on the server; the panel hiding
    buttons is only for convenience. Writers add and edit their own drafts, reviewers run the blind solve and the
@@ -12,7 +13,7 @@ type Staff = { id: string; name: string; role: Role };
 const DAY = 24 * 60 * 60 * 1000;
 const PLANS = ["free", "season", "bundle", "monthly"] as const;
 
-async function requireRole(c: Ctx, allowed: Role[]): Promise<Staff> {
+export async function requireRole(c: Ctx, allowed: Role[]): Promise<Staff> {
   const s = await requireSession(c.db, c.request);
   const u = await c.db.prepare("SELECT id, name, role FROM users WHERE id = ?").bind(s.user_id).first<Staff>();
   if (!u || u.role === "student") throw fail(403, "forbidden", "This is for Examwise staff only.");
@@ -407,6 +408,7 @@ const overviewRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
     const waitingBlind = await c.db.prepare("SELECT count(*) AS n FROM questions WHERE stage = 'blind' AND blind_answer IS NULL AND writer_id != ?").bind(me.id).first<{ n: number }>();
 
     let users = null;
+    let visits = null;
     let activity: unknown[] = [];
     if (me.role === "admin") {
       const [u, plans, act] = await c.db.batch([
@@ -420,8 +422,9 @@ const overviewRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
         paid: Object.fromEntries((plans!.results as { plan: string; n: number }[]).map((r) => [r.plan, r.n])),
       };
       activity = act!.results;
+      visits = await visitSummary(c.db);
     }
-    return json({ byStage, liveBySubject, sentBackToMe: mine?.n ?? 0, waitingBlind: waitingBlind?.n ?? 0, users, activity });
+    return json({ byStage, liveBySubject, sentBackToMe: mine?.n ?? 0, waitingBlind: waitingBlind?.n ?? 0, users, visits, activity });
   },
 };
 
