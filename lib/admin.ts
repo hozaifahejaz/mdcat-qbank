@@ -29,6 +29,7 @@ export type Overview = {
   sentBackToMe: number;
   waitingBlind: number;
   users: { total: number; newThisWeek: number; staff: number; paid: Record<string, number> } | null;
+  visits: { today: number; week: number; now: number } | null;
   activity: LogEntry[];
 };
 
@@ -46,6 +47,19 @@ export type UserDetail = {
 };
 
 export const getOverview = () => api<Overview>("/api/admin/overview");
+
+/* Visitors are counted once a day (server/visits.ts), so a total over a range adds up each day's visitors. */
+export type VisitRow = { key: string; visitors: number; views: number };
+export type Visits = {
+  days: number;
+  now: number;
+  totals: { visitors: number; views: number; signedIn: number; signups: number };
+  previous: { visitors: number; views: number };
+  daily: { date: string; visitors: number; views: number; signedIn: number }[];
+  pages: VisitRow[]; referrers: VisitRow[]; campaigns: VisitRow[]; countries: VisitRow[];
+  devices: VisitRow[]; os: VisitRow[]; browsers: VisitRow[];
+};
+export const getVisits = (days: number) => api<Visits>(`/api/admin/visitors?days=${days}`);
 
 export const listQuestions = () => api<{ questions: AdminQuestion[] }>("/api/admin/questions").then((r) => r.questions);
 export const saveQuestion = (q: Partial<QuestionFields> & { id?: string }) => api<{ question: AdminQuestion }>("/api/admin/questions/save", { body: q }).then((r) => r.question);

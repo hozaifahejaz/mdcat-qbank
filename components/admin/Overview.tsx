@@ -83,6 +83,17 @@ export default function Overview({ user }: { user: AccountUser }) {
             )}
           </section>
 
+          {d.visits && (
+            <section className="dcard panel">
+              <div className="panel-h"><h2>Visitors</h2><a className="link" href="/admin/visitors">See all</a></div>
+              <dl className="kpis three">
+                <div><dt>On the site now</dt><dd>{d.visits.now}</dd></div>
+                <div><dt>Today</dt><dd>{d.visits.today}</dd></div>
+                <div><dt>Last 7 days</dt><dd>{d.visits.week}</dd></div>
+              </dl>
+            </section>
+          )}
+
           <section className="dcard panel">
             <h2 className="panel-title">Recent activity</h2>
             {d.activity.length ? (
