@@ -27,7 +27,7 @@ const features = [
 const faqs = [
   { q: "Is this a coaching course?", a: "No. It's a practice tool: MCQs, explanations, timed mocks and past papers." },
   { q: "Where do the questions come from?", a: "Our own subject experts write them from the PMDC syllabus. Nothing is copied." },
-  { q: "Can I use it on my phone and laptop?", a: "Yes. Register two devices and use one at a time." },
+  { q: "Can I use it on my phone and laptop?", a: "Yes. Your progress syncs between them." },
   { q: "How do I pay?", a: `JazzCash, Easypaisa, card or bank transfer. Rs. ${prices.seasonPass} once for the season.` },
 ];
 

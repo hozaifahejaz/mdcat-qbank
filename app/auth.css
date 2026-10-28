@@ -95,10 +95,6 @@ form.stack, .stack { display: grid; gap: 14px; }
 .devices-sketch .lap { width: 200px; }
 .devices-sketch .ph { width: 110px; }
 .devices-sketch i { display: block; height: 7px; border-radius: 99px; background: var(--line); }
-.devices-sketch .st { display: inline-flex; align-items: center; gap: 6px; font-size: 0.75rem; }
-.devices-sketch .st::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--good); }
-.devices-sketch .off .st::before { background: var(--muted); }
-.devices-sketch .off { opacity: .7; }
 
 /* Device list, used on the device-limit screen and the account page */
 .device-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }

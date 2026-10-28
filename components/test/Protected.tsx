@@ -68,7 +68,7 @@ export default function Protected({ user, children }: { user: AccountUser; child
       )}
       {warned && (
         <div className="toast" role="alert">
-          <span>Screenshots of questions aren&apos;t allowed. Every question carries your account ID.</span>
+          <span>Screenshots of questions aren&apos;t allowed.</span>
           <button type="button" className="link" onClick={() => setWarned(false)}>OK</button>
         </div>
       )}
