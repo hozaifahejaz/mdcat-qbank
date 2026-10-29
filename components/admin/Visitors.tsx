@@ -62,7 +62,7 @@ export default function Visitors() {
           <div><dt>Visitors</dt><dd>{n(t.visitors)}</dd>{change(t.visitors, d.previous.visitors, days)}</div>
           <div><dt>Page views</dt><dd>{n(t.views)}</dd>{change(t.views, d.previous.views, days)}</div>
           <div><dt>On the site now</dt><dd className="live">{d.now > 0 && <i aria-hidden="true" />}{n(d.now)}</dd><span className="muted small">in the last 5 minutes</span></div>
-          <div><dt>New accounts</dt><dd>{n(t.signups)}</dd>{t.visitors > 0 && <span className="muted small">{((t.signups / t.visitors) * 100).toFixed(1)}% of visitors</span>}</div>
+          <div><dt>New accounts</dt><dd>{n(t.signups)}</dd>{t.visitors > 0 && t.signups <= t.visitors && <span className="muted small">{((t.signups / t.visitors) * 100).toFixed(1)}% of visitors</span>}</div>
         </dl>
         <VisitsChart daily={d.daily} weekly={days > 31} />
         <p className="muted small">
@@ -168,6 +168,7 @@ function VisitsChart({ daily, weekly }: { daily: Visits["daily"]; weekly: boolea
               <i className={metric} style={{ height: `${(c[metric] / top) * 100}%` }} />
             </button>
           ))}
+          {cols.every((c) => !c.views) && <p className="dc-empty">No visits in this range yet.</p>}
           {h && (
             <div className="tip dc-tip" style={{ left: `${((hover! + 0.5) / cols.length) * 100}%` }}>
               <b>{n(h[metric])} {metric === "visitors" ? "visitors" : "page views"}</b>

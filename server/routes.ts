@@ -1,13 +1,14 @@
 import { hashPassword, randomToken, sha256, verifyPassword } from "./crypto";
-import { claimDevice, checkDevice, isActiveSession, listDevices, releaseDevice, removeDevice } from "./devices";
+import { claimDevice, checkDevice, listDevices, releaseDevice, removeDevice } from "./devices";
 import type { Env } from "./env";
 import { HttpError, assertSameOrigin, body, clientIp, fail, json, redirect, safeNext, str } from "./http";
 import { linkEmail, mailConfigured, sendMail } from "./mail";
 import { type Provider, appleConfigured, clearStateCookie, finishOAuth, googleConfigured, startOAuth } from "./oauth";
 import { rateLimit } from "./ratelimit";
-import { type Session, clearSessionCookie, createSession, getSession, requireSession } from "./session";
+import { clearSessionCookie, createSession, getSession, requireSession } from "./session";
 import { adminRoutes } from "./admin";
 import { visitRoutes } from "./visits";
+import { studyRoutes } from "./study";
 import { checkCode, sendCode, smsConfigured } from "./sms";
 import { checkCaptcha } from "./turnstile";
 import { createUser, publicUser, userByEmail, userById, userByPhone, userForOAuth } from "./users";
@@ -245,7 +246,9 @@ const routes: Record<string, (c: Ctx) => Promise<Response>> = {
 };
 
 async function oauth(c: Ctx, provider: Provider, step: "start" | "callback"): Promise<Response> {
-  const toSignIn = (msg: string) => redirect(`/signin?error=${encodeURIComponent(msg)}`, [clearStateCookie()]);
+  // Only a code goes in the address; the sign-in page words it (lib/auth.ts signInErrors), so a link can't put
+  // made-up text on our page.
+  const toSignIn = (code: string) => redirect(`/signin?error=${encodeURIComponent(code)}`, [clearStateCookie()]);
   try {
     if (step === "start") {
       const { url, cookie } = await startOAuth(c.env, c.request, provider, safeNext(new URL(c.request.url).searchParams.get("next")));
@@ -257,17 +260,10 @@ async function oauth(c: Ctx, provider: Provider, step: "start" | "callback"): Pr
     // Seen from the browser this is a top-level navigation back to our site, so the Lax session cookie sticks.
     return redirect(`/auth/callback?next=${encodeURIComponent(safeNext(next))}`, [session, clearStateCookie()]);
   } catch (e) {
-    if (e instanceof HttpError) return toSignIn(e.message);
+    if (e instanceof HttpError) return toSignIn(e.code);
     console.error(e);
-    return toSignIn("Sign-in didn't complete. Please try again.");
+    return toSignIn("oauth_failed");
   }
-}
-
-/* Paid-content endpoints call this: signed in, and on the account's active device. */
-export async function requireActiveSession(db: D1Database, request: Request): Promise<Session> {
-  const s = await requireSession(db, request);
-  if (!(await isActiveSession(db, s))) throw fail(423, "device_locked", "Your account is active on another device.");
-  return s;
 }
 
 export async function handle(request: Request, env: Env): Promise<Response> {
@@ -281,7 +277,7 @@ export async function handle(request: Request, env: Env): Promise<Response> {
       return await oauth(c, o[1] as Provider, step);
     }
     const key = `${request.method} ${url.pathname}`;
-    const route = routes[key] ?? adminRoutes[key] ?? visitRoutes[key];
+    const route = routes[key] ?? adminRoutes[key] ?? visitRoutes[key] ?? studyRoutes[key];
     if (!route) throw fail(404, "not_found", "Not found.");
     if (request.method !== "GET") assertSameOrigin(request);
     return await route(c);

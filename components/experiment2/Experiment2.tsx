@@ -1,6 +1,6 @@
 import Logo from "@/components/Logo";
 import ThemeToggle from "@/components/ThemeToggle";
-import { paper, prices, site } from "@/lib/site";
+import { paper, prices, site, supportHref } from "@/lib/site";
 import { ExplainCard, MistakesCard, MockCard, PassCard, QuestionCard, ScoreCard, TimerCard } from "./Mockups";
 
 /* Experiment 2: a landing page after acctual.com. Announcement bar, centred hero over a stage of stacked product cards,
@@ -59,7 +59,7 @@ export default function Experiment2() {
         </ul>
         <div className="x2-nav-end">
           <ThemeToggle />
-          <a className="x2-signin" href="/signin">Log in</a>
+          <a className="x2-signin" href="/signin">Sign in</a>
           <a className="x2-btn" href="/signup">Start free</a>
         </div>
       </nav>
@@ -72,7 +72,7 @@ export default function Experiment2() {
         <ul className="x2-facts">
           <li><b>Rs. {prices.seasonPass}</b> per season</li>
           <li><b>No</b> renewal</li>
-          <li><b>2</b> devices</li>
+          <li><b>180</b> MCQ mocks</li>
         </ul>
 
         <div className="x2-stage">
@@ -147,8 +147,8 @@ export default function Experiment2() {
         <div><Logo /><span>Made in Pakistan</span></div>
         <ul>
           <li><a href="/pricing">Pricing</a></li>
-          <li><a href="/signin">Log in</a></li>
-          <li><a href={`mailto:${site.supportEmail}`}>Contact</a></li>
+          <li><a href="/signin">Sign in</a></li>
+          <li><a href={supportHref}>Contact</a></li>
         </ul>
         <small>© {site.season} {site.name}. Not affiliated with PMDC.</small>
       </footer>

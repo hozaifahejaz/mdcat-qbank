@@ -9,7 +9,7 @@ type Mode = "signin" | "signup";
 
 /* Email and password. Sign-up signs straight in, or, once email sending is on, emails a confirmation link first
    (it lands on /auth/callback). Sign-in is immediate. */
-export default function EmailForm({ mode, next, siteKey, passwordReset, onSignedIn }: { mode: Mode; next: string; siteKey: string; passwordReset: boolean; onSignedIn: () => void }) {
+export default function EmailForm({ mode, next, siteKey, onSignedIn }: { mode: Mode; next: string; siteKey: string; onSignedIn: () => void }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -90,7 +90,7 @@ export default function EmailForm({ mode, next, siteKey, passwordReset, onSigned
       <div className="field">
         <div className="row">
           <label htmlFor="pw" style={{ fontSize: "0.8125rem", fontWeight: 600 }}>Password</label>
-          {mode === "signin" && passwordReset && <a href="/forgot-password">Forgot password?</a>}
+          {mode === "signin" && <a href="/forgot-password">Forgot password?</a>}
         </div>
         <div className="pw">
           <input id="pw" className="input" type={show ? "text" : "password"} autoComplete={mode === "signup" ? "new-password" : "current-password"}

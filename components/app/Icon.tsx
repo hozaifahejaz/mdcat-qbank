@@ -21,6 +21,8 @@ const paths: Record<string, React.ReactNode> = {
   panel: <><rect x="3.5" y="4.5" width="17" height="15" rx="2" /><path d="M14.5 4.5v15" /></>,
   chevron: <><path d="m9 6 6 6-6 6" /></>,
   shield: <><path d="M12 3.5 5 6.5v5c0 4.2 2.9 7.6 7 9 4.1-1.4 7-4.8 7-9v-5z" /><path d="m9 12 2.2 2.2L15.5 10" /></>,
+  flag: <><path d="M6 20.5V4.5M6 5h11l-2.5 4 2.5 4H6" /></>,
+  bell: <><path d="M6.5 16.5V11a5.5 5.5 0 0 1 11 0v5.5l1.5 1.5H5z" /><path d="M10 20.5h4" /></>,
   flame: <><path d="M12 3.5c.5 3-2.5 4.5-2.5 7.5a2.5 2.5 0 0 0 5 0c0-1-.5-1.8-1-2.5 2.5 1 4 3.6 4 6a5.5 5.5 0 0 1-11 0c0-4.5 4-6.5 5.5-11z" /></>,
 };
 

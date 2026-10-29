@@ -23,6 +23,7 @@ export default function Overview({ user }: { user: AccountUser }) {
 
   const total = Object.values(d.byStage).reduce((a, b) => a + b, 0);
   const todo = [
+    d.openReports > 0 && { n: d.openReports, text: "questions reported by students", href: "/admin/reports" },
     d.sentBackToMe > 0 && { n: d.sentBackToMe, text: "of your questions were sent back to you", href: "/admin/questions?stage=draft" },
     d.waitingBlind > 0 && { n: d.waitingBlind, text: "waiting for a blind solve", href: "/admin/questions?stage=blind" },
     user.role !== "writer" && d.byStage.review > 0 && { n: d.byStage.review, text: "waiting for the textbook checklist", href: "/admin/questions?stage=review" },
@@ -40,7 +41,7 @@ export default function Overview({ user }: { user: AccountUser }) {
         <div className="panel-h"><h2>To do</h2></div>
         {todo.length ? (
           <ul className="todo">
-            {todo.map((t) => <li key={t.href}><a href={t.href}><b>{t.n}</b> {t.n === 1 ? t.text.replace("questions were", "question was") : t.text}</a></li>)}
+            {todo.map((t) => <li key={t.href}><a href={t.href}><b>{t.n}</b> {t.n === 1 ? t.text.replace("questions were", "question was").replace("questions reported", "question reported") : t.text}</a></li>)}
           </ul>
         ) : <p className="muted">Nothing waiting on you.</p>}
       </section>
@@ -77,6 +78,7 @@ export default function Overview({ user }: { user: AccountUser }) {
               <div><dt>New this week</dt><dd>{d.users.newThisWeek}</dd></div>
               <div><dt>Paid now</dt><dd>{Object.values(d.users.paid).reduce((a, b) => a + b, 0)}</dd></div>
               <div><dt>Staff</dt><dd>{d.users.staff}</dd></div>
+              {d.waitlist > 0 && <div><dt>Waitlist</dt><dd><a href="/admin/waitlist">{d.waitlist}</a></dd></div>}
             </dl>
             {Object.keys(d.users.paid).length > 0 && (
               <p className="muted small">{Object.entries(d.users.paid).map(([p, n]) => `${planNames[p as keyof typeof planNames] ?? p}: ${n}`).join(" · ")}</p>

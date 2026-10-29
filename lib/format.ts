@@ -22,6 +22,7 @@ export function clock(sec: number) {
 
 export const kindNames: Record<TestResult["kind"], string> = {
   mock: "Mock",
+  "mini-mock": "Mini mock",
   timed: "Timed test",
   practice: "Practice",
   "past-paper": "Past paper",
@@ -31,7 +32,7 @@ export const planNames: Record<StudentUser["plan"], string> = {
   free: "Free plan",
   season: "MDCAT Season Pass",
   bundle: "MDCAT + NUMS Bundle",
-  monthly: "Monthly",
+  monthly: "One-month pass",
 };
 
 export const letters = ["A", "B", "C", "D", "E"];

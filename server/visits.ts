@@ -135,7 +135,7 @@ export const visitRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
       c.db.prepare("SELECT day, count(DISTINCT visitor) AS v, count(*) AS n, count(DISTINCT CASE WHEN signed_in = 1 THEN visitor END) AS s FROM page_views WHERE day >= ? GROUP BY day").bind(from),
       c.db.prepare("SELECT day, count(DISTINCT visitor) AS v, count(*) AS n FROM page_views WHERE day >= ? AND day < ? GROUP BY day").bind(prevFrom, from),
       c.db.prepare("SELECT count(DISTINCT visitor) AS n FROM page_views WHERE created_at > ?").bind(now - 5 * 60 * 1000),
-      c.db.prepare("SELECT count(*) AS n FROM users WHERE created_at >= ?").bind(dayStart(from)),
+      c.db.prepare("SELECT count(*) AS n FROM users WHERE created_at >= ? AND role = 'student'").bind(dayStart(from)),
       top("path"),
       top("referrer"),
       top("campaign", "AND campaign != ''"),

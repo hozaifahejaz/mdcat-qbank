@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import AppShell, { PageHead } from "@/components/app/AppShell";
 import { getReceipts, methodNames, money, plans, type Receipt } from "@/lib/billing";
 import { day, fullDay, planNames } from "@/lib/format";
-import { site } from "@/lib/site";
+import { site, supportHref } from "@/lib/site";
 import type { AccountUser } from "@/lib/user";
 
 export default function BillingScreen() {
@@ -25,7 +25,7 @@ function Billing({ user }: { user: AccountUser }) {
   const paid = user.plan !== "free";
   return (
     <div className="dgrid">
-      <PageHead title="Billing">
+      <PageHead title="Plan and billing">
         <a className="dpill light" href="/account">Account and devices</a>
       </PageHead>
 
@@ -38,19 +38,18 @@ function Billing({ user }: { user: AccountUser }) {
           <p className="plan-name">{planNames[user.plan]}</p>
           <p className="muted">
             {paid
-              ? <>Full access{user.planExpiresAt ? <> until <b>{fullDay(user.planExpiresAt)}</b></> : null}. {user.plan === "monthly" ? "Renews monthly." : "One payment, no renewal."}</>
-              : "About 300 questions, one mini-mock and basic stats."}
+              ? <>Full access{user.planExpiresAt ? <> until <b>{fullDay(user.planExpiresAt)}</b></> : null}. One payment, no renewal.</>
+              : site.launched ? "A free set of questions in every subject, one mini mock and basic stats." : "Free questions, one mini mock and basic stats once the bank opens."}
           </p>
           <div className="hello-ctas">
             {user.plan !== "season" && <a className="dpill dark" href="/checkout?plan=season">{paid ? "Switch to" : "Get"} the Season Pass · {money(plans.season.price)}</a>}
-            {user.plan === "monthly" && <button type="button" className="dpill light">Cancel renewal</button>}
           </div>
         </section>
 
         <section className="dcard panel" aria-labelledby="help-h">
           <h2 id="help-h" className="panel-title">Paid but not showing?</h2>
           <p className="muted">Wallet and card payments switch your plan on straight away. Bank transfers are checked by hand first.</p>
-          <a className="link" href={`mailto:${site.supportEmail}`}>Email support with your receipt number</a>
+          <a className="link" href={supportHref}>Message support with your receipt number</a>
         </section>
       </div>
 

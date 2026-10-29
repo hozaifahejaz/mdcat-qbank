@@ -40,3 +40,4 @@ body { margin: 0; background: var(--bg); color: var(--ink); font: 400 1rem/1.6 v
 /* No sideways scroll on phones, whatever a child does */
 html, body { overflow-x: clip; }
 :focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }

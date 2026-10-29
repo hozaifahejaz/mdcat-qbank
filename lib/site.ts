@@ -1,9 +1,15 @@
 /* Site-wide names and numbers. The brand lives here and nowhere else. Prices follow the plan's pricing table. */
 export const site = {
   name: "Examwise",
-  url: "https://example.com",
+  /* The live address. Change to https://examwise.pk once the domain is bought and connected. */
+  url: "https://mdcat-qbank.pages.dev",
   /* On the examwise.pk domain once it's bought. */
   supportEmail: "support@examwise.pk",
+  /* WhatsApp support in international form without the +, e.g. "923001234567". Empty hides the WhatsApp links. */
+  whatsapp: "",
+  /* False until the first questions go live: the public pages then say the bank is opening soon instead of
+     promising free questions, and the landing page offers the launch waitlist. */
+  launched: false,
   season: "2027",
   examMonth: "August 2027",
   /* Expected date for the dashboard countdown. PMDC announces the real one; 2026 was 16 August. Update when it does. */
@@ -25,3 +31,7 @@ export const paper = [
   { subject: "English", count: 9, tone: "var(--lilac)", solid: "#8a63ff" },
   { subject: "Logical Reasoning", count: 9, tone: "var(--lemon)", solid: "#c9a400" },
 ];
+
+/* Where Help links go: WhatsApp when there's a number, email otherwise. */
+export const supportHref = site.whatsapp ? `https://wa.me/${site.whatsapp}` : `mailto:${site.supportEmail}`;
+export const whatsappHref = site.whatsapp ? `https://wa.me/${site.whatsapp}` : "";

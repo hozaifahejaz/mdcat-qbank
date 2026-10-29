@@ -4,6 +4,8 @@ import ThemeToggle from "@/components/ThemeToggle";
 import { money, plans } from "@/lib/billing";
 import { prices, site } from "@/lib/site";
 
+const buy = (plan: string) => `/signup?next=${encodeURIComponent(`/checkout?plan=${plan}`)}`;
+
 const tick = <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>;
 
 const cards = [
@@ -12,7 +14,7 @@ const cards = [
     name: "Free",
     price: 0,
     per: "",
-    items: ["About 300 questions", "1 mini-mock", "Basic stats"],
+    items: [site.launched ? "A free set in every subject" : "Free questions when the bank opens", "1 mini mock", "Basic stats"],
     cta: { label: "Start free", href: "/signup" },
     tone: "var(--card)",
   },
@@ -23,7 +25,7 @@ const cards = [
     was: plans.season.was,
     per: plans.season.per,
     items: ["Full question bank", "All full-length mocks", "Every past paper", "Subject and chapter analytics"],
-    cta: { label: "Get the Season Pass", href: "/checkout?plan=season" },
+    cta: { label: "Get the Season Pass", href: buy("season") },
     tone: "var(--lilac)",
     note: plans.season.was ? `Early-bird price until ${prices.earlyBirdUntil}` : plans.season.blurb,
   },
@@ -32,8 +34,8 @@ const cards = [
     name: plans.monthly.name,
     price: plans.monthly.price,
     per: plans.monthly.per,
-    items: ["Everything in the Season Pass", "Pay month by month", plans.monthly.blurb],
-    cta: { label: "Go monthly", href: "/checkout?plan=monthly" },
+    items: ["Everything in the Season Pass", "30 days of full access", "No renewal: buy again only if you need more"],
+    cta: { label: "Get one month", href: buy("monthly") },
     tone: "var(--card)",
   },
 ];

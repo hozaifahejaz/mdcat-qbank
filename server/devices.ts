@@ -1,6 +1,6 @@
 import { uuid } from "./crypto";
 import { fail } from "./http";
-import type { Session } from "./session";
+import { type Session, requireSession } from "./session";
 
 /* The device rule (docs/plan.md): at most 2 registered devices per account, one active at a time,
    and one device removal every 30 days. "Active" means the account's active_session_id is this session. */
@@ -86,6 +86,13 @@ export async function checkDevice(db: D1Database, session: Session, rawKey: stri
   if (u?.active_session_id === session.id) return { status: "active" as const };
   if (!u?.active_device_id) return { status: "idle" as const };
   return { status: "locked" as const, active_label: u.label };
+}
+
+/* Question content calls this: signed in, and on the account's active device. */
+export async function requireActiveSession(db: D1Database, request: Request): Promise<Session> {
+  const s = await requireSession(db, request);
+  if (!(await isActiveSession(db, s))) throw fail(423, "device_locked", "Your account is active on another device.");
+  return s;
 }
 
 /* True only for the account's active session. Every paid-content endpoint should require it. */

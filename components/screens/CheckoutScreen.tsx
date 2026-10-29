@@ -5,7 +5,7 @@ import AppShell from "@/components/app/AppShell";
 import PayLogo, { type Brand } from "@/components/app/PayLogo";
 import { formatPhone } from "@/lib/auth";
 import { type Method, methodNames, money, type PlanId, plans } from "@/lib/billing";
-import { site } from "@/lib/site";
+import { site, supportHref } from "@/lib/site";
 import type { AccountUser } from "@/lib/user";
 
 export default function CheckoutScreen() {
@@ -131,7 +131,7 @@ function Checkout({ user }: { user: AccountUser }) {
             {plan.blurb}. Signed in as {user.phone ? formatPhone(user.phone) : user.email}.
           </p>
           <p className="muted small">
-            Questions? <a className="link" href={`mailto:${site.supportEmail}`}>{site.supportEmail}</a>
+            Questions? <a className="link" href={supportHref}>{site.whatsapp ? "Message us on WhatsApp" : site.supportEmail}</a>
           </p>
         </aside>
       </div>

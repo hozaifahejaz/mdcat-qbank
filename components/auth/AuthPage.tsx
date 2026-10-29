@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { type AuthConfig, getAuthConfig } from "@/lib/api";
-import { readNext } from "@/lib/auth";
+import { readNext, signInError } from "@/lib/auth";
 import { getCurrentUser } from "@/lib/user";
 import AuthFrame from "@/components/auth/AuthFrame";
 import AfterSignIn from "@/components/auth/AfterSignIn";
@@ -32,7 +32,7 @@ export default function AuthPage({ mode }: { mode: Mode }) {
   useEffect(() => {
     setNext(readNext());
     const params = new URLSearchParams(window.location.search);
-    if (params.get("error")) setError(params.get("error")!);
+    if (params.get("error")) setError(signInError(params.get("error")!));
     getAuthConfig().then((cfg) => {
       setConfig(cfg);
       if (cfg && (params.get("method") === "email" || !cfg.phone) && cfg.email) setMethod("email");
@@ -59,19 +59,19 @@ export default function AuthPage({ mode }: { mode: Mode }) {
             <ProviderButtons next={next} google={config.google} apple={config.apple} onUnavailable={setError} />
             <div className="or">or</div>
             <div className="tabs" role="tablist" aria-label="Sign-in method">
-              <button type="button" role="tab" aria-selected={method === "phone"} onClick={() => { setMethod("phone"); setError(""); }}>Phone</button>
+              <button type="button" role="tab" aria-selected={method === "phone"} onClick={() => { setMethod("phone"); setError(""); }}>Phone{!config.phone && <span className="soon-tag">Soon</span>}</button>
               <button type="button" role="tab" aria-selected={method === "email"} onClick={() => { setMethod("email"); setError(""); }}>Email</button>
             </div>
             {error && <p className="note bad" role="alert">{error}</p>}
             <div role="tabpanel">
               {method === "phone" && <PhoneForm key={`p-${mode}`} mode={mode} siteKey={siteKey} available={config.phone} onSignedIn={() => setSignedIn(true)} />}
-              {method === "email" && <EmailForm key={`e-${mode}`} mode={mode} next={next} siteKey={siteKey} passwordReset={config.passwordReset} onSignedIn={() => setSignedIn(true)} />}
+              {method === "email" && <EmailForm key={`e-${mode}`} mode={mode} next={next} siteKey={siteKey} onSignedIn={() => setSignedIn(true)} />}
             </div>
           </>
         )}
         {mode === "signup" && (
           <p className="fine">
-            By creating an account you agree to our Terms.
+            By creating an account you agree to our <a href="/terms" target="_blank">Terms</a> and <a href="/privacy" target="_blank">Privacy policy</a>.
           </p>
         )}
         <p className="switch">{c.switchText} <a href={switchHref}>{c.switchLabel}</a></p>

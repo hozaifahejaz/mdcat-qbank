@@ -15,12 +15,13 @@ export default function ResetPassword() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [expired, setExpired] = useState(false);
+  const [missing, setMissing] = useState(false);
   const [done, setDone] = useState(false);
 
   useEffect(() => {
     const t = new URLSearchParams(window.location.search).get("token") ?? "";
     setToken(t);
-    if (!t) setExpired(true);
+    if (!t) setMissing(true);
   }, []);
 
   async function submit(e: React.FormEvent) {
@@ -48,7 +49,12 @@ export default function ResetPassword() {
           <h1>Choose a new password</h1>
           <p className="lede">At least 8 characters. This signs you out everywhere else.</p>
         </div>
-        {expired ? (
+        {missing ? (
+          <>
+            <p className="note info">Open the reset link from your email to choose a new password here. No email? Ask for a new link.</p>
+            <a className="pill pill-dark block" href="/forgot-password">Send me a reset link</a>
+          </>
+        ) : expired ? (
           <>
             <p className="note bad" role="alert">This reset link has expired or was already used. Request a new one.</p>
             <a className="pill pill-dark block" href="/forgot-password">Send a new link</a>

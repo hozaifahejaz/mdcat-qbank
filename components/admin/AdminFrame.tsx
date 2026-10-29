@@ -10,13 +10,18 @@ import { type AccountUser, getCurrentUser } from "@/lib/user";
    experiments are admins only, so writers and reviewers don't see them. */
 function adminNav(user: AccountUser): Nav {
   const admin = user.role === "admin";
+  const reviewer = admin || user.role === "reviewer";
   const groups: NavGroup[] = [
     { links: [{ href: "/admin", label: "Overview", icon: "home" }] },
-    { label: "Content", links: [{ href: "/admin/questions", label: "Questions", icon: "practice" }] },
+    { label: "Content", links: [
+      { href: "/admin/questions", label: "Questions", icon: "practice" },
+      ...(reviewer ? [{ href: "/admin/reports", label: "Reports", icon: "flag" }] : []),
+    ] },
     ...(admin ? [{
       label: "Accounts",
       links: [
         { href: "/admin/users", label: "Users and plans", icon: "account", short: "Users" },
+        { href: "/admin/waitlist", label: "Waitlist", icon: "bell" },
         { href: "/admin/visitors", label: "Visitors", icon: "results" },
         { href: "/admin/reveal", label: "Reveal watermark", icon: "target", short: "Watermark" },
       ],
@@ -28,9 +33,11 @@ function adminNav(user: AccountUser): Nav {
   return { kind: "admin", home: "/admin", groups, tabs: admin ? ["/admin", "/admin/questions", "/admin/users", "/admin/visitors"] : ["/admin", "/admin/questions"] };
 }
 
-/* Every /admin page: signed-out visitors go to sign-in, students get "staff only", and staff get the admin frame
+/* Every /admin page: signed-out visitors go to sign-in, students get "not found" (so the panel isn't advertised), and staff get the admin frame
    with the links their role can use. This only shapes the page; the API refuses anyone without the role anyway. */
-export default function AdminFrame({ active, adminOnly, children }: { active: string; adminOnly?: boolean; children: (user: AccountUser) => React.ReactNode }) {
+export default function AdminFrame({ active, adminOnly, reviewerOnly, children }: {
+  active: string; adminOnly?: boolean; reviewerOnly?: boolean; children: (user: AccountUser) => React.ReactNode;
+}) {
   const [user, setUser] = useState<AccountUser | null | undefined>(undefined);
 
   useEffect(() => {
@@ -44,9 +51,9 @@ export default function AdminFrame({ active, adminOnly, children }: { active: st
 
   if (!isStaff(user.role)) {
     return (
-      <AppFrame user={user} title="Admin">
+      <AppFrame user={user} title="Not found">
         <section className="box">
-          <Empty title="This page is for Examwise staff" text="Your account doesn't have access to the admin panel. If you think it should, ask an admin.">
+          <Empty title="Page not found" text="There's nothing at this address.">
             <a className="dpill dark small" href="/dashboard">Go to your dashboard</a>
           </Empty>
         </section>
@@ -56,7 +63,7 @@ export default function AdminFrame({ active, adminOnly, children }: { active: st
 
   return (
     <AppFrame user={user} active={active} nav={adminNav(user)}>
-      {!adminOnly || user.role === "admin" ? children(user) : (
+      {(!adminOnly || user.role === "admin") && (!reviewerOnly || user.role !== "writer") ? children(user) : (
         <section className="box">
           <Empty title="Admins only" text="Your role doesn't include this part of the admin panel. If you need it, ask an admin.">
             <a className="dpill dark small" href="/admin">Back to the overview</a>

@@ -14,6 +14,7 @@ export default function ThemeToggle() {
     const next = dark ? "light" : "dark";
     document.documentElement.setAttribute("data-theme", next);
     try { localStorage.setItem("theme", next); } catch {}
+    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", next === "dark" ? "#0f1012" : "#f4f4f1");
     setDark(!dark);
   }
 

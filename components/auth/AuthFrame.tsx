@@ -37,7 +37,7 @@ function SidePanel() {
     <aside className="auth-side" aria-label="What you get">
       <h2>One account, on your phone and laptop.</h2>
       <ul>
-        <li>Free chapter-wise MCQs to start, with a full explanation on every one.</li>
+        <li>{site.launched ? "Free chapter-wise MCQs to start, with a full explanation on every one." : "Free chapter-wise MCQs as soon as the bank opens, with a full explanation on every one."}</li>
         <li>Your progress, mocks and weak chapters follow you to either device.</li>
       </ul>
       <div className="devices-sketch" aria-hidden="true">

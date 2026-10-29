@@ -34,7 +34,7 @@ type QRow = {
   stem: string; options: string; answer: number; why: string; wrong: string; stage: StageId; checks: string;
   duplicate: number | null; duplicate_of: string | null; blind_by: string | null; blind_answer: number | null;
   reviewed_by: string | null; signed_off_by: string | null; sent_back: string | null; writer_id: string;
-  created_at: number; updated_at: number;
+  created_at: number; updated_at: number; free: number; paper: number | null; live_copy: string | null; live_stage: StageId | null;
   writer_name: string; blind_name: string | null; reviewer_name: string | null; signoff_name: string | null;
 };
 
@@ -59,6 +59,7 @@ function present(r: QRow, viewer: Staff) {
     reviewedBy: r.reviewer_name, signedOffBy: r.signoff_name, sentBack: r.sent_back,
     writerId: r.writer_id, writer: r.writer_name,
     createdAt: new Date(r.created_at).toISOString(), updatedAt: new Date(r.updated_at).toISOString(),
+    free: !!r.free, paper: r.paper, liveCopy: r.live_copy ? r.live_stage : null,
   };
 }
 
@@ -117,11 +118,54 @@ async function closestMatch(db: D1Database, q: QuestionFields & { id: string }) 
   return best;
 }
 
+/* What a writer may see: their own questions, and others' only while waiting for a blind solve (key hidden).
+   Reviewers and admins see the whole bank. */
+const scopeFor = (me: Staff) => (me.role === "writer" ? { sql: "(q.writer_id = ? OR (q.stage = 'blind' AND q.blind_answer IS NULL))", args: [me.id] } : { sql: "1 = 1", args: [] as unknown[] });
+const PAGE = 50;
+
 const questionRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
+  /* One page of the queue, filtered on the server: view (a stage, "mine" or "all"), subject and search. */
   "GET /api/admin/questions": async (c) => {
     const me = await staff(c);
-    const { results } = await c.db.prepare(`${Q_SELECT} ORDER BY q.updated_at DESC`).all<QRow>();
-    return json({ questions: results.map((r) => present(r, me)) });
+    const p = new URL(c.request.url).searchParams;
+    const scope = scopeFor(me);
+    const where = [scope.sql];
+    const args = [...scope.args];
+    const view = str(p.get("view"), 20);
+    if (view === "mine") { where.push("q.writer_id = ?"); args.push(me.id); }
+    else if (stageIds.includes(view as StageId)) { where.push("q.stage = ?"); args.push(view); }
+    const subject = str(p.get("subject"), 40);
+    if (subjectCodes[subject]) { where.push("q.subject = ?"); args.push(subject); }
+    const search = str(p.get("q"), 100).replace(/[%_]/g, "");
+    if (search) { where.push("(q.id LIKE ? OR q.stem LIKE ? OR q.topic LIKE ? OR w.name LIKE ?)"); args.push(...Array(4).fill(`%${search}%`)); }
+    const offset = Math.max(0, Number(p.get("offset")) || 0);
+    const filtered = where.join(" AND ");
+    const [rows, total, stagesRes, mine, keys] = await c.db.batch([
+      c.db.prepare(`${Q_SELECT} WHERE ${filtered} ORDER BY q.updated_at DESC LIMIT ${PAGE + 1} OFFSET ${offset}`).bind(...args),
+      c.db.prepare(`SELECT count(*) AS n FROM questions q JOIN users w ON w.id = q.writer_id WHERE ${filtered}`).bind(...args),
+      c.db.prepare(`SELECT q.stage, count(*) AS n FROM questions q WHERE ${scope.sql} GROUP BY q.stage`).bind(...scope.args),
+      c.db.prepare("SELECT count(*) AS n FROM questions WHERE writer_id = ?").bind(me.id),
+      c.db.prepare(`SELECT answer, count(*) AS n FROM questions q WHERE ${scope.sql} AND NOT (q.stage = 'blind' AND q.blind_answer IS NULL AND q.writer_id != ?) GROUP BY answer`).bind(...scope.args, me.id),
+    ]);
+    const list = rows!.results as QRow[];
+    const counts: Record<string, number> = { all: 0, mine: (mine!.results[0] as { n: number }).n };
+    (stagesRes!.results as { stage: string; n: number }[]).forEach((r) => { counts[r.stage] = r.n; counts.all! += r.n; });
+    const keyCounts = [0, 1, 2, 3].map((k) => (keys!.results as { answer: number; n: number }[]).find((r) => r.answer === k)?.n ?? 0);
+    const known = keyCounts.reduce((a, b) => a + b, 0);
+    return json({
+      questions: list.slice(0, PAGE).map((r) => present(r, me)),
+      total: (total!.results[0] as { n: number }).n,
+      hasMore: list.length > PAGE,
+      counts,
+      spread: { known, pct: keyCounts.map((n) => Math.round((n / Math.max(1, known)) * 100)) },
+    });
+  },
+
+  "GET /api/admin/questions/one": async (c) => {
+    const me = await staff(c);
+    const r = await getQuestion(c.db, str(new URL(c.request.url).searchParams.get("id"), 20));
+    if (me.role === "writer" && r.writer_id !== me.id && !(r.stage === "blind" && r.blind_answer === null)) throw fail(403, "forbidden", "Writers can only open their own questions.");
+    return json({ question: present(r, me) });
   },
 
   /* Create (no id) or edit. Writers can only touch their own drafts. Editing a question that's past the draft stage
@@ -152,7 +196,13 @@ const questionRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
       ).bind(f.subject, f.chapter, f.topic, f.difficulty, f.source, f.stem, JSON.stringify(f.options), f.answer, f.why, JSON.stringify(f.wrong), now, r.id),
       log(c.db, me, "question.edit", r.id, r.stage === "draft" ? "" : `Edited at ${stageLabel(r.stage)}, back to draft`),
     ];
-    if (r.stage !== "draft") ops.push(backToDraft(c.db, r.id, `Edited by ${me.name} at ${stageLabel(r.stage)}. It needs every check again.`));
+    if (r.stage !== "draft") {
+      // A question students already see stays up, as it was, until the edit passes every check.
+      if ((r.stage === "beta" || r.stage === "live") && !r.live_copy) {
+        ops.push(c.db.prepare("UPDATE questions SET live_copy = ?, live_stage = ? WHERE id = ?").bind(JSON.stringify(fieldsOf(r)), r.stage, r.id));
+      }
+      ops.push(backToDraft(c.db, r.id, `Edited by ${me.name} at ${stageLabel(r.stage)}. It needs every check again.${r.stage === "beta" || r.stage === "live" || r.live_copy ? " Students keep seeing the checked version until then." : ""}`));
+    }
     await c.db.batch(ops);
     return json({ question: present(await getQuestion(c.db, r.id), me) });
   },
@@ -198,7 +248,8 @@ const questionRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
       if (me.role !== "admin") throw fail(403, "forbidden", "Only an admin can do this.");
       const to = r.stage === "signoff" ? "beta" : "live";
       await c.db.batch([
-        c.db.prepare(`UPDATE questions SET stage = ?, ${to === "beta" ? "signed_off_by = ?," : ""} updated_at = ? WHERE id = ?`)
+        // From beta on, the new version is the one students see, so any kept copy of the old one goes.
+        c.db.prepare(`UPDATE questions SET stage = ?, ${to === "beta" ? "signed_off_by = ?," : ""} live_copy = NULL, live_stage = NULL, updated_at = ? WHERE id = ?`)
           .bind(...(to === "beta" ? [to, me.id, now, r.id] : [to, now, r.id])),
         log(c.db, me, `question.${to}`, r.id),
       ]);
@@ -216,7 +267,7 @@ const questionRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
     const r = await getQuestion(c.db, str(b.id, 20));
     if (r.stage !== "blind" || r.blind_answer !== null) throw fail(400, "stage", "This question isn't waiting for a blind solve.");
     if (r.writer_id === me.id) throw fail(403, "own_question", "Someone other than the writer has to solve it.");
-    const pick = typeof b.answer === "number" && b.answer >= 0 && b.answer <= 3 ? b.answer : -1;
+    const pick = typeof b.answer === "number" && Number.isInteger(b.answer) && b.answer >= 0 && b.answer <= 3 ? b.answer : -1;
     if (pick < 0) throw fail(400, "bad_answer", "Pick an answer.");
     const L = "ABCD";
     const ops = [
@@ -247,9 +298,41 @@ const questionRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
     const b = await body(c.request);
     const r = await getQuestion(c.db, str(b.id, 20));
     if (r.stage !== "draft") throw fail(400, "stage", "Only drafts can be deleted. Send it back first.");
+    if (r.live_copy) throw fail(400, "live_copy", "Students still see the checked version of this question. Use \"Discard edit\" to go back to it instead.");
     if (me.role !== "admin" && r.writer_id !== me.id) throw fail(403, "forbidden", "Only the writer or an admin can delete it.");
     await c.db.batch([c.db.prepare("DELETE FROM questions WHERE id = ?").bind(r.id), log(c.db, me, "question.delete", r.id, r.stem.slice(0, 80))]);
     return json({ ok: true });
+  },
+
+  /* Drops an edit to a live question and puts back the version that passed, at the stage it was. */
+  "POST /api/admin/questions/discard": async (c) => {
+    const me = await reviewer(c);
+    const b = await body(c.request);
+    const r = await getQuestion(c.db, str(b.id, 20));
+    if (!r.live_copy || !r.live_stage) throw fail(400, "no_copy", "There's no earlier version of this question to go back to.");
+    const f = JSON.parse(r.live_copy) as QuestionFields;
+    await c.db.batch([
+      c.db.prepare(`UPDATE questions SET subject = ?, chapter = ?, topic = ?, difficulty = ?, source = ?, stem = ?, options = ?, answer = ?, why = ?, wrong = ?,
+          stage = ?, live_copy = NULL, live_stage = NULL, sent_back = NULL, updated_at = ? WHERE id = ?`)
+        .bind(f.subject, f.chapter, f.topic, f.difficulty, f.source, f.stem, JSON.stringify(f.options), f.answer, f.why, JSON.stringify(f.wrong), r.live_stage, Date.now(), r.id),
+      log(c.db, me, "question.discard", r.id, `Back to the ${stageLabel(r.live_stage)} version`),
+    ]);
+    return json({ question: present(await getQuestion(c.db, r.id), me) });
+  },
+
+  /* Publishing details that aren't part of the question, so changing them needs no re-check: whether it's in the
+     free set, and which past paper it was rebuilt from. */
+  "POST /api/admin/questions/meta": async (c) => {
+    const me = await admin(c);
+    const b = await body(c.request);
+    const r = await getQuestion(c.db, str(b.id, 20));
+    const year = b.paper === null || b.paper === "" ? null : Number(b.paper);
+    if (year !== null && !(Number.isInteger(year) && year >= 2000 && year <= 2100)) throw fail(400, "bad_year", "Pick a past-paper year, or none.");
+    await c.db.batch([
+      c.db.prepare("UPDATE questions SET free = ?, paper = ? WHERE id = ?").bind(b.free ? 1 : 0, year, r.id),
+      log(c.db, me, "question.meta", r.id, `${b.free ? "In" : "Not in"} the free set${year ? `, past paper ${year}` : ""}`),
+    ]);
+    return json({ question: present(await getQuestion(c.db, r.id), me) });
   },
 
   "GET /api/admin/questions/log": async (c) => {
@@ -260,6 +343,46 @@ const questionRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
       .bind(id)
       .all();
     return json({ log: results });
+  },
+};
+
+/* ---------- Students' reports ---------- */
+
+const reportRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
+  /* Reports grouped by question, open ones first. A question with three open reports is hidden from new tests. */
+  "GET /api/admin/reports": async (c) => {
+    await reviewer(c);
+    const status = new URL(c.request.url).searchParams.get("status") === "closed" ? "closed" : "open";
+    const { results } = await c.db
+      .prepare(`SELECT r.id, r.question_id, r.reason, r.details, r.status, r.note, r.created_at, r.resolved_at,
+          u.name AS student, x.name AS resolver, q.stem, q.stage, q.subject
+        FROM reports r LEFT JOIN users u ON u.id = r.user_id LEFT JOIN users x ON x.id = r.resolved_by LEFT JOIN questions q ON q.id = r.question_id
+        WHERE ${status === "open" ? "r.status = 'open'" : "r.status != 'open'"}
+        ORDER BY ${status === "open" ? "r.created_at ASC" : "r.resolved_at DESC"} LIMIT 200`)
+      .all();
+    return json({ reports: results });
+  },
+
+  /* Closes every open report on a question at once: fixed (the question was changed) or dismissed (it was right). */
+  "POST /api/admin/reports/resolve": async (c) => {
+    const me = await reviewer(c);
+    const b = await body(c.request);
+    const id = str(b.questionId, 20);
+    const status = b.status === "fixed" ? "fixed" : b.status === "dismissed" ? "dismissed" : "";
+    if (!status) throw fail(400, "bad_status", "Pick fixed or dismissed.");
+    const note = str(b.note, 500);
+    const res = await c.db.prepare("UPDATE reports SET status = ?, note = ?, resolved_by = ?, resolved_at = ? WHERE question_id = ? AND status = 'open'")
+      .bind(status, note, me.id, Date.now(), id).run();
+    if (!res.meta.changes) throw fail(404, "not_found", "There are no open reports on that question.");
+    await log(c.db, me, `report.${status}`, id, note).run();
+    return json({ ok: true, closed: res.meta.changes });
+  },
+
+  /* People who asked to hear when Examwise opens. */
+  "GET /api/admin/waitlist": async (c) => {
+    await admin(c);
+    const { results } = await c.db.prepare("SELECT contact, kind, created_at FROM waitlist ORDER BY created_at DESC LIMIT 2000").all();
+    return json({ waitlist: results });
   },
 };
 
@@ -407,8 +530,11 @@ const overviewRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
     const mine = await c.db.prepare("SELECT count(*) AS n FROM questions WHERE writer_id = ? AND stage = 'draft' AND sent_back IS NOT NULL").bind(me.id).first<{ n: number }>();
     const waitingBlind = await c.db.prepare("SELECT count(*) AS n FROM questions WHERE stage = 'blind' AND blind_answer IS NULL AND writer_id != ?").bind(me.id).first<{ n: number }>();
 
+    const openReports = me.role === "writer" ? 0 : (await c.db.prepare("SELECT count(DISTINCT question_id) AS n FROM reports WHERE status = 'open'").first<{ n: number }>())?.n ?? 0;
+
     let users = null;
     let visits = null;
+    let waitlist = 0;
     let activity: unknown[] = [];
     if (me.role === "admin") {
       const [u, plans, act] = await c.db.batch([
@@ -423,9 +549,10 @@ const overviewRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
       };
       activity = act!.results;
       visits = await visitSummary(c.db);
+      waitlist = (await c.db.prepare("SELECT count(*) AS n FROM waitlist").first<{ n: number }>())?.n ?? 0;
     }
-    return json({ byStage, liveBySubject, sentBackToMe: mine?.n ?? 0, waitingBlind: waitingBlind?.n ?? 0, users, visits, activity });
+    return json({ byStage, liveBySubject, sentBackToMe: mine?.n ?? 0, waitingBlind: waitingBlind?.n ?? 0, openReports, waitlist, users, visits, activity });
   },
 };
 
-export const adminRoutes = { ...overviewRoutes, ...questionRoutes, ...userRoutes };
+export const adminRoutes = { ...overviewRoutes, ...questionRoutes, ...reportRoutes, ...userRoutes };
