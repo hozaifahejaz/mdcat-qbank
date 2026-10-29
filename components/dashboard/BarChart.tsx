@@ -86,6 +86,7 @@ export default function BarChart({ daily }: { daily: DayActivity[] }) {
               </button>
             );
           })}
+          {cols.every((c) => !c.answered) && <p className="dc-empty">No practice in this range yet. Answer a few questions and your bars show up here.</p>}
           {h && (
             <div className="tip dc-tip" style={{ left: `${((hover! + 0.5) / cols.length) * 100}%` }}>
               <b>{h[metric]} {metric}</b>

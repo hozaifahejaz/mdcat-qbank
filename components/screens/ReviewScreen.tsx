@@ -5,8 +5,9 @@ import AppShell from "@/components/app/AppShell";
 import Explanation from "@/components/test/Explanation";
 import Protected from "@/components/test/Protected";
 import { ReportDialog } from "@/components/test/TestPlayer";
-import { type Attempt, getAttempt, type Scored, score } from "@/lib/attempts";
+import { friendlyError } from "@/lib/auth";
 import { type Question, subjects } from "@/lib/bank";
+import { type Review as Data, type Scored, getReview, setBookmark, testHref } from "@/lib/study";
 import { band, clock, day, kindNames, letters, pct } from "@/lib/format";
 import { paper } from "@/lib/site";
 import type { AccountUser } from "@/lib/user";
@@ -17,31 +18,42 @@ export default function ReviewScreen() {
   return <AppShell title="Results">{(user) => <Review user={user} />}</AppShell>;
 }
 
+type Status = "correct" | "wrong" | "skipped";
+const statusOf = (r: Scored): Status => (r.chosen === null ? "skipped" : r.chosen === r.q.answer ? "correct" : "wrong");
+
 /* /review?id=… — the result of one test, then every question with the student's answer and the explanation. */
 function Review({ user }: { user: AccountUser }) {
-  const [attempt, setAttempt] = useState<Attempt | null | undefined>(undefined);
+  const [data, setData] = useState<Data | null | undefined>(undefined);
+  const [error, setError] = useState("");
   useEffect(() => {
-    const id = new URLSearchParams(window.location.search).get("id") ?? "last";
-    setAttempt(getAttempt(id));
+    const id = new URLSearchParams(window.location.search).get("id") ?? "";
+    getReview(id).then(setData, (e) => {
+      // Still open: back to the test to finish it.
+      if ((e as { code?: string }).code === "open") return window.location.replace(`/test?id=${encodeURIComponent(id)}`);
+      setError(friendlyError(e));
+      setData(null);
+    });
   }, []);
 
-  if (attempt === undefined) return <div className="dgrid"><div className="sk" style={{ height: 240 }} /></div>;
-  if (attempt === null) {
+  if (data === undefined) return <div className="dgrid"><div className="sk" style={{ height: 240 }} /></div>;
+  if (data === null) {
     return (
       <div className="dgrid">
         <section className="dcard panel empty">
-          <h1>We couldn&apos;t find that test</h1>
-          <p className="muted">Results are kept on this device until you close the tab. Saved history comes with the full bank.</p>
+          <h1>We couldn&apos;t open that test</h1>
+          <p className="muted">{error}</p>
           <a className="dpill dark" href="/history">See test history</a>
         </section>
       </div>
     );
   }
-  return <Result user={user} attempt={attempt} />;
+  return <Result user={user} data={data} />;
 }
 
-function Result({ user, attempt }: { user: AccountUser; attempt: Attempt }) {
-  const rows = score(attempt);
+function Result({ user, data }: { user: AccountUser; data: Data }) {
+  const { attempt } = data;
+  const rows = data.items.map((r) => ({ ...r, status: statusOf(r) }));
+  const [saved, setSaved] = useState(() => new Set(data.items.filter((r) => r.bookmarked).map((r) => r.q.id)));
   const [filter, setFilter] = useState<Filter>("all");
   const [report, setReport] = useState<Question | null>(null);
   const right = rows.filter((r) => r.status === "correct").length;
@@ -49,6 +61,11 @@ function Result({ user, attempt }: { user: AccountUser; attempt: Attempt }) {
   const skipped = rows.filter((r) => r.status === "skipped").length;
   const p = pct(right, rows.length);
   const per = Math.round(attempt.seconds / Math.max(1, rows.length));
+  const toggleSave = (id: string) => {
+    const on = !saved.has(id);
+    setSaved((m) => { const c = new Set(m); if (on) c.add(id); else c.delete(id); return c; });
+    setBookmark(id, on).catch(() => {});
+  };
 
   const bySubject = subjects.map((s) => {
     const r = rows.filter((x) => x.q.subject === s);
@@ -70,7 +87,7 @@ function Result({ user, attempt }: { user: AccountUser; attempt: Attempt }) {
             <span className={`acc ${band(p).cls}`}>{p}% · {band(p).word}</span>
           </div>
           <div className="hello-ctas">
-            {retry.length > 0 && <a className="dpill dark" href={`/test?mode=tutor&title=${encodeURIComponent("Retry: " + attempt.title)}&ids=${retry.join(",")}`}>Retry {retry.length} wrong and skipped</a>}
+            {retry.length > 0 && <a className="dpill dark" href={testHref({ kind: "practice", ids: retry, title: `Retry: ${attempt.title}` })}>Retry {retry.length} wrong and skipped</a>}
             <a className="dpill light" href="/dashboard">Back to dashboard</a>
           </div>
         </div>
@@ -113,7 +130,7 @@ function Result({ user, attempt }: { user: AccountUser; attempt: Attempt }) {
         </div>
         <Protected user={user}>
           <ol className="rlist">
-            {shown.map(({ r, i }) => <ReviewItem key={r.q.id} r={r} n={i + 1} onReport={() => setReport(r.q)} />)}
+            {shown.map(({ r, i }) => <ReviewItem key={`${r.q.id}-${i}`} r={r} n={i + 1} saved={saved.has(r.q.id)} onSave={() => toggleSave(r.q.id)} onReport={() => setReport(r.q)} />)}
             {!shown.length && <li className="muted">Nothing here.</li>}
           </ol>
         </Protected>
@@ -123,7 +140,7 @@ function Result({ user, attempt }: { user: AccountUser; attempt: Attempt }) {
   );
 }
 
-function ReviewItem({ r, n, onReport }: { r: Scored; n: number; onReport: () => void }) {
+function ReviewItem({ r, n, saved, onSave, onReport }: { r: Scored & { status: Status }; n: number; saved: boolean; onSave: () => void; onReport: () => void }) {
   const label = { correct: "Correct", wrong: "Wrong", skipped: "Skipped" }[r.status];
   return (
     <li className={`ritem ${r.status}`}>
@@ -149,6 +166,7 @@ function ReviewItem({ r, n, onReport }: { r: Scored; n: number; onReport: () => 
             ))}
           </ul>
           <Explanation q={r.q} chosen={r.chosen} onReport={onReport} />
+          <button type="button" className={`tool${saved ? " on" : ""}`} aria-pressed={saved} onClick={onSave}>{saved ? "Bookmarked" : "Bookmark"}</button>
         </div>
       </details>
     </li>

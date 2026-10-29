@@ -36,6 +36,14 @@ export function friendlyError(err: unknown): string {
   return "Something went wrong. Please try again.";
 }
 
+/* The ?error= codes Google and Apple sign-in can send back to /signin. Anything else shows the generic line. */
+export const signInErrors: Record<string, string> = {
+  provider_off: "That sign-in method isn't switched on yet. Please use your email for now.",
+  oauth_cancelled: "Sign-in was cancelled. Please try again.",
+  oauth_state: "That sign-in link expired. Please try again.",
+};
+export const signInError = (code: string) => signInErrors[code] ?? "Sign-in didn't complete. Please try again.";
+
 /* The device rule, enforced by the API (server/devices.ts). Signing in on a device makes it the active one. */
 export const claimDevice = () => api<ClaimResult>("/api/device/claim", { body: { deviceKey: getDeviceKey(), label: deviceLabel() } });
 export const checkDevice = () => api<CheckResult>("/api/device/check", { body: { deviceKey: getDeviceKey() } });

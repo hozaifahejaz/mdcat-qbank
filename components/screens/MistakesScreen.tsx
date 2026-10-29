@@ -5,8 +5,9 @@ import AppShell, { PageHead } from "@/components/app/AppShell";
 import Empty from "@/components/app/Empty";
 import Explanation from "@/components/test/Explanation";
 import Protected from "@/components/test/Protected";
-import { getBookmarks, getMistakes, type Mistake } from "@/lib/attempts";
+import { friendlyError } from "@/lib/auth";
 import { type Question, subjects } from "@/lib/bank";
+import { type Mistake, getBookmarks, getMistakes, setBookmark, testHref } from "@/lib/study";
 import type { Subject } from "@/lib/dashboard-data";
 import { day, letters } from "@/lib/format";
 import type { AccountUser } from "@/lib/user";
@@ -22,21 +23,26 @@ function Mistakes({ user }: { user: AccountUser }) {
   const [mistakes, setMistakes] = useState<Mistake[]>([]);
   const [saved, setSaved] = useState<Question[]>([]);
   const [open, setOpen] = useState<string | null>(null);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    getMistakes().then(setMistakes);
-    getBookmarks().then(setSaved);
+    getMistakes().then(setMistakes, (e) => setError(friendlyError(e)));
+    getBookmarks().then(setSaved, (e) => setError(friendlyError(e)));
     if (new URLSearchParams(window.location.search).get("tab") === "saved") setTab("saved");
   }, []);
 
   const rows = (tab === "wrong" ? mistakes.map((m) => ({ q: m.q, m })) : saved.map((q) => ({ q, m: undefined as Mistake | undefined })))
     .filter((r) => subject === "all" || r.q.subject === subject);
-  const ids = rows.map((r) => r.q.id).join(",");
+  const ids = rows.map((r) => r.q.id);
+  const unsave = (id: string) => {
+    setSaved((x) => x.filter((q) => q.id !== id));
+    setBookmark(id, false).catch((e) => setError(friendlyError(e)));
+  };
 
   return (
     <div className="dgrid">
       <PageHead title="My mistakes" sub="Get each one right once and it leaves the list.">
-        {rows.length > 0 && <a className="dpill dark" href={`/test?mode=tutor&title=${encodeURIComponent(tab === "wrong" ? "My mistakes" : "Bookmarks")}&ids=${ids}`}>Retry {rows.length}</a>}
+        {rows.length > 0 && <a className="dpill dark" href={testHref({ kind: "practice", ids: ids.slice(0, 100), title: tab === "wrong" ? "My mistakes" : "Bookmarks" })}>Retry {Math.min(100, rows.length)}</a>}
       </PageHead>
 
       <div className="ptabs" role="tablist">
@@ -44,6 +50,7 @@ function Mistakes({ user }: { user: AccountUser }) {
         <button type="button" role="tab" className="tab" aria-selected={tab === "saved"} onClick={() => setTab("saved")}>Bookmarked <span className="muted">{saved.length}</span></button>
       </div>
 
+      {error && <p className="note-bad" role="alert">{error}</p>}
       <section className="dcard panel">
         <div className="chips" role="group" aria-label="Subject">
           <button type="button" className="chip" aria-pressed={subject === "all"} onClick={() => setSubject("all")}>All subjects</button>
@@ -66,7 +73,10 @@ function Mistakes({ user }: { user: AccountUser }) {
                 {open === q.id && (
                   <div className="rbody">
                     <Explanation q={q} chosen={m?.chosen} />
-                    <a className="dpill light small" href={`/test?mode=tutor&ids=${q.id}&title=${encodeURIComponent(q.topic)}`}>Try it again</a>
+                    <div className="hello-ctas">
+                      <a className="dpill light small" href={testHref({ kind: "practice", ids: [q.id], title: q.topic || q.chapter })}>Try it again</a>
+                      {!m && <button type="button" className="dpill light small" onClick={() => unsave(q.id)}>Remove bookmark</button>}
+                    </div>
                   </div>
                 )}
               </li>

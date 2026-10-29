@@ -22,7 +22,7 @@ export const plans: Record<PlanId, { name: string; price: number; was?: number; 
     per: "until the exam",
     blurb: "One payment, no renewal",
   },
-  monthly: { name: "Monthly", price: rs(prices.monthly), per: "a month", blurb: "Cancel any time" },
+  monthly: { name: "One-month pass", price: rs(prices.monthly), per: "for 30 days", blurb: "One payment for 30 days, no renewal" },
 };
 
 export const methodNames: Record<Method, string> = {

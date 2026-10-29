@@ -279,6 +279,7 @@
 .dc-y { position: relative; font-size: .75rem; color: var(--muted); font-variant-numeric: tabular-nums; }
 .dc-y span { position: absolute; right: 0; line-height: 1; }
 .dc-cols { position: relative; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 4px; height: 216px; }
+.dc-empty { position: absolute; inset: 0; margin: 0; display: grid; place-items: center; padding: 0 16px; text-align: center; font-size: .875rem; color: var(--muted); pointer-events: none; }
 .dc-grid { position: absolute; left: 0; right: 0; height: 0; border-top: 1px dashed var(--line); pointer-events: none; }
 .dc-grid:first-child { border-top-style: solid; }
 .dc-col { position: relative; display: flex; align-items: flex-end; justify-content: center; padding: 0; border: 0; background: none; cursor: default; border-radius: 4px; }

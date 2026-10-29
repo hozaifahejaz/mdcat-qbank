@@ -2,6 +2,7 @@ import Logo from "@/components/Logo";
 import Reveal from "@/components/Reveal";
 import SampleQuestion from "@/components/SampleQuestion";
 import ThemeToggle from "@/components/ThemeToggle";
+import Waitlist from "@/components/Waitlist";
 import { paper, prices, site } from "@/lib/site";
 import "./landing.css";
 
@@ -24,6 +25,9 @@ const faqs = [
   { q: "Do you cover NUMS, AKU or other tests?", a: "PMDC MDCAT first. NUMS is next, and we'll add other university tests after that." },
   { q: "Are you affiliated with PMDC?", a: `No. ${site.name} is independent and not affiliated with PMDC, NUMS or any university.` },
 ];
+
+/* Plan buttons go through sign-up and land on checkout with the plan picked. */
+const buy = (plan: string) => `/signup?next=${encodeURIComponent(`/checkout?plan=${plan}`)}`;
 
 export default function Home() {
   const total = paper.reduce((n, p) => n + p.count, 0);
@@ -60,7 +64,8 @@ export default function Home() {
                 <a className="pill pill-dark" href="#try">Try a question</a>
                 <a className="pill pill-light" href="#pricing">See pricing</a>
               </div>
-              <div className="who" aria-label="Every subject on the paper">
+              <div className="who" aria-label="Questions per subject on the paper">
+                <span className="who-h muted">On the paper</span>
                 {paper.map((p) => (
                   <span key={p.subject} style={{ background: p.tone }}><b>{p.count}</b>{p.subject}</span>
                 ))}
@@ -121,7 +126,7 @@ export default function Home() {
             <div className="center rv">
               <span className="tag"><i />Pricing</span>
               <h2>One payment. The whole season.</h2>
-              <p className="muted">No subscription and no add-ons. A season pass covers you from the day you join until the {site.examMonth} MDCAT.</p>
+              <p className="muted">No subscription and no add-ons. A season pass covers you from the day you join until the {site.examMonth} MDCAT.{!site.launched && " Questions open soon; payments open with them."}</p>
             </div>
             <div className="plans">
               <div className="card plan rv">
@@ -129,7 +134,7 @@ export default function Home() {
                 <p className="for">Try the questions and explanations before you pay anything.</p>
                 <div className="price"><small>Rs.</small><b>0</b></div>
                 <ul>
-                  <li>About 300 questions across all subjects</li>
+                  <li>{site.launched ? "A free set of questions in every subject" : "Free questions in every subject, from launch"}</li>
                   <li>One mini mock</li>
                   <li>Basic progress stats</li>
                 </ul>
@@ -149,23 +154,23 @@ export default function Home() {
                   <li>Chapter-by-chapter dashboard</li>
                   <li>Bookmarks and "My mistakes"</li>
                 </ul>
-                <a className="pill" href="/signup">Get the season pass</a>
+                <a className="pill" href={buy("season")}>Get the season pass</a>
               </div>
               <div className="card plan rv">
-                <h3>Monthly</h3>
+                <h3>One month</h3>
                 <p className="for">For students who want to start small or only need a few weeks.</p>
-                <div className="price"><small>Rs.</small><b>{prices.monthly}</b><span>per month</span></div>
+                <div className="price"><small>Rs.</small><b>{prices.monthly}</b><span>for 30 days</span></div>
                 <ul>
                   <li className="plus">Everything in the season pass</li>
-                  <li>Pay one month at a time</li>
-                  <li>Switch to the season pass any time</li>
+                  <li>30 days of full access</li>
+                  <li>No renewal: buy again only if you need more</li>
                 </ul>
-                <a className="pill pill-dark" href="/signup">Go monthly</a>
+                <a className="pill pill-dark" href={buy("monthly")}>Get one month</a>
               </div>
             </div>
             <div className="price-notes rv">
               <span>JazzCash, Easypaisa or card</span>
-              <span>Pay once, no renewal</span>
+              <span>No subscriptions, no renewals</span>
               <span>Free questions, no card needed</span>
             </div>
           </section>
@@ -219,11 +224,20 @@ export default function Home() {
 
           <div className="final rv" id="join">
             <h2>Start practising before MDCAT {site.season}.</h2>
-            <p>Make a free account and try the questions. Upgrade when you're ready, and your progress carries over.</p>
-            <div className="ctas">
-              <a className="pill pill-dark" href="/signup">Start free</a>
-              <a className="pill pill-light" href="#try">Try a question</a>
-            </div>
+            {site.launched ? (
+              <>
+                <p>Make a free account and try the questions. Upgrade when you&apos;re ready, and your progress carries over.</p>
+                <div className="ctas">
+                  <a className="pill pill-dark" href="/signup">Start free</a>
+                  <a className="pill pill-light" href="#try">Try a question</a>
+                </div>
+              </>
+            ) : (
+              <>
+                <p>The question bank opens soon. Leave your email or number and we&apos;ll tell you the day it does, with the early-bird price.</p>
+                <Waitlist />
+              </>
+            )}
           </div>
         </div>
       </main>
@@ -238,6 +252,7 @@ export default function Home() {
               <li><a href="#faq">FAQ</a></li>
               <li><a href="/privacy">Privacy</a></li>
               <li><a href="/terms">Terms</a></li>
+              <li><a href="/refunds">Refunds</a></li>
             </ul>
           </div>
           <p className="legal">Not affiliated with PMDC, NUMS or any university. MDCAT is administered by PMDC. © {new Date().getFullYear()} {site.name}</p>

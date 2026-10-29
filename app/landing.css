@@ -248,3 +248,21 @@ footer { border-top: 1px solid var(--line); padding-block: 40px; font-size: 0.93
   .marquee-track li[aria-hidden] { display: none; }
   .marquee { mask-image: none; -webkit-mask-image: none; }
 }
+
+/* Launch waitlist in the closing panel */
+.wl { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; width: min(100%, 520px); margin-top: 6px; }
+.wl input { flex: 1 1 240px; min-width: 0; height: 48px; border-radius: 999px; border: 0; padding-inline: 20px; font: inherit; font-size: 1rem; background: #fff; color: #111214; }
+.wl input::placeholder { color: #6b6f76; }
+.wl input:focus-visible { outline: 3px solid rgba(255,255,255,.6); outline-offset: 2px; }
+.wl .pill { height: 48px; }
+.wl .pill:disabled { opacity: .7; }
+.wl-err { flex-basis: 100%; background: rgba(0,0,0,.18); border-radius: 12px; padding: 8px 12px; font-size: .9375rem; }
+.wl-alt { flex-basis: 100%; color: #fff; opacity: .85; font-size: .9375rem; text-decoration: underline; text-underline-offset: 3px; }
+.wl-done { background: rgba(255,255,255,.16); border-radius: 14px; padding: 12px 18px; font-weight: 600; }
+.who-h { font-size: 0.8125rem; font-weight: 600; padding: 5px 4px; }
+
+/* Phones: one-row top bar; the section links are in the footer */
+@media (max-width: 640px) {
+  .navbar { flex-wrap: nowrap; border-radius: 999px; }
+  .navbar ul { display: none; }
+}

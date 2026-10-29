@@ -31,7 +31,7 @@ a { color: inherit; text-decoration: none; }
 .auth-top .end a:hover { color: var(--blue); }
 @media (max-width: 440px) { .auth-top .end .hint { display: none; } }
 .auth-main { display: grid; grid-template-columns: minmax(0, 460px) minmax(0, 1fr); gap: 20px; align-items: stretch; padding-block: 12px 40px; }
-.auth-main.solo { grid-template-columns: minmax(0, 520px); justify-content: center; }
+.auth-main.solo { grid-template-columns: minmax(0, 520px); justify-content: center; align-items: start; }
 @media (max-width: 900px) { .auth-main { grid-template-columns: minmax(0, 1fr); max-width: 520px; margin-inline: auto; } }
 .auth-foot { padding-block: 0 28px; font-size: 0.8125rem; color: var(--muted); text-align: center; }
 
@@ -115,13 +115,19 @@ form.stack, .stack { display: grid; gap: 14px; }
 @media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 2.4s; } }
 
 /* Account page */
-.acct { display: grid; gap: 14px; }
-.acct section { padding: 28px; display: grid; gap: 16px; }
-@media (max-width: 520px) { .acct section { padding: 22px 18px; } }
-.acct h2 { font-size: 1.375rem; letter-spacing: -0.03em; }
+.acct section { display: grid; gap: 16px; }
+.acct-out { display: flex !important; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+@media (max-width: 520px) {
+  .device-list li { grid-template-columns: 40px minmax(0, 1fr); }
+  .device-list li > :last-child { grid-column: 2; justify-self: start; }
+}
 .acct .kv { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 10px 16px; font-size: 0.9375rem; }
-@media (max-width: 520px) { .acct .kv { grid-template-columns: minmax(0, 1fr); gap: 2px; } .acct .kv dd { margin-bottom: 10px; } }
+@media (max-width: 520px) { .acct .kv { grid-template-columns: 96px minmax(0, 1fr); gap: 12px 12px; } }
 .acct .kv dt { color: var(--muted); }
 .acct .kv dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
 .acct .inline { display: flex; gap: 10px; }
-.acct .inline .input { flex: 1; min-width: 0; }
+.acct .inline input { flex: 1; min-width: 0; }
+
+/* A sign-in method that isn't switched on yet */
+.pill.soon { opacity: .6; }
+.soon-tag { font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; padding: 2px 7px; border-radius: 999px; background: var(--bg); color: var(--muted); margin-left: 8px; }

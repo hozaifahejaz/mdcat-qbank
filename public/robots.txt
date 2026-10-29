@@ -1,0 +1,17 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /experiments
+Disallow: /api/
+Disallow: /dashboard
+Disallow: /practice
+Disallow: /mocks
+Disallow: /past-papers
+Disallow: /mistakes
+Disallow: /history
+Disallow: /review
+Disallow: /test
+Disallow: /account
+Disallow: /checkout
+
+Sitemap: https://mdcat-qbank.pages.dev/sitemap.xml

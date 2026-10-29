@@ -72,8 +72,8 @@ export default function RevealScreen() {
       <section className="dcard panel">
         <label className="fld upload" onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); load(e.dataTransfer.files[0]); }}>
           <span>Screenshot</span>
-          <input type="file" accept="image/*" onChange={(e) => load(e.target.files?.[0])} />
-          <span className="drop">{img ? "Choose another image" : "Choose or drop an image"}</span>
+          <input className="sr" type="file" accept="image/*" onChange={(e) => load(e.target.files?.[0])} />
+          <span className="drop"><b>{img ? "Choose another image" : "Choose an image"}</b><span className="muted small">or drop it here</span></span>
         </label>
         {found && (
           <div className={found === "reading" ? "note-chip" : found === "none" ? "note-warn" : "note-good"} role="status">

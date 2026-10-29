@@ -335,6 +335,17 @@
 .queue-f { display: grid; gap: 8px; }
 .queue ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
 .queue .pad { padding: 12px; }
+.queue .more { justify-self: center; }
+.pub-row { display: flex; gap: 8px; align-items: center; font-weight: 600; font-size: .875rem; margin-bottom: 12px; }
+.rep-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+.rep-q { display: grid; gap: 10px; }
+.rep-q .qrow-top a { font-weight: 700; }
+.rep-items { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.rep-items li { background: var(--bg); border-radius: 12px; padding: 8px 12px; font-size: .875rem; }
+.rep-act { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.rep-act input { flex: 1 1 220px; }
+.wl-table { width: 100%; border-collapse: collapse; font-size: .875rem; }
+.wl-table th, .wl-table td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); }
 .qrow { width: 100%; text-align: left; font: inherit; border: 0; background: none; cursor: pointer; display: grid; gap: 4px; padding: 10px 12px; border-radius: 14px; }
 .qrow:hover { background: var(--bg); }
 .qrow[aria-current="true"] { background: var(--blue-soft); }
@@ -480,3 +491,21 @@ fieldset.plain { border: 0; margin: 0; padding: 0; min-width: 0; display: grid; 
 .exp-copy .muted { font-size: .875rem; }
 .exp-meta { font-size: .75rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 @media (max-width: 520px) { .exp-row { grid-template-columns: auto minmax(0, 1fr); padding: 14px; gap: 12px; } .exp-row .dpill { display: none; } }
+
+/* File drop zone (admin watermark reveal) */
+.upload .drop { display: grid; justify-items: center; gap: 2px; padding: 28px 16px; border: 1.5px dashed var(--line); border-radius: 14px; text-align: center; cursor: pointer; transition: border-color .2s, background-color .2s; }
+.upload:hover .drop, .upload:focus-within .drop { border-color: var(--blue); background: var(--blue-soft); }
+
+/* Terms, Privacy and Refunds */
+.legal { max-width: 760px; margin: 24px auto 64px; padding: clamp(22px, 4vw, 44px); display: grid; gap: 12px; line-height: 1.65; }
+.legal h1 { font-size: clamp(2rem, 1.5rem + 2vw, 2.75rem); font-weight: 800; letter-spacing: -0.04em; line-height: 1.1; }
+.legal h2 { font-size: 1.1875rem; font-weight: 700; margin-top: 14px; }
+.legal ul { margin: 0; padding-left: 1.25em; display: grid; gap: 6px; }
+.legal a { text-decoration: underline; text-underline-offset: 2px; }
+.legal hr { border: 0; border-top: 1px solid var(--line); margin: 12px 0 0; }
+
+/* 404 */
+.lost { min-height: 100dvh; display: grid; place-content: center; justify-items: center; gap: 14px; text-align: center; padding: 24px 16px; }
+.lost h1 { font-size: clamp(2.25rem, 1.5rem + 3vw, 3.5rem); font-weight: 800; letter-spacing: -0.05em; margin-top: 18px; }
+.lost p { max-width: 34ch; }
+.lost .hello-ctas { justify-content: center; }

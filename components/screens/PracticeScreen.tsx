@@ -2,10 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import AppShell, { PageHead } from "@/components/app/AppShell";
-import { available, subjects, syllabus } from "@/lib/bank";
+import { subjects, syllabus } from "@/lib/bank";
 import { getDashboard, type Subject, type SubjectStat } from "@/lib/dashboard-data";
 import { band, pct } from "@/lib/format";
 import { paper } from "@/lib/site";
+import { type Catalog, getCatalog, openCount, testHref, totalCount } from "@/lib/study";
 import type { AccountUser } from "@/lib/user";
 
 const counts = [10, 25, 50, 100];
@@ -24,9 +25,11 @@ function Practice({ user }: { user: AccountUser }) {
   const [only, setOnly] = useState<"all" | "unseen" | "wrong">("all");
   const [topic, setTopic] = useState<string | null>(null);
   const [stats, setStats] = useState<SubjectStat[]>([]);
+  const [catalog, setCatalog] = useState<Catalog | null>(null);
 
   useEffect(() => {
-    getDashboard(user).then((d) => setStats(d.subjects));
+    getDashboard(user).then((d) => setStats(d.subjects), () => {});
+    getCatalog().then(setCatalog, () => {});
     const p = new URLSearchParams(window.location.search);
     const s = p.get("subject") as Subject | null;
     if (s && subjects.includes(s)) setSubject(s);
@@ -39,18 +42,17 @@ function Practice({ user }: { user: AccountUser }) {
 
   const chapters = syllabus[subject];
   const stat = (c: string) => stats.find((s) => s.subject === subject)?.chapters.find((x) => x.chapter === c);
-  const pool = useMemo(() => available(subject, [...picked]), [subject, picked]);
+  const pool = useMemo(() => openCount(catalog, subject, [...picked]), [catalog, subject, picked]);
+  const locked = totalCount(catalog, subject, [...picked]) - pool;
   const allOn = picked.size === chapters.length;
 
   const switchSubject = (s: Subject) => { setSubject(s); setPicked(new Set()); setTopic(null); };
   const toggle = (c: string) => setPicked((p) => { const n = new Set(p); if (n.has(c)) n.delete(c); else n.add(c); return n; });
 
-  const href = (() => {
-    const q = new URLSearchParams({ mode, subject, count: String(count) });
-    if (picked.size && !allOn) q.set("chapters", [...picked].join("|"));
-    if (topic) q.set("title", `${subject} · ${topic}`);
-    return `/test?${q}`;
-  })();
+  const href = testHref({
+    kind: mode === "timed" ? "timed" : "practice", subject, count, from: only, topic: topic ?? undefined,
+    chapters: picked.size && !allOn ? [...picked] : undefined,
+  });
 
   return (
     <div className="dgrid">
@@ -80,14 +82,14 @@ function Practice({ user }: { user: AccountUser }) {
             {chapters.map((c) => {
               const s = stat(c);
               const p = s?.answered ? pct(s.correct, s.answered) : null;
-              const n = available(subject, [c]);
+              const n = openCount(catalog, subject, [c]);
               return (
                 <li key={c}>
                   <label>
                     <input type="checkbox" checked={picked.has(c)} onChange={() => toggle(c)} />
                     <span className="pk-name">{c}</span>
                     <span className="muted pk-n">{n ? `${s?.answered ?? 0}/${n}` : ""}</span>
-                    {!n ? <span className="acc none">Coming soon</span> : p === null ? <span className="acc none">Not started</span> : <span className={`acc ${band(p).cls}`} title={band(p).word}>{p}%</span>}
+                    {!n ? <span className="acc none">{totalCount(catalog, subject, [c]) ? "With a pass" : "Coming soon"}</span> : p === null ? <span className="acc none">Not started</span> : <span className={`acc ${band(p).cls}`} title={band(p).word}>{p}%</span>}
                   </label>
                 </li>
               );
@@ -124,9 +126,14 @@ function Practice({ user }: { user: AccountUser }) {
           </div>
 
           <div className="setup-sum">
-            <span className="muted">{picked.size && !allOn ? `${picked.size} chapter${picked.size > 1 ? "s" : ""}` : "All chapters"} · {pool ? `${pool.toLocaleString("en-GB")} questions in the bank` : "questions coming soon"}</span>
-            {pool ? <a className="dpill dark block" href={href}>Start {Math.min(count, pool)} questions</a> : <button type="button" className="dpill dark block" disabled>Questions coming soon</button>}
+            <span className="muted">{picked.size && !allOn ? `${picked.size} chapter${picked.size > 1 ? "s" : ""}` : "All chapters"} · {!catalog ? "…" : pool ? `${pool.toLocaleString("en-GB")} questions in the bank` : locked ? "with a pass" : "questions coming soon"}</span>
+            {!catalog ? <button type="button" className="dpill dark block" disabled>Loading…</button>
+              : pool ? <a className="dpill dark block" href={href}>Start {Math.min(count, pool)} questions</a>
+              : locked ? <a className="dpill dark block" href="/pricing">Get a pass for these questions</a>
+              : <button type="button" className="dpill dark block" disabled>Questions coming soon</button>}
             {pool > 0 && mode === "timed" && <span className="muted small">Clock: {Math.min(count, pool)} minutes</span>}
+            {catalog && !catalog.paid && locked > 0 && <span className="muted small">Free plan: {pool.toLocaleString("en-GB")} of {(pool + locked).toLocaleString("en-GB")} questions here. <a className="link" href="/pricing">A pass opens them all.</a></span>}
+            {only !== "all" && pool > 0 && <span className="muted small">{only === "unseen" ? "Only questions you haven't answered yet." : "Only questions you got wrong last time."} If none match, try All questions.</span>}
           </div>
         </section>
       </div>

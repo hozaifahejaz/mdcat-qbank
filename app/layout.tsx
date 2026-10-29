@@ -16,7 +16,10 @@ export const metadata: Metadata = {
     siteName: site.name,
     title: `MDCAT MCQs with full explanations · ${site.name}`,
     description: "Chapter-wise MDCAT practice, timed 180-question mocks and an explanation on every question.",
+    url: "/",
+    images: [{ url: "/og.png", width: 1200, height: 630, alt: `${site.name}: MDCAT MCQs with full explanations` }],
   },
+  twitter: { card: "summary_large_image" },
 };
 
 export const viewport: Viewport = {
@@ -27,7 +30,7 @@ export const viewport: Viewport = {
 };
 
 /* Set the theme before first paint: a saved choice wins, otherwise follow the device. */
-const themeScript = `(function(){try{var t=localStorage.getItem("theme");if(t!=="light"&&t!=="dark")t=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";document.documentElement.setAttribute("data-theme",t)}catch(e){}})();`;
+const themeScript = `(function(){try{var t=localStorage.getItem("theme");if(t!=="light"&&t!=="dark")t=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";document.documentElement.setAttribute("data-theme",t);var c=t==="dark"?"#0f1012":"#f4f4f1",s=function(){var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",c)};s();document.addEventListener("DOMContentLoaded",s)}catch(e){}})();`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

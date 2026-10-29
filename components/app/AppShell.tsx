@@ -8,7 +8,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 import { signOut } from "@/lib/auth";
 import { planNames } from "@/lib/format";
 import { isStaff, roleNames } from "@/lib/qc";
-import { site } from "@/lib/site";
+import { site, supportHref } from "@/lib/site";
 import { type AccountUser, getCurrentUser } from "@/lib/user";
 
 /* The sidebar, grouped like the study loop: practise, then review what went wrong. */
@@ -102,7 +102,7 @@ export function AppFrame({ active, title, user, aside, nav = studentNav, childre
         <div className="side-foot">
           <ul>
             {switchLink && <li><a href={switchLink.href}><Icon name={switchLink.icon} />{switchLink.label}</a></li>}
-            <li><a href={`mailto:${site.supportEmail}`}><Icon name="help" />Help</a></li>
+            <li><a href={supportHref}><Icon name="help" />Help</a></li>
             <li>
               <button type="button" onClick={async () => { await signOut(); window.location.replace("/"); }}><Icon name="signout" />Sign out</button>
             </li>
@@ -130,7 +130,7 @@ export function AppFrame({ active, title, user, aside, nav = studentNav, childre
           <h1 className="m-title">{title ?? here?.label ?? "Study"}</h1>
           <div className="topbar-end">
             {!admin && user?.plan === "free" && <a className="dpill dark small hide-xs" href="/pricing">Upgrade</a>}
-            <a className="help-link hide-xs" href={`mailto:${site.supportEmail}`}>Need help?</a>
+            <a className="help-link hide-xs" href={supportHref}>Need help?</a>
             <ThemeToggle />
             <a className="avatar m-avatar" href="/account" aria-label="Account">{user ? initials(user.name) : ""}</a>
           </div>
@@ -170,7 +170,7 @@ export function AppFrame({ active, title, user, aside, nav = studentNav, childre
                 <li key={l.href}><a href={l.href} aria-current={l.href === active ? "page" : undefined}><Icon name={l.icon} />{l.label}<span className="chev"><Icon name="chevron" size={16} /></span></a></li>
               ))}
               {switchLink && <li><a href={switchLink.href}><Icon name={switchLink.icon} />{switchLink.label}<span className="chev"><Icon name="chevron" size={16} /></span></a></li>}
-              <li><a href={`mailto:${site.supportEmail}`}><Icon name="help" />Help<span className="chev"><Icon name="chevron" size={16} /></span></a></li>
+              <li><a href={supportHref}><Icon name="help" />Help<span className="chev"><Icon name="chevron" size={16} /></span></a></li>
               <li><button type="button" className="danger" onClick={async () => { await signOut(); window.location.replace("/"); }}><Icon name="signout" />Sign out</button></li>
             </ul>
             {!admin && user?.plan === "free" && <a className="dpill dark block" href="/pricing">Get the Season Pass</a>}

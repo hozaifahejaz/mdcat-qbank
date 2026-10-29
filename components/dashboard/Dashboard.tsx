@@ -5,7 +5,6 @@ import { AppFrame } from "@/components/app/AppShell";
 import Empty from "@/components/app/Empty";
 import Icon from "@/components/app/Icon";
 import BarChart from "@/components/dashboard/BarChart";
-import { bank } from "@/lib/bank";
 import { getDashboard, type Dashboard as Data, type SubjectStat } from "@/lib/dashboard-data";
 import { band, day, fullDay, kindNames, pct, tz } from "@/lib/format";
 import { paper, site } from "@/lib/site";
@@ -26,6 +25,9 @@ function sumChapters(s: SubjectStat) {
 
 const COACH_KEY = "dash-coach-hidden";
 
+/* Any questions open to this student yet? Before launch every screen says they're coming. */
+const hasQuestions = (d: Data) => d.subjects.some((s) => s.chapters.some((c) => c.available > 0));
+
 export default function Dashboard() {
   const [user, setUser] = useState<AccountUser | null>(null);
   const [data, setData] = useState<Data | null>(null);
@@ -40,8 +42,8 @@ export default function Dashboard() {
         window.location.replace("/signin?next=/dashboard");
         return;
       }
-      const d = await getDashboard(u);
-      if (live) { setUser(u); setData(d); }
+      const d = await getDashboard(u).catch(() => null);
+      if (live && d) { setUser(u); setData(d); }
     })();
     return () => { live = false; };
   }, []);
@@ -72,7 +74,7 @@ function Skeleton() {
 function Body({ data, coachHidden, onShowCoach }: { data: Data; coachHidden: boolean; onShowCoach: () => void }) {
   const totals = data.subjects.map(sumChapters).reduce((t, s) => ({ answered: t.answered + s.answered, available: t.available + s.available, correct: t.correct + s.correct }), { answered: 0, available: 0, correct: 0 });
   const month = data.daily.slice(-30).reduce((t, d) => ({ answered: t.answered + d.answered, correct: t.correct + d.correct }), { answered: 0, correct: 0 });
-  const mocks = data.recent.filter((t) => t.total === 180).sort((a, b) => a.date.localeCompare(b.date));
+  const mocks = data.recent.filter((t) => t.kind === "mock").sort((a, b) => a.date.localeCompare(b.date));
   const lastMock = mocks.at(-1);
   const prevMock = mocks.at(-2);
   const change = lastMock && prevMock ? lastMock.score - prevMock.score : null;
@@ -94,7 +96,7 @@ function Body({ data, coachHidden, onShowCoach }: { data: Data; coachHidden: boo
         </div>
       </section>
 
-      {!bank.length && <p className="demo"><i />Questions coming soon. Your stats fill in as you practise.</p>}
+      {!hasQuestions(data) && <p className="demo"><i />Questions coming soon. Your stats fill in as you practise.</p>}
 
       <section className="kpis" aria-label="Your numbers">
         <div className="kpi">
@@ -245,11 +247,11 @@ function Body({ data, coachHidden, onShowCoach }: { data: Data; coachHidden: boo
 /* The right-hand panel: what to do next, worked out from the student's own numbers. Every suggestion is a link
    into practice, not a chat; an AI tutor is a later phase of the plan. */
 function coachTips(data: Data) {
-  if (!bank.length) return [];
+  if (!hasQuestions(data)) return [];
   const weakest = [...data.weakTopics].sort((a, b) => a.correct / a.answered - b.correct / b.answered).slice(0, 2);
   const nextMock = data.recent.filter((t) => t.kind === "mock").length + 1;
   return [
-    ...weakest.map((w) => ({ href: `/practice?topic=${encodeURIComponent(w.topic)}`, icon: "target", tone: "var(--bad)", label: `${w.topic} · ${pct(w.correct, w.answered)}%` })),
+    ...weakest.map((w) => ({ href: `/practice?${new URLSearchParams({ subject: w.subject, chapter: w.chapter, topic: w.topic })}`, icon: "target", tone: "var(--bad)", label: `${w.topic} · ${pct(w.correct, w.answered)}%` })),
     ...(data.resume ? [{ href: data.resume.href, icon: "play", tone: "var(--blue)", label: `Finish ${data.resume.title.split(" · ").at(-1)}` }] : []),
     ...(data.mistakesToRetry ? [{ href: "/mistakes", icon: "retry", tone: "var(--warn)", label: `Retry ${data.mistakesToRetry} mistakes` }] : []),
     { href: "/mocks/new", icon: "mock", tone: "var(--good)", label: `Sit full mock ${nextMock}` },
@@ -303,7 +305,7 @@ function CoachStrip({ data }: { data: Data }) {
       <div className="m-coach-h">
         <h2 id="mcoach-h"><span className="coach-dot"><Icon name="spark" size={14} /></span>Up next</h2>
       </div>
-      {!bank.length && <p className="muted small">Questions are being written and checked. Suggestions show here once you can practise.</p>}
+      {!hasQuestions(data) && <p className="muted small">Questions are being written and checked. Suggestions show here once you can practise.</p>}
       <ul className="m-tips">
         {coachTips(data).map((t) => (
           <li key={t.label}><a href={t.href}><span style={{ color: t.tone }}><Icon name={t.icon} size={18} /></span>{t.label}</a></li>

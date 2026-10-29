@@ -55,6 +55,10 @@ export async function userForOAuth(db: D1Database, provider: Provider, p: OAuthP
   return userId;
 }
 
+/* The plan in force now: a paid plan whose end date has passed counts as free. */
+export const effectivePlan = (u: Pick<UserRow, "plan" | "plan_expires_at">, now = Date.now()) =>
+  u.plan !== "free" && (u.plan_expires_at === null || u.plan_expires_at > now) ? u.plan : "free";
+
 /* The account as the pages see it (matches StudentUser in lib/user.ts, plus sign-in methods). */
 export async function publicUser(db: D1Database, u: UserRow) {
   const { results } = await db.prepare("SELECT provider FROM identities WHERE user_id = ?").bind(u.id).all<{ provider: string }>();
@@ -68,9 +72,9 @@ export async function publicUser(db: D1Database, u: UserRow) {
     name: u.name,
     email: u.email ?? undefined,
     phone: u.phone ?? undefined,
-    plan: u.plan,
+    plan: effectivePlan(u),
     role: u.role,
-    planExpiresAt: u.plan_expires_at ? new Date(u.plan_expires_at).toISOString() : undefined,
+    planExpiresAt: u.plan_expires_at && effectivePlan(u) !== "free" ? new Date(u.plan_expires_at).toISOString() : undefined,
     methods,
   };
 }

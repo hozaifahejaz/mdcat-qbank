@@ -5,6 +5,7 @@ import { type AuthConfig, api, getAuthConfig } from "@/lib/api";
 import { friendlyError } from "@/lib/auth";
 import AuthFrame from "@/components/auth/AuthFrame";
 import NotConfigured from "@/components/auth/NotConfigured";
+import { site, supportHref } from "@/lib/site";
 import Turnstile from "@/components/auth/Turnstile";
 
 /* Email a reset link. The reply is the same whether or not the email has an account, so this page
@@ -38,7 +39,22 @@ export default function ForgotPassword() {
   }
 
   const top = { hint: "Remembered it?", label: "Sign in", href: "/signin?method=email" };
-  if (config === null || config?.passwordReset === false) return <AuthFrame top={top}><NotConfigured /></AuthFrame>;
+  if (config === null) return <AuthFrame top={top}><NotConfigured /></AuthFrame>;
+  // Until email sending is on there's no reset link, so support resets it by hand after checking the account is theirs.
+  if (config?.passwordReset === false) {
+    return (
+      <AuthFrame top={top}>
+        <div className="card auth-card">
+          <div>
+            <h1>Forgot your password?</h1>
+            <p className="lede">Reset links by email aren&apos;t switched on yet. Message us from the email address or phone number on your account and we&apos;ll reset it for you.</p>
+          </div>
+          <a className="pill pill-dark block" href={supportHref}>{site.whatsapp ? "Message us on WhatsApp" : `Email ${site.supportEmail}`}</a>
+          <p className="fine">Signed up with your phone number, Google or Apple? You don&apos;t need a password. <a href="/signin">Sign in that way</a> instead.</p>
+        </div>
+      </AuthFrame>
+    );
+  }
 
   return (
     <AuthFrame top={top}>

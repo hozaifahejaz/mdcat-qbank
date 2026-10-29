@@ -87,7 +87,7 @@ export default function Experiment() {
           </ul>
           <div className="bx-nav-end">
             <ThemeToggle />
-            <a className="bx-link" href="/signin">Log in</a>
+            <a className="bx-link" href="/signin">Sign in</a>
             <a className="bx-btn bx-btn-sm" href="/signup">Get started</a>
           </div>
         </div>

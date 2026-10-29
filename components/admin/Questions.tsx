@@ -1,11 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PageHead } from "@/components/app/AppShell";
 import Empty from "@/components/app/Empty";
 import { friendlyError } from "@/lib/auth";
 import {
-  type AdminQuestion, type LogEntry, actionNames, advanceQuestion, blindSolve, deleteQuestion, keySpread, listQuestions, questionLog, saveQuestion, sendBack,
+  type AdminQuestion, type LogEntry, type QuestionPage, actionNames, advanceQuestion, blindSolve, deleteQuestion, discardEdit, getQuestion, listQuestions,
+  questionLog, saveQuestion, sendBack, setQuestionMeta,
 } from "@/lib/admin";
 import { subjects, syllabus } from "@/lib/bank";
 import type { Subject } from "@/lib/dashboard-data";
@@ -29,41 +30,55 @@ const fieldsOf = (q: AdminQuestion): QuestionFields => ({
    question through the check in docs/plan.md: template complete and not a duplicate, a blind solve by someone other
    than the writer, the textbook checklist, an admin's sign-off, beta, then live. The server enforces every step. */
 export default function Questions({ user }: { user: AccountUser }) {
-  const [qs, setQs] = useState<AdminQuestion[] | null>(null);
+  const [page, setPage] = useState<QuestionPage | null>(null);
   const [err, setErr] = useState("");
   const [view, setView] = useState<View>("all");
   const [subject, setSubject] = useState<Subject | "all">("all");
   const [search, setSearch] = useState("");
+  const [query, setQuery] = useState("");
   const [sel, setSel] = useState<string | null>(null);
+  // The open question when it isn't on the loaded page (opened by link, or just moved out of the current tab).
+  const [extra, setExtra] = useState<AdminQuestion | null>(null);
+  const [more, setMore] = useState(false);
   const [toast, setToast] = useState("");
+  const first = useRef(true);
 
-  const load = useCallback(() => listQuestions().then((d) => { setQs(d); return d; }, (e) => { setErr(friendlyError(e)); return null; }), []);
+  // The queue is filtered and paged on the server, 50 at a time, so it stays quick with thousands of questions.
+  const filters = useMemo(() => ({ view, subject: subject === "all" ? "" : subject, q: query }), [view, subject, query]);
+  const load = useCallback(() => listQuestions({ ...filters, offset: 0 }).then((d) => { setPage(d); setErr(""); return d; }, (e) => { setErr(friendlyError(e)); return null; }), [filters]);
+  const loadMore = async () => {
+    if (!page) return;
+    setMore(true);
+    try {
+      const d = await listQuestions({ ...filters, offset: page.questions.length });
+      setPage({ ...d, questions: [...page.questions, ...d.questions.filter((q) => !page.questions.some((x) => x.id === q.id))] });
+    } catch (e) { setErr(friendlyError(e)); } finally { setMore(false); }
+  };
+
+  useEffect(() => { const t = setTimeout(() => setQuery(search.trim()), 300); return () => clearTimeout(t); }, [search]);
 
   useEffect(() => {
-    const p = new URLSearchParams(window.location.search);
-    const st = p.get("stage") as View | null;
-    if (st && (st === "all" || st === "mine" || stages.some((s) => s.id === st))) setView(st);
-    load().then((d) => {
+    if (first.current) {
+      // First load: honour ?stage=, ?id= and ?new= from links on the overview and elsewhere.
+      first.current = false;
+      const p = new URLSearchParams(window.location.search);
+      const st = p.get("stage") as View | null;
+      if (st && st !== view && (st === "all" || st === "mine" || stages.some((s) => s.id === st))) { setView(st); return; }
+      const id = p.get("id");
       if (p.get("new")) setSel("new");
-      else if (p.get("id")) setSel(p.get("id"));
-      else if (d) setSel((d.find((q) => !st || st === "all" || q.stage === st) ?? null)?.id ?? null);
-    });
-  }, [load]);
+      else if (id) { setSel(id); getQuestion(id).then(setExtra, (e) => setErr(friendlyError(e))); }
+      load().then((d) => { if (d && !p.get("new") && !id) setSel(d.questions[0]?.id ?? null); });
+      return;
+    }
+    load().then((d) => setSel((s) => s ?? d?.questions[0]?.id ?? null));
+  }, [load]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { if (toast) { const t = setTimeout(() => setToast(""), 3200); return () => clearTimeout(t); } }, [toast]);
 
-  const counts = useMemo(() => {
-    const c: Record<string, number> = { all: qs?.length ?? 0, mine: qs?.filter((q) => q.writerId === user.id).length ?? 0 };
-    stages.forEach((s) => { c[s.id] = qs?.filter((q) => q.stage === s.id).length ?? 0; });
-    return c;
-  }, [qs, user.id]);
-
-  const list = (qs ?? []).filter((q) =>
-    (view === "all" || (view === "mine" ? q.writerId === user.id : q.stage === view)) &&
-    (subject === "all" || q.subject === subject) &&
-    (!search || `${q.id} ${q.stem} ${q.topic} ${q.writer}`.toLowerCase().includes(search.toLowerCase())));
-  const current = sel === "new" ? null : qs?.find((q) => q.id === sel) ?? null;
+  const list = page?.questions ?? [];
+  const current = sel === "new" ? null : list.find((q) => q.id === sel) ?? (extra?.id === sel ? extra : null);
 
   const changed = async (q: AdminQuestion | null, message: string) => {
+    setExtra(q);
     await load();
     setSel(q?.id ?? null);
     setToast(message);
@@ -85,7 +100,7 @@ export default function Questions({ user }: { user: AccountUser }) {
         <nav className="stage-tabs" aria-label="Stage">
           {tabList.map((t) => (
             <button key={t.id} type="button" className="stab" aria-pressed={view === t.id} onClick={() => setView(t.id)}>
-              {t.label}<span>{counts[t.id]}</span>
+              {t.label}<span>{page?.counts[t.id] ?? 0}</span>
             </button>
           ))}
         </nav>
@@ -119,20 +134,21 @@ export default function Questions({ user }: { user: AccountUser }) {
                 </button>
               </li>
             ))}
-            {qs && !list.length && sel !== "new" && <li className="muted pad">Nothing here.</li>}
+            {page && !list.length && sel !== "new" && <li className="muted pad">Nothing here.</li>}
           </ul>
+          {page?.hasMore && <button type="button" className="dpill light small more" disabled={more} onClick={loadMore}>{more ? "Loading" : `Load more (${page.total - list.length} left)`}</button>}
         </aside>
 
-        {sel === "new" ? <Editor key="new" user={user} q={null} all={qs ?? []} onChanged={changed} onToast={setToast} />
-          : current ? <Editor key={current.id + current.updatedAt} user={user} q={current} all={qs!} onChanged={changed} onToast={setToast} />
-          : qs && !qs.length ? (
+        {sel === "new" ? <Editor key="new" user={user} q={null} spread={page?.spread} onChanged={changed} />
+          : current ? <Editor key={current.id + current.updatedAt} user={user} q={current} spread={page?.spread} onChanged={changed} />
+          : page && !page.counts.all ? (
             <section className="dcard panel">
               <Empty title="No questions yet" text="Write the first one. Each question goes through the automatic checks, a blind solve by someone else, the textbook checklist and an admin's sign-off before students see it.">
                 <button type="button" className="dpill dark small" onClick={() => setSel("new")}>New question</button>
               </Empty>
             </section>
           )
-          : qs ? <section className="dcard panel"><Empty title="Pick a question" text="Choose one from the list to read or edit it." /></section>
+          : page ? <section className="dcard panel"><Empty title="Pick a question" text="Choose one from the list to read or edit it." /></section>
           : <div className="sk" style={{ height: 480 }} />}
       </div>
       {toast && <div className="toast" role="status">{toast}</div>}
@@ -140,9 +156,9 @@ export default function Questions({ user }: { user: AccountUser }) {
   );
 }
 
-function Editor({ user, q, all, onChanged, onToast }: {
-  user: AccountUser; q: AdminQuestion | null; all: AdminQuestion[];
-  onChanged: (q: AdminQuestion | null, message: string) => Promise<void>; onToast: (s: string) => void;
+function Editor({ user, q, spread, onChanged }: {
+  user: AccountUser; q: AdminQuestion | null; spread: QuestionPage["spread"] | undefined;
+  onChanged: (q: AdminQuestion | null, message: string) => Promise<void>;
 }) {
   const start = q ? fieldsOf(q) : blank();
   const [f, setF] = useState<QuestionFields>(start);
@@ -163,7 +179,6 @@ function Editor({ user, q, all, onChanged, onToast }: {
   const canEdit = !q?.keyHidden && (staffReviewer || (mine && stage === "draft"));
   const dirty = JSON.stringify(f) !== JSON.stringify(start);
   const missing = missingFields(f);
-  const spread = keySpread(all);
 
   const run = async (fn: () => Promise<void>) => {
     setBusy(true); setErr("");
@@ -171,7 +186,11 @@ function Editor({ user, q, all, onChanged, onToast }: {
   };
 
   const save = () => run(async () => {
-    if (q && stage !== "draft" && !confirm(`Saving changes sends ${q.id} back to draft, and it goes through every check again. Save anyway?`)) return;
+    if (q && stage !== "draft" && !confirm(
+      q.liveCopy || stage === "beta" || stage === "live"
+        ? `Saving sends ${q.id} back to draft to be checked again. Students keep seeing the version that passed until the new one goes live. Save anyway?`
+        : `Saving changes sends ${q.id} back to draft, and it goes through every check again. Save anyway?`,
+    )) return;
     const saved = await saveQuestion({ ...f, id: q?.id });
     await onChanged(saved, q ? (saved.stage === stage ? "Saved." : `Saved. ${saved.id} is back in draft.`) : `${saved.id} created as a draft.`);
   });
@@ -191,6 +210,12 @@ function Editor({ user, q, all, onChanged, onToast }: {
     const res = await sendBack(q!.id, note);
     setBackOpen(false);
     await onChanged(res, `${res.id} sent back to ${res.writer}.`);
+  });
+
+  const discard = () => run(async () => {
+    if (!confirm(`Throw away the edit to ${q!.id} and put back the ${stageLabel(q!.liveCopy!)} version students see?`)) return;
+    const res = await discardEdit(q!.id);
+    await onChanged(res, `Edit discarded. ${res.id} is back to ${stageLabel(res.stage)}.`);
   });
 
   const remove = () => run(async () => {
@@ -222,6 +247,7 @@ function Editor({ user, q, all, onChanged, onToast }: {
         </ol>
         <p className="muted small">{stages[si]!.step}</p>
         {q?.sentBack && stage === "draft" && <p className="note-warn"><b>Sent back:</b> {q.sentBack}</p>}
+        {q?.liveCopy && <p className="note-warn">This is an edit of a {stageLabel(q.liveCopy).toLowerCase()} question. Students keep seeing the version that passed until this one goes live again.</p>}
         {!canEdit && !q?.keyHidden && <p className="muted small">{mine ? "Only reviewers and admins can edit a question once it's submitted." : "Writers can only edit their own drafts."}</p>}
         {err && <p className="note-bad" role="alert">{err}</p>}
       </div>
@@ -284,8 +310,8 @@ function Editor({ user, q, all, onChanged, onToast }: {
                   ? <Check ok={q.duplicate < DUPLICATE_LIMIT} label="Not a duplicate" detail={q.duplicateOf ? `Closest match: ${q.duplicateOf}, ${q.duplicate}% the same words` : "Nothing similar in the bank"} />
                   : <Check ok={null} label="Not a duplicate" detail="Checked against the bank when you submit" />}
                 {/* With a handful of questions any split looks lopsided, so this waits for a real sample. */}
-                {all.length >= 20
-                  ? <Check ok={Math.max(...spread) < 40} label="No key-position bias in the bank" detail={`Keys: ${spread.map((p, i) => `${letters[i]} ${p}%`).join(" · ")}`} />
+                {spread && spread.known >= 20
+                  ? <Check ok={Math.max(...spread.pct) < 40} label="No key-position bias in the bank" detail={`Keys: ${spread.pct.map((p, i) => `${letters[i]} ${p}%`).join(" · ")}`} />
                   : <Check ok={null} label="No key-position bias in the bank" detail="Checked once the bank has 20 questions" />}
               </ul>
             </div>
@@ -315,6 +341,8 @@ function Editor({ user, q, all, onChanged, onToast }: {
               {q?.reviewedBy && <p className="muted small">Checked by {q.reviewedBy}{q.signedOffBy ? `, signed off by ${q.signedOffBy}` : ""}.</p>}
             </div>
 
+            {q && user.role === "admin" && <Publishing q={q} onChanged={onChanged} />}
+
             {q && (
               <div className="dcard panel">
                 <h3 className="panel-title">History</h3>
@@ -342,7 +370,8 @@ function Editor({ user, q, all, onChanged, onToast }: {
           ) : (
             <>
               {canEdit && <button type="button" className="dpill light small" disabled={busy || (!!q && !dirty)} onClick={save}>{q ? "Save" : "Save draft"}</button>}
-              {q && stage === "draft" && (user.role === "admin" || mine) && <button type="button" className="dpill light small danger" disabled={busy} onClick={remove}>Delete</button>}
+              {q && stage === "draft" && !q.liveCopy && (user.role === "admin" || mine) && <button type="button" className="dpill light small danger" disabled={busy} onClick={remove}>Delete</button>}
+              {q?.liveCopy && staffReviewer && <button type="button" className="dpill light small" disabled={busy} onClick={discard}>Discard edit</button>}
               <span className="grow" />
               {q && stage !== "draft" && staffReviewer && <button type="button" className="dpill light small" disabled={busy} onClick={() => setBackOpen(true)}>Send back to writer</button>}
               {primary && (
@@ -353,6 +382,39 @@ function Editor({ user, q, all, onChanged, onToast }: {
         </div>
       )}
     </section>
+  );
+}
+
+/* Admins only: whether the question is in the free set, and the past paper it was rebuilt from. Neither changes the
+   question itself, so neither needs a re-check. */
+function Publishing({ q, onChanged }: { q: AdminQuestion; onChanged: (q: AdminQuestion | null, message: string) => Promise<void> }) {
+  const [free, setFree] = useState(q.free);
+  const [paper, setPaper] = useState(q.paper ? String(q.paper) : "");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const dirty = free !== q.free || paper !== (q.paper ? String(q.paper) : "");
+  const save = async () => {
+    setBusy(true); setErr("");
+    try {
+      const res = await setQuestionMeta(q.id, free, paper ? Number(paper) : null);
+      await onChanged(res, `Publishing details saved for ${res.id}.`);
+    } catch (e) { setErr(friendlyError(e)); setBusy(false); }
+  };
+  const year = new Date().getFullYear();
+  return (
+    <div className="dcard panel">
+      <h3 className="panel-title">Publishing</h3>
+      <label className="pub-row"><input type="checkbox" checked={free} onChange={(e) => setFree(e.target.checked)} /> In the free set</label>
+      <label className="fld">
+        <span>Past paper</span>
+        <select value={paper} onChange={(e) => setPaper(e.target.value)}>
+          <option value="">Not from a past paper</option>
+          {Array.from({ length: 12 }, (_, i) => year - i).map((y) => <option key={y} value={y}>PMDC {y}</option>)}
+        </select>
+      </label>
+      {err && <p className="note-bad" role="alert">{err}</p>}
+      <div><button type="button" className="dpill dark small" disabled={busy || !dirty} onClick={save}>Save</button></div>
+    </div>
   );
 }
 
