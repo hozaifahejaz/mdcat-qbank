@@ -90,7 +90,7 @@ function Body({ data, coachHidden, onShowCoach }: { data: Data; coachHidden: boo
           <p className="muted">Exam expected {fullDay(site.examDate)}{data.streakDays > 0 && <> · {data.streakDays}-day practice streak</>}</p>
         </div>
         <div className="hello-ctas">
-          {coachHidden && <button type="button" className="dpill light small hide-m" onClick={onShowCoach}><Icon name="spark" size={16} />Study coach</button>}
+          {coachHidden && <button type="button" className="dpill light small hide-m coach-show" onClick={onShowCoach}><Icon name="spark" size={16} />Study coach</button>}
           <a className="dpill light small" href="/practice">Practise</a>
           <a className="dpill dark small" href="/mocks/new">Start a full mock</a>
         </div>

@@ -30,13 +30,14 @@ a { color: inherit; text-decoration: none; }
 .auth-top .end a { font-weight: 600; }
 .auth-top .end a:hover { color: var(--blue); }
 @media (max-width: 440px) { .auth-top .end .hint { display: none; } }
+@media (max-width: 380px) { .auth-top .end { gap: 10px; font-size: 0.875rem; white-space: nowrap; } }
 .auth-main { display: grid; grid-template-columns: minmax(0, 460px) minmax(0, 1fr); gap: 20px; align-items: stretch; padding-block: 12px 40px; }
 .auth-main.solo { grid-template-columns: minmax(0, 520px); justify-content: center; align-items: start; }
 @media (max-width: 900px) { .auth-main { grid-template-columns: minmax(0, 1fr); max-width: 520px; margin-inline: auto; } }
 .auth-foot { padding-block: 0 28px; font-size: 0.8125rem; color: var(--muted); text-align: center; }
 
 /* The form card */
-.auth-card { padding: 34px 32px; display: grid; gap: 20px; align-content: start; }
+.auth-card { padding: 34px 32px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; align-content: start; min-width: 0; }
 @media (max-width: 520px) { .auth-card { padding: 26px 20px; border-radius: 24px; } }
 .auth-card h1 { font-size: clamp(1.875rem, 1.5rem + 1.4vw, 2.375rem); }
 .auth-card .lede { color: var(--muted); margin-top: 8px; }
@@ -130,4 +131,5 @@ form.stack, .stack { display: grid; gap: 14px; }
 
 /* A sign-in method that isn't switched on yet */
 .pill.soon { opacity: .6; }
+.providers .pill { max-width: 100%; min-width: 0; }
 .soon-tag { font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; padding: 2px 7px; border-radius: 999px; background: var(--bg); color: var(--muted); margin-left: 8px; }

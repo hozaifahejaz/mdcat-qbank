@@ -374,28 +374,64 @@
   .dc-cols { height: 180px; gap: 5px; }
   .dc-col i { width: 72%; }
 
-  .m-coach { gap: 10px; }
-  .m-coach-h h2 { display: flex; align-items: center; gap: 8px; font-size: 1.0625rem; font-weight: 700; letter-spacing: -0.02em; margin: 0; }
-  .coach-dot { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; color: #ff5a1f; box-shadow: inset 0 0 0 1px var(--line); }
-  .coach-dot svg { fill: currentColor; }
-  .m-tips { list-style: none; margin: 0 -14px; padding: 0 14px 2px; display: flex; gap: 8px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; scroll-padding-inline: 14px; }
-  .m-tips li { flex: none; scroll-snap-align: start; }
-  .m-tips a { display: grid; gap: 10px; align-content: space-between; width: 148px; min-height: 92px; padding: 12px; border-radius: 16px; box-shadow: inset 0 0 0 1px var(--line); font-size: .875rem; font-weight: 600; line-height: 1.3; box-sizing: border-box; }
-  .m-tips a span { display: grid; }
-  .m-coach .goal { margin: 0; }
-
-  .m-list { list-style: none; margin: 0; padding: 0; display: grid; }
-  .m-list li + li { border-top: 1px solid var(--line); }
-  .m-list a { display: flex; align-items: center; gap: 12px; padding: 12px 0; min-height: 56px; }
-  .m-main { flex: 1; min-width: 0; display: grid; gap: 4px; }
-  .m-main b { font-size: .9375rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .m-main .muted { font-size: .75rem; }
-  .m-main .meter { height: 5px; }
-  .m-side { display: grid; justify-items: end; gap: 4px; flex: none; }
-  .m-side b { font-size: 1rem; font-variant-numeric: tabular-nums; }
-  .m-side b small { font-size: .75rem; color: var(--muted); }
-  .m-list .row-ic { width: 36px; height: 36px; border-radius: 11px; }
+  .m-coach .m-tips { margin-inline: -14px; padding-inline: 14px; scroll-padding-inline: 14px; }
 }
+/* The coach's "Up next" strip and the stacked lists. Phones always use them; tablets and narrow columns use them
+   too (see below), so they live outside the phone block. */
+.m-coach { gap: 10px; }
+.m-coach-h h2 { display: flex; align-items: center; gap: 8px; font-size: 1.0625rem; font-weight: 700; letter-spacing: -0.02em; margin: 0; }
+.coach-dot { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; color: #ff5a1f; box-shadow: inset 0 0 0 1px var(--line); }
+.coach-dot svg { fill: currentColor; }
+.m-tips { list-style: none; margin: 0; padding: 0 0 2px; display: flex; gap: 8px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
+.m-tips li { flex: none; scroll-snap-align: start; }
+.m-tips a { display: grid; gap: 10px; align-content: space-between; width: 148px; min-height: 92px; padding: 12px; border-radius: 16px; box-shadow: inset 0 0 0 1px var(--line); font-size: .875rem; font-weight: 600; line-height: 1.3; box-sizing: border-box; }
+.m-tips a span { display: grid; }
+.m-coach .goal { margin: 0; }
+
+.m-list { list-style: none; margin: 0; padding: 0; }
+.m-list li + li { border-top: 1px solid var(--line); }
+.m-list a { display: flex; align-items: center; gap: 12px; padding: 12px 0; min-height: 56px; }
+.m-main { flex: 1; min-width: 0; display: grid; gap: 4px; }
+.m-main b { font-size: .9375rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.m-main .muted { font-size: .75rem; }
+.m-main .meter { height: 5px; }
+.m-side { display: grid; justify-items: end; gap: 4px; flex: none; }
+.m-side b { font-size: 1rem; font-variant-numeric: tabular-nums; }
+.m-side b small { font-size: .75rem; color: var(--muted); }
+.m-list .row-ic { width: 36px; height: 36px; border-radius: 11px; }
+
+/* Tablets and small laptops (761-1240px): there is no room for the coach beside the dashboard, and stacked under
+   everything it was easy to miss. Show the same "Up next" strip near the top instead, as on phones. */
+@media (max-width: 1240px) {
+  .has-aside .coach, .coach-show { display: none !important; }
+  .m-coach.show-m { display: grid; }
+}
+@media (min-width: 761px) and (max-width: 1240px) {
+  .m-tips { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); overflow: visible; }
+  .m-tips a { width: auto; height: 100%; }
+}
+
+/* Subjects and recent tests: the table fits its column at every width, and turns into the stacked list when the
+   column itself is narrow (container query, so it works the same with or without the sidebar and coach). */
+.home { container: home / inline-size; }
+.home .dtable { min-width: 0; }
+.home .dtable thead th, .home .dtable td, .home .dtable tbody th { padding-inline: 10px; }
+.home .dtable .cover > div { min-width: 90px; }
+@container home (max-width: 900px) { .home .dtable .status-chip { display: none; } }
+@container home (max-width: 600px) {
+  .home .m-list.show-m { display: grid; }
+  .home .table-scroll.hide-m { display: none; }
+}
+
+/* Small phones (<=360px): the chart's two toggles share a row and the range picker gets its own. */
+@media (max-width: 360px) {
+  .barchart .panel-h { grid-template-columns: minmax(0, 1fr); }
+  .chart-ctl { grid-template-columns: 1fr 1fr; }
+  .chart-ctl .sel { grid-column: 1 / -1; display: grid; }
+  .chart-ctl .sel select { width: 100%; }
+  .kpi h2 { align-items: flex-start; line-height: 1.25; }
+}
+
 @keyframes rise { from { transform: translateY(100%); } }
 @keyframes fade { from { opacity: 0; } }
 .table-scroll { position: relative; }

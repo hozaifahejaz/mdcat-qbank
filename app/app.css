@@ -115,6 +115,14 @@
 .opts.compact .opt { padding: 8px 12px; font-size: .9375rem; cursor: default; }
 .opts.compact .letter { width: 28px; height: 28px; }
 .opts.compact .opt { grid-template-columns: 28px minmax(0, 1fr) auto; }
+/* Small phones: the "Your answer" / "Answer" tag goes under the option text, so the text keeps the full width. */
+@media (max-width: 480px) {
+  .opt { grid-template-columns: 32px minmax(0, 1fr); gap: 2px 12px; padding: 11px 12px; }
+  .opt .letter { width: 32px; height: 32px; }
+  .opt:has(.otag) .letter { grid-row: span 2; }
+  .opt .otag { grid-column: 2; }
+  .opts.compact .opt { grid-template-columns: 28px minmax(0, 1fr); }
+}
 
 .expl { display: grid; gap: 10px; padding: 18px; border-radius: var(--r-md); background: var(--bg); font-size: .9375rem; line-height: 1.6; }
 .expl-v { font-weight: 800; font-size: 1rem; }
