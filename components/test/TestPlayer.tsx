@@ -53,8 +53,9 @@ export default function TestPlayer({ user, attempt, note }: Props) {
     leaving.current = true;
     setBusy(true);
     try {
-      await finishTest(attempt.id);
-      window.location.href = `/review?id=${encodeURIComponent(attempt.id)}`;
+      const done = await finishTest(attempt.id);
+      // Nothing was checked, so there's no result to show.
+      window.location.href = done.empty ? "/practice" : `/review?id=${encodeURIComponent(attempt.id)}`;
     } catch (e) {
       leaving.current = false;
       setBusy(false);

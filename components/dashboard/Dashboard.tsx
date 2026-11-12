@@ -92,7 +92,8 @@ function Body({ data, coachHidden, onShowCoach }: { data: Data; coachHidden: boo
         <div className="hello-ctas">
           {coachHidden && <button type="button" className="dpill light small hide-m" onClick={onShowCoach}><Icon name="spark" size={16} />Study coach</button>}
           <a className="dpill light small" href="/practice">Practise</a>
-          <a className="dpill dark small" href="/mocks/new">Start a full mock</a>
+          {data.nextMock === "full" && <a className="dpill dark small" href="/mocks/new">Start a full mock</a>}
+          {data.nextMock === "mini" && <a className="dpill dark small" href="/mocks/new?mini=1">Take the mini mock</a>}
         </div>
       </section>
 
@@ -254,7 +255,8 @@ function coachTips(data: Data) {
     ...weakest.map((w) => ({ href: `/practice?${new URLSearchParams({ subject: w.subject, chapter: w.chapter, topic: w.topic })}`, icon: "target", tone: "var(--bad)", label: `${w.topic} · ${pct(w.correct, w.answered)}%` })),
     ...(data.resume ? [{ href: data.resume.href, icon: "play", tone: "var(--blue)", label: `Finish ${data.resume.title.split(" · ").at(-1)}` }] : []),
     ...(data.mistakesToRetry ? [{ href: "/mistakes", icon: "retry", tone: "var(--warn)", label: `Retry ${data.mistakesToRetry} mistakes` }] : []),
-    { href: "/mocks/new", icon: "mock", tone: "var(--good)", label: `Sit full mock ${nextMock}` },
+    ...(data.nextMock === "full" ? [{ href: "/mocks/new", icon: "mock", tone: "var(--good)", label: `Sit full mock ${nextMock}` }] : []),
+    ...(data.nextMock === "mini" ? [{ href: "/mocks/new?mini=1", icon: "mock", tone: "var(--good)", label: "Take the mini mock" }] : []),
     { href: "/practice?mode=timed", icon: "bolt", tone: "#8a63ff", label: "Timed test, 25 questions" },
   ];
 }

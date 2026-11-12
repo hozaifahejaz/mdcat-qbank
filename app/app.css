@@ -509,3 +509,9 @@ fieldset.plain { border: 0; margin: 0; padding: 0; min-width: 0; display: grid; 
 .lost h1 { font-size: clamp(2.25rem, 1.5rem + 3vw, 3.5rem); font-weight: 800; letter-spacing: -0.05em; margin-top: 18px; }
 .lost p { max-width: 34ch; }
 .lost .hello-ctas { justify-content: center; }
+
+/* Wide things (the users table, the QC stepper) scroll inside their card instead of stretching it past a phone's screen. */
+.editor { grid-template-columns: minmax(0, 1fr); }
+.users-list .table-scroll { margin-inline: 0; }
+.link-row span { overflow-wrap: anywhere; }
+@media (max-width: 480px) { .action-bar { flex-wrap: wrap; border-radius: 24px; } .action-bar .dpill { white-space: nowrap; } }

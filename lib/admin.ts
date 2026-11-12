@@ -99,7 +99,7 @@ export const resolveReports = (questionId: string, status: "fixed" | "dismissed"
 export type WaitlistEntry = { contact: string; kind: "email" | "phone"; created_at: number };
 export const getWaitlist = () => api<{ waitlist: WaitlistEntry[] }>("/api/admin/waitlist").then((r) => r.waitlist);
 
-export const listUsers = (q: string, filter: string) => api<{ users: AdminUser[] }>(`/api/admin/users?q=${encodeURIComponent(q)}&filter=${filter}`).then((r) => r.users);
+export const listUsers = (q: string, filter: string, offset = 0) => api<{ users: AdminUser[]; hasMore: boolean }>(`/api/admin/users?q=${encodeURIComponent(q)}&filter=${filter}&offset=${offset}`);
 export const getUser = (id: string) => api<UserDetail>(`/api/admin/users/one?id=${encodeURIComponent(id)}`);
 export const setRole = (id: string, role: Role) => api<{ user: AdminUser }>("/api/admin/users/role", { body: { id, role } });
 export const setPlan = (id: string, plan: AdminUser["plan"], expiresAt: string | null) => api<{ user: AdminUser }>("/api/admin/users/plan", { body: { id, plan, expiresAt } });
