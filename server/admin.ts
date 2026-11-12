@@ -335,9 +335,14 @@ const questionRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
     return json({ question: present(await getQuestion(c.db, r.id), me) });
   },
 
+  /* A question's history. Writers see it for their own questions only. While a question waits for its blind solve,
+     nobody but its writer sees the history: earlier lines can name the key ("Picked A, key C"). */
   "GET /api/admin/questions/log": async (c) => {
-    await staff(c);
+    const me = await staff(c);
     const id = str(new URL(c.request.url).searchParams.get("id"), 20);
+    const q = await c.db.prepare("SELECT writer_id, stage, blind_answer FROM questions WHERE id = ?").bind(id).first<{ writer_id: string; stage: StageId; blind_answer: number | null }>();
+    if (!q && me.role !== "admin") return json({ log: [] });
+    if (q && q.writer_id !== me.id && (me.role === "writer" || (q.stage === "blind" && q.blind_answer === null))) return json({ log: [] });
     const { results } = await c.db
       .prepare("SELECT l.action, l.detail, l.created_at, u.name AS actor FROM admin_log l LEFT JOIN users u ON u.id = l.actor_id WHERE l.target = ? ORDER BY l.id DESC LIMIT 50")
       .bind(id)
@@ -411,6 +416,8 @@ async function targetUser(db: D1Database, id: string): Promise<UserListRow> {
   return u;
 }
 
+const USER_PAGE = 100;
+
 const userRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
   "GET /api/admin/users": async (c) => {
     await admin(c);
@@ -425,10 +432,12 @@ const userRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
     }
     if (filter === "paid") where.push(`u.plan != 'free' AND (u.plan_expires_at IS NULL OR u.plan_expires_at > ${Date.now()})`);
     else if (filter === "staff") where.push("u.role != 'student'");
-    else if (filter === "free") where.push("u.plan = 'free'");
-    const sql = `${USER_SELECT}${where.length ? ` WHERE ${where.join(" AND ")}` : ""} ORDER BY u.created_at DESC LIMIT 200`;
+    // Free means no pass in force, so an expired pass counts as free.
+    else if (filter === "free") where.push(`(u.plan = 'free' OR (u.plan_expires_at IS NOT NULL AND u.plan_expires_at <= ${Date.now()}))`);
+    const offset = Math.max(0, Math.floor(Number(p.get("offset")) || 0));
+    const sql = `${USER_SELECT}${where.length ? ` WHERE ${where.join(" AND ")}` : ""} ORDER BY u.created_at DESC, u.id LIMIT ${USER_PAGE + 1} OFFSET ${offset}`;
     const { results } = await c.db.prepare(sql).bind(...args).all<UserListRow>();
-    return json({ users: results.map(presentUser) });
+    return json({ users: results.slice(0, USER_PAGE).map(presentUser), hasMore: results.length > USER_PAGE });
   },
 
   "GET /api/admin/users/one": async (c) => {
@@ -473,7 +482,9 @@ const userRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
     if (!plan) throw fail(400, "bad_plan", "Pick a plan.");
     let expires: number | null = null;
     if (plan !== "free") {
-      expires = Date.parse(str(b.expiresAt, 40));
+      // A bare date means the end of that day in Pakistan, not 5 am.
+      const raw = str(b.expiresAt, 40);
+      expires = Date.parse(/^\d{4}-\d{2}-\d{2}$/.test(raw) ? `${raw}T23:59:59+05:00` : raw);
       if (!Number.isFinite(expires)) throw fail(400, "bad_date", "Pick an end date for the plan.");
       if (expires < Date.now()) throw fail(400, "bad_date", "The end date has to be in the future.");
     }
