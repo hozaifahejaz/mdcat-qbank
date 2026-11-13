@@ -1,4 +1,5 @@
 import { normalisePhone } from "../lib/phone";
+import { bankById } from "../lib/banks";
 import { paper } from "../lib/site";
 import { uuid } from "./crypto";
 import { requireActiveSession } from "./devices";
@@ -144,17 +145,32 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
   /* How many questions each chapter has for this student, which tests are open to them, and their past papers. */
   "GET /api/study/catalog": async (c) => {
     const me = await student(c, false);
-    const [chapters, papers, mini] = await c.db.batch([
-      c.db.prepare(`SELECT subject, chapter, count(*) AS total, sum(free) AS free FROM served WHERE open_reports < ${REPORT_HIDE} GROUP BY subject, chapter`),
+    // ?bank= picks whose chapters to count (lib/banks.ts); mocks and past papers are always MDCAT.
+    const bank = bankById(new URL(c.request.url).searchParams.get("bank"))?.id ?? "mdcat";
+    const [chapters, papers, mini, mdcat, mine] = await c.db.batch([
+      c.db.prepare(`SELECT subject, chapter, count(*) AS total, sum(free) AS free FROM bank_served WHERE bank = ? AND open_reports < ${REPORT_HIDE} GROUP BY subject, chapter`).bind(bank),
       c.db.prepare(`SELECT paper AS year, count(*) AS n FROM served WHERE paper IS NOT NULL AND open_reports < ${REPORT_HIDE} GROUP BY paper ORDER BY paper DESC`),
       c.db.prepare("SELECT id, finished_at FROM attempts WHERE user_id = ? AND kind = 'mini-mock' ORDER BY started_at DESC LIMIT 1").bind(me.id),
+      c.db.prepare(`SELECT subject, count(*) AS total, sum(free) AS free FROM served WHERE open_reports < ${REPORT_HIDE} GROUP BY subject`),
+      // This student's latest answer to each question in the bank, by the bank's subject and chapter.
+      c.db.prepare(`SELECT b.subject, b.chapter, count(*) AS answered, sum(CASE WHEN l.answer = l.key THEN 1 ELSE 0 END) AS correct
+        FROM (${LATEST}) l JOIN bank_served b ON b.id = l.question_id AND b.bank = ?2 GROUP BY b.subject, b.chapter`).bind(me.id, bank),
     ]);
     const lastMini = mini!.results[0] as { id: string; finished_at: number | null } | undefined;
+    const done = mine!.results as { subject: string; chapter: string; answered: number; correct: number }[];
     const rows = (chapters!.results as { subject: string; chapter: string; total: number; free: number }[])
-      .map((r) => ({ subject: r.subject, chapter: r.chapter, total: r.total, open: me.paid ? r.total : r.free ?? 0 }));
-    const bySubject = (s: string, k: "total" | "open") => rows.filter((r) => r.subject === s).reduce((n, r) => n + r[k], 0);
+      .map((r) => {
+        const d = done.find((x) => x.subject === r.subject && x.chapter === r.chapter);
+        return { subject: r.subject, chapter: r.chapter, total: r.total, open: me.paid ? r.total : r.free ?? 0, answered: d?.answered ?? 0, correct: d?.correct ?? 0 };
+      });
+    const totals = mdcat!.results as { subject: string; total: number; free: number }[];
+    const bySubject = (s: string, k: "total" | "open") => {
+      const t = totals.find((x) => x.subject === s);
+      return !t ? 0 : k === "total" || me.paid ? t.total : t.free ?? 0;
+    };
     return json({
       paid: me.paid,
+      bank,
       chapters: rows,
       papers: (papers!.results as { year: number; n: number }[]).map((p) => ({ year: p.year, count: p.n })),
       mocks: MOCKS,
@@ -205,15 +221,19 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
     } else {
       const count = Math.min(100, Math.max(1, Number(b.count) || 25));
       const asked = Array.isArray(b.ids) ? b.ids.filter((x): x is string => typeof x === "string").slice(0, 200) : [];
-      const where: string[] = [`open_reports < ${REPORT_HIDE}${me.pool}`];
-      const args: unknown[] = [];
+      const bank = bankById(str(b.bank, 10)) ?? bankById("mdcat")!;
+      const where: string[] = ["bank = ?", `open_reports < ${REPORT_HIDE}${me.pool}`];
+      const args: unknown[] = [bank.id];
       if (asked.length) {
         where.push("id IN (SELECT value FROM json_each(?))");
         args.push(JSON.stringify(asked));
       } else {
         const subject = str(b.subject, 40);
+        // Several whole subjects (books) at once, or one subject and some of its chapters.
+        const several = Array.isArray(b.subjects) ? b.subjects.filter((x): x is string => typeof x === "string").slice(0, 10) : [];
         const chapters = Array.isArray(b.chapters) ? b.chapters.filter((x): x is string => typeof x === "string").slice(0, 40) : [];
         if (subject) { where.push("subject = ?"); args.push(subject); }
+        else if (several.length) { where.push("subject IN (SELECT value FROM json_each(?))"); args.push(JSON.stringify(several)); }
         if (chapters.length) { where.push("chapter IN (SELECT value FROM json_each(?))"); args.push(JSON.stringify(chapters)); }
         const topic = str(b.topic, 120);
         if (topic) { where.push("topic = ?"); args.push(topic); }
@@ -224,9 +244,11 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
           where.push(`id IN (SELECT question_id FROM (${LATEST.replaceAll("?1", "?")}) WHERE answer != key)`);
           args.push(me.id);
         }
-        title ||= subject ? `${subject}${topic ? ` · ${topic}` : chapters.length === 1 ? ` · ${chapters[0]}` : ""}` : "Mixed practice";
+        title ||= subject ? `${subject}${topic ? ` · ${topic}` : chapters.length === 1 ? ` · ${chapters[0]}` : ""}`
+          : several.length ? several.join(" + ") : "Mixed practice";
+        if (bank.id !== "mdcat") title = `${bank.name} · ${title}`.slice(0, 120);
       }
-      const { results } = await c.db.prepare(`SELECT id, subject FROM served WHERE ${where.join(" AND ")} ORDER BY random() LIMIT ${asked.length ? 200 : count}`).bind(...args).all<{ id: string; subject: string }>();
+      const { results } = await c.db.prepare(`SELECT DISTINCT id, subject FROM bank_served WHERE ${where.join(" AND ")} ORDER BY random() LIMIT ${asked.length ? 200 : count}`).bind(...args).all<{ id: string; subject: string }>();
       ids = asked.length ? asked.filter((id) => results.some((r) => r.id === id)) : results.map((r) => r.id);
       title ||= "Practice";
     }

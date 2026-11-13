@@ -2,6 +2,7 @@
    API a test at a time (server/study.ts, lib/study.ts), and staff from the admin API. Every question follows the
    writing template in docs/plan.md (stem, four options, key, syllabus tag, difficulty, source chapter, and an
    explanation saying why the key is right and why each other option is wrong). */
+import { mdcatSyllabus } from "@/lib/banks";
 import type { Subject } from "@/lib/dashboard-data";
 
 export type Difficulty = "easy" | "moderate" | "hard";
@@ -20,51 +21,8 @@ export type Question = {
   wrong: Record<number, string>;
 };
 
-/* Chapters per subject, in syllabus order. */
-export const syllabus: Record<Subject, string[]> = {
-  Biology: [
-    "Cell structure and function",
-    "Biological molecules",
-    "Enzymes",
-    "Bioenergetics",
-    "Acellular life",
-    "Human physiology",
-    "Inheritance",
-    "Biotechnology",
-    "Evolution",
-  ],
-  Chemistry: [
-    "Fundamental concepts",
-    "Atomic structure",
-    "States of matter",
-    "Chemical equilibrium",
-    "Reaction kinetics",
-    "Thermochemistry",
-    "Electrochemistry",
-    "Chemical bonding",
-    "Organic chemistry",
-  ],
-  Physics: [
-    "Vectors and equilibrium",
-    "Force and motion",
-    "Work and energy",
-    "Circular motion",
-    "Waves",
-    "Thermodynamics",
-    "Electrostatics",
-    "Current electricity",
-    "Modern and nuclear physics",
-  ],
-  English: [
-    "Grammar and sentence correction",
-    "Vocabulary in context",
-  ],
-  "Logical Reasoning": [
-    "Critical thinking",
-    "Patterns and sequences",
-    "Cause and effect",
-  ],
-};
+/* Chapters per MDCAT subject, in syllabus order. Every bank's chapters are in lib/banks.ts. */
+export const syllabus: Record<Subject, string[]> = mdcatSyllabus;
 
 export const subjects = Object.keys(syllabus) as Subject[];
 

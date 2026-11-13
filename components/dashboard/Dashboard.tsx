@@ -5,9 +5,11 @@ import { AppFrame } from "@/components/app/AppShell";
 import Empty from "@/components/app/Empty";
 import Icon from "@/components/app/Icon";
 import BarChart from "@/components/dashboard/BarChart";
+import MobileHome from "@/components/dashboard/MobileHome";
 import { getDashboard, type Dashboard as Data, type SubjectStat } from "@/lib/dashboard-data";
 import { band, day, fullDay, kindNames, pct, tz } from "@/lib/format";
 import { paper, site } from "@/lib/site";
+import { useNarrow } from "@/lib/narrow";
 import { type AccountUser, getCurrentUser } from "@/lib/user";
 
 function greeting() {
@@ -26,12 +28,14 @@ function sumChapters(s: SubjectStat) {
 const COACH_KEY = "dash-coach-hidden";
 
 /* Any questions open to this student yet? Before launch every screen says they're coming. */
-const hasQuestions = (d: Data) => d.subjects.some((s) => s.chapters.some((c) => c.available > 0));
+export const hasQuestions = (d: Data) => d.subjects.some((s) => s.chapters.some((c) => c.available > 0));
 
 export default function Dashboard() {
   const [user, setUser] = useState<AccountUser | null>(null);
   const [data, setData] = useState<Data | null>(null);
   const [coach, setCoach] = useState(true);
+  // Phones get their own home: the bank buttons and one progress card (MobileHome). Laptops get the full dashboard.
+  const narrow = useNarrow();
 
   useEffect(() => {
     try { setCoach(localStorage.getItem(COACH_KEY) !== "1"); } catch {}
@@ -53,15 +57,15 @@ export default function Dashboard() {
     try { localStorage.setItem(COACH_KEY, show ? "0" : "1"); } catch {}
   }
 
-  const aside = user && data && coach ? <Coach user={user} data={data} onHide={() => toggleCoach(false)} /> : null;
+  const aside = narrow === false && user && data && coach ? <Coach user={user} data={data} onHide={() => toggleCoach(false)} /> : null;
   return (
     <AppFrame active="/dashboard" user={user} aside={aside}>
-      {user && data ? <Body data={data} coachHidden={!coach} onShowCoach={() => toggleCoach(true)} /> : <Skeleton />}
+      {user && data && narrow !== null ? narrow ? <MobileHome data={data} /> : <Body data={data} coachHidden={!coach} onShowCoach={() => toggleCoach(true)} /> : <Skeleton />}
     </AppFrame>
   );
 }
 
-function Skeleton() {
+export function Skeleton() {
   return (
     <div className="dgrid" aria-busy="true" aria-label="Loading your dashboard">
       <div className="sk" style={{ height: 80 }} />
@@ -71,7 +75,9 @@ function Skeleton() {
   );
 }
 
-function Body({ data, coachHidden, onShowCoach }: { data: Data; coachHidden: boolean; onShowCoach: () => void }) {
+/* The full dashboard on laptops. progress: the phone's Progress tab, which shows the same numbers under its own
+   heading, without the exam header and the Up next strip. */
+export function Body({ data, coachHidden, onShowCoach, progress }: { data: Data; coachHidden?: boolean; onShowCoach?: () => void; progress?: boolean }) {
   const totals = data.subjects.map(sumChapters).reduce((t, s) => ({ answered: t.answered + s.answered, available: t.available + s.available, correct: t.correct + s.correct }), { answered: 0, available: 0, correct: 0 });
   const month = data.daily.slice(-30).reduce((t, d) => ({ answered: t.answered + d.answered, correct: t.correct + d.correct }), { answered: 0, correct: 0 });
   const mocks = data.recent.filter((t) => t.kind === "mock").sort((a, b) => a.date.localeCompare(b.date));
@@ -81,6 +87,7 @@ function Body({ data, coachHidden, onShowCoach }: { data: Data; coachHidden: boo
 
   return (
     <div className="dgrid home">
+      {progress ? <section className="hello page-head"><div><h1>Progress</h1><p className="muted">How your practice is going.</p></div></section> : (
       <section className="home-head" aria-labelledby="home-h">
         <div>
           <div className="title-row">
@@ -95,6 +102,7 @@ function Body({ data, coachHidden, onShowCoach }: { data: Data; coachHidden: boo
           <a className="dpill dark small" href="/mocks/new">Start a full mock</a>
         </div>
       </section>
+      )}
 
       {!hasQuestions(data) && <p className="demo"><i />Questions coming soon. Your stats fill in as you practise.</p>}
 
@@ -118,7 +126,7 @@ function Body({ data, coachHidden, onShowCoach }: { data: Data; coachHidden: boo
         </div>
       </section>
 
-      <CoachStrip data={data} />
+      {!progress && <CoachStrip data={data} />}
 
       <section className="box" aria-labelledby="prog-h">
         <BarChart daily={data.daily} />
