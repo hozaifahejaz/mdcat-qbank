@@ -13,7 +13,8 @@ import { type AccountUser, getCurrentUser } from "@/lib/user";
 
 /* The sidebar, grouped like the study loop: practise, then review what went wrong. */
 /* short is the label under a phone tab, when the full one is too long. */
-export type NavLink = { href: string; label: string; icon: string; short?: string };
+/* phoneOnly links show in the phone tab bar but not in the sidebar, where the dashboard already covers them. */
+export type NavLink = { href: string; label: string; icon: string; short?: string; phoneOnly?: boolean };
 export type NavGroup = { label?: string; links: NavLink[] };
 
 const groups: NavGroup[] = [
@@ -29,6 +30,7 @@ const groups: NavGroup[] = [
   {
     label: "Review",
     links: [
+      { href: "/progress", label: "Progress", icon: "trend", phoneOnly: true },
       { href: "/mistakes", label: "My mistakes", icon: "mistakes", short: "Mistakes" },
       { href: "/history", label: "Results", icon: "results" },
     ],
@@ -47,7 +49,7 @@ export const links = groups.flatMap((g) => g.links);
 /* Which links the frame shows. Phones get a bottom tab bar instead of the sidebar: the places people go most,
    and More for the rest. The admin panel passes its own (components/admin/AdminFrame.tsx). */
 export type Nav = { kind: "student" | "admin"; home: string; groups: NavGroup[]; tabs: string[] };
-const studentNav: Nav = { kind: "student", home: "/dashboard", groups, tabs: ["/dashboard", "/practice", "/mocks", "/mistakes"] };
+const studentNav: Nav = { kind: "student", home: "/dashboard", groups, tabs: ["/dashboard", "/practice", "/mocks", "/progress"] };
 
 export function initials(name: string) {
   return (name || "?").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]!.toUpperCase()).join("");
@@ -61,7 +63,7 @@ export function AppFrame({ active, title, user, aside, nav = studentNav, childre
   const navLinks = nav.groups.flatMap((g) => g.links);
   const here = navLinks.find((l) => l.href === active);
   const tabs = nav.tabs;
-  const moreLinks = navLinks.filter((l) => !tabs.includes(l.href));
+  const moreLinks = navLinks.filter((l) => !tabs.includes(l.href) && !l.phoneOnly);
   const admin = nav.kind === "admin";
   /* The chip by the name: plan for students, role in the admin panel. */
   const chip = !user ? null
@@ -90,7 +92,7 @@ export function AppFrame({ active, title, user, aside, nav = studentNav, childre
             <div key={i} className="side-group">
               {g.label && <span className="side-label">{g.label}</span>}
               <ul>
-                {g.links.map((l) => (
+                {g.links.filter((l) => !l.phoneOnly || l.href === active).map((l) => (
                   <li key={l.href}>
                     <a href={l.href} aria-current={l.href === active ? "page" : undefined}><Icon name={l.icon} />{l.label}</a>
                   </li>

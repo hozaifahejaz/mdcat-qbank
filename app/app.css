@@ -52,7 +52,7 @@
 .ptabs { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 2px; }
 .tab { font: inherit; font-weight: 600; font-size: .9375rem; display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 999px; border: 0; background: var(--card); box-shadow: var(--shadow); cursor: pointer; white-space: nowrap; }
 .tab i { width: 9px; height: 9px; border-radius: 3px; background: var(--c); }
-.tab[aria-selected="true"] { background: var(--pill); color: var(--on-pill); }
+.tab[aria-selected="true"], .tab[aria-current="page"] { background: var(--pill); color: var(--on-pill); }
 .tab[aria-selected="true"] .muted { color: inherit; opacity: .7; }
 
 /* Segmented choice (mode, plan) */
@@ -68,6 +68,23 @@
 .picklist li:first-child label { border-top: 0; }
 .picklist label:hover { background: var(--bg); }
 .pk-n { font-size: .8125rem; font-variant-numeric: tabular-nums; }
+
+/* Practice: books or subjects of a bank, each opening to its chapters */
+.booklist { list-style: none; margin: 0; padding: 0; display: grid; }
+.booklist > li { border-top: 1px solid var(--line); }
+.booklist > li:first-child { border-top: 0; }
+.book-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; }
+.book-row label { display: grid; grid-template-columns: 18px auto minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 12px 6px; cursor: pointer; border-radius: 10px; }
+.book-row label:hover { background: var(--bg); }
+.book-name { display: grid; gap: 1px; min-width: 0; }
+.book-name b { font-size: .9688rem; }
+.book-name .muted { font-size: .8125rem; }
+.book-open svg { transform: rotate(90deg); transition: transform .2s; }
+.book-open[aria-expanded="true"] svg { transform: rotate(-90deg); }
+.chapter-list { margin: 0 0 10px 30px; }
+.chapter-list label { grid-template-columns: 18px minmax(0, 1fr) auto; padding: 9px 6px; font-size: .9063rem; }
+.pk-no { margin-right: 6px; font-variant-numeric: tabular-nums; }
+@media (max-width: 480px) { .chapter-list { margin-left: 8px; } .book-row label { gap: 10px; } }
 @media (max-width: 480px) { .picklist label { grid-template-columns: 18px minmax(0, 1fr) auto; } .pk-n { display: none; } }
 .setup { position: sticky; top: 96px; }
 .setup-sum { display: grid; gap: 10px; padding-top: 4px; }
