@@ -3,7 +3,7 @@
 
    A question can sit in more than one bank. Its own subject and chapter (questions table) place it in the MDCAT bank;
    every other bank lists its questions in the bank_questions table with that bank's subject and chapter
-   (migrations/0007_banks.sql). So a Biology question can be "Enzymes" in MDCAT and "Chapter 3: Enzymes" in FSc
+   (migrations/0008_banks.sql). So a Biology question can be "Enzymes" in MDCAT and "Chapter 3: Enzymes" in FSc
    Part 1 at the same time. Which questions go in which bank gets filled in as questions are added. */
 export type BankId = "fsc1" | "fsc2" | "mdcat" | "nums" | "aku";
 
