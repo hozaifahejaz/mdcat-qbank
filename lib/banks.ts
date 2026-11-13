@@ -33,7 +33,10 @@ export const mdcatSyllabus = {
     "Thermochemistry",
     "Electrochemistry",
     "Chemical bonding",
+    "p-block elements",
     "Organic chemistry",
+    "Environmental chemistry",
+    "Experimental techniques and lab safety",
   ],
   Physics: [
     "Vectors and equilibrium",
