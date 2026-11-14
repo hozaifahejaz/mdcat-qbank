@@ -19,7 +19,12 @@ export const mdcatSyllabus = {
     "Bioenergetics",
     "Acellular life",
     "Human physiology",
+    "Homeostasis",
+    "Coordination and control",
+    "Reproduction",
+    "Immunity",
     "Inheritance",
+    "Chromosomes and DNA",
     "Biotechnology",
     "Evolution",
   ],
@@ -104,10 +109,11 @@ const fsc1: BankSubject[] = [
 const fsc2: BankSubject[] = [
   {
     name: "Biology",
+    // The PECTAA Biology 12 textbook (National Curriculum 2023), chapters 13 to 25 in book order.
     chapters: [
-      "Homeostasis", "Support and movement", "Coordination and control", "Reproduction", "Growth and development",
-      "Chromosomes and DNA", "Cell cycle", "Variation and genetics", "Biotechnology", "Evolution", "Ecosystem",
-      "Some major ecosystems", "Man and his environment",
+      "Homeostasis", "Human urinary system", "Human nervous system", "Human endocrine system",
+      "Human reproductive systems", "Inheritance", "Chromosome and DNA", "Biotechnology", "Immunity", "Biostatistics",
+      "Pharmacology", "Evolution", "Ecology",
     ],
   },
   {
@@ -144,7 +150,9 @@ export const banks: Bank[] = [
   {
     id: "aku", name: "AKU Admission Test", short: "AKU", blurb: "Aga Khan University",
     subjects: [
-      ...(["Biology", "Chemistry", "Physics", "English"] as const).map(mdcatSubject),
+      // AKU tests the HSSC curriculum, which also has ecosystems (not on the PMDC MDCAT syllabus).
+      { name: "Biology", chapters: [...mdcatSyllabus.Biology, "Ecology"] },
+      ...(["Chemistry", "Physics", "English"] as const).map(mdcatSubject),
       { name: "Mathematics", chapters: ["Algebra", "Functions and graphs", "Trigonometry", "Statistics"] },
     ],
   },
