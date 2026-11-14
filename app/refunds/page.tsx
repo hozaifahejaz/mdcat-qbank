@@ -14,14 +14,14 @@ export default function Page() {
 
       <h2>When you can get a refund</h2>
       <ul>
-        <li><b>Within 7 days:</b> a full refund if you ask within 7 days of paying and have answered fewer than 100 questions on the pass.</li>
+        <li><b>Within 7 days:</b> a full refund if you ask within 7 days of paying and have opened fewer than 100 questions on the pass.</li>
         <li><b>Paid twice:</b> if you were charged twice for the same pass, we refund the extra payment in full.</li>
         <li><b>Paid but no access:</b> if your payment went through but your pass didn&apos;t unlock and we can&apos;t fix it, we refund you in full.</li>
       </ul>
 
       <h2>When we can&apos;t refund</h2>
       <ul>
-        <li>After 7 days, or once you&apos;ve answered 100 or more questions on the pass.</li>
+        <li>After 7 days, or once you&apos;ve opened 100 or more questions on the pass.</li>
         <li>If the account was closed for breaking our <a href="/terms">Terms</a>, such as sharing content or the account.</li>
       </ul>
 

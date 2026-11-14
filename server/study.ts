@@ -4,8 +4,8 @@ import { paper } from "../lib/site";
 import { uuid } from "./crypto";
 import { requireActiveSession } from "./devices";
 import { body, fail, json, str } from "./http";
-import { rateLimit } from "./ratelimit";
-import { requireSession } from "./session";
+import { rateLimit, spend, used } from "./ratelimit";
+import { note, requireSession } from "./session";
 import { effectivePlan, userById } from "./users";
 
 /* The student side of the bank (/api/study/*): which questions a student can practise, their tests, answers,
@@ -23,6 +23,9 @@ const GRACE = 30 * 1000;
 /* Open reports that hide a question from new tests until a reviewer looks. */
 const REPORT_HIDE = 3;
 export const MOCKS = 12;
+/* New questions an account can be given in 24 hours: a full mock and a long day's practice, with room to spare. */
+const DAILY_QUESTIONS = 500;
+const STARTS_PER_HOUR = 15;
 const MINI_SPLIT = [13, 8, 6, 2, 1]; // 30 questions in the paper's proportions
 const subjects = paper.map((p) => p.subject);
 
@@ -53,7 +56,7 @@ async function student(c: Ctx, active: boolean) {
   const u = await userById(c.db, s.user_id);
   if (!u) throw fail(401, "signed_out", "Please sign in.");
   const paid = effectivePlan(u) !== "free";
-  return { id: u.id, paid, pool: paid ? "" : " AND free = 1" };
+  return { id: u.id, paid, staff: u.role !== "student", pool: paid ? "" : " AND free = 1" };
 }
 
 async function servedByIds(db: D1Database, ids: string[]): Promise<Map<string, Served>> {
@@ -279,7 +282,7 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
   /* Start a test. The server picks the questions, so the browser never holds more than the test it's sitting. */
   "POST /api/study/start": async (c) => {
     const me = await student(c, true);
-    await rateLimit(c.db, `start:${me.id}`, 60, HOUR);
+    if (!me.staff) await rateLimit(c.db, `start:${me.id}`, STARTS_PER_HOUR, HOUR);
     await finishExpired(c.db, me.id);
     const b = await body(c.request);
     let kind: Kind = (["practice", "timed", "mock", "mini-mock", "past-paper"] as const).find((k) => k === b.kind) ?? "practice";
@@ -364,6 +367,16 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
 
     const id = uuid();
     const now = Date.now();
+    if (!me.staff) {
+      // Counted when the questions are handed out, so a set that is opened and thrown away still counts.
+      const left = DAILY_QUESTIONS - (await used(c.db, `given:${me.id}`, DAY));
+      if (ids.length > left) {
+        const noted = await c.db.prepare("SELECT 1 FROM security_events WHERE user_id = ? AND kind = 'daily_limit' AND created_at > ?").bind(me.id, now - DAY).first();
+        if (!noted) await note(c.db, me.id, "daily_limit", `Reached ${DAILY_QUESTIONS} new questions in a day`).run();
+        throw fail(429, "daily_limit", left > 0 ? `You can start ${left} more question${left === 1 ? "" : "s"} today. Pick a shorter set, or carry on with a test you already have open.` : "That's the most new questions for one day. Review what you've done today, and start new sets tomorrow.");
+      }
+      await spend(c.db, `given:${me.id}`, ids.length, DAY);
+    }
     // Timed tests get a minute a question; the mock is the real paper's 3 hours for 180.
     const deadline = clock ? now + ids.length * 60 * 1000 : null;
     await c.db.batch([
@@ -567,7 +580,8 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
     const b = await body(c.request);
     const id = str(b.questionId, 20);
     if (b.on) {
-      const q = await c.db.prepare("SELECT id FROM served WHERE id = ?").bind(id).first();
+      // Only a question this student was given, so bookmarking can't be used to probe the bank.
+      const q = await c.db.prepare("SELECT s.id FROM served s WHERE s.id = ?1 AND EXISTS (SELECT 1 FROM answers a WHERE a.user_id = ?2 AND a.question_id = ?1)").bind(id, me.id).first();
       if (!q) throw fail(404, "not_found", "That question isn't available.");
       await c.db.prepare("INSERT OR IGNORE INTO bookmarks (user_id, question_id, created_at) VALUES (?, ?, ?)").bind(me.id, id, Date.now()).run();
     } else {

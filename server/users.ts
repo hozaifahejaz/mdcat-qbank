@@ -35,6 +35,13 @@ export async function userForOAuth(db: D1Database, provider: Provider, p: OAuthP
     const existing = await userByEmail(db, p.email);
     if (existing) {
       userId = existing.id;
+      // An account nobody confirmed may have been made by someone else: end whatever sessions it has.
+      if (!existing.email_verified_at) {
+        await db.batch([
+          db.prepare("DELETE FROM sessions WHERE user_id = ?").bind(userId),
+          db.prepare("UPDATE users SET active_session_id = NULL, active_device_id = NULL WHERE id = ?").bind(userId),
+        ]);
+      }
       await db
         .prepare(
           `UPDATE users SET

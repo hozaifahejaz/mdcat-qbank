@@ -38,6 +38,15 @@ export type Overview = {
   users: { total: number; newThisWeek: number; staff: number; paid: Record<string, number> } | null;
   visits: { today: number; week: number; now: number } | null;
   activity: LogEntry[];
+  watch: { id: string; name: string; email: string | null; phone: string | null; kind: string; detail: string; at: number }[];
+};
+
+/* Notes the site makes on an account by itself (server/session.ts, devices.ts, study.ts). */
+export const noteNames: Record<string, string> = {
+  session_moved: "Sign-in used from a different browser",
+  many_places: "Used from many places at once",
+  takeover_limit: "Too many device switches",
+  daily_limit: "Daily question limit reached",
 };
 
 export type AdminUser = {
@@ -50,6 +59,8 @@ export type UserDetail = {
   devices: { id: string; label: string; created_at: number; last_seen_at: number; active: boolean }[];
   methods: string[];
   takeoversToday: number;
+  questionsToday: number;
+  notes: { kind: string; detail: string; created_at: number }[];
   log: LogEntry[];
 };
 

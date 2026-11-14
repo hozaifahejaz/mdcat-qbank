@@ -6,7 +6,8 @@ export type Device = { id: string; label: string; created_at: number; last_seen_
 
 export type ClaimResult =
   | { status: "active"; takeovers_today: number }
-  | { status: "device_limit"; devices: Device[] };
+  | { status: "device_limit"; devices: Device[] }
+  | { status: "takeover_limit"; next_allowed_at: string };
 
 export type CheckResult =
   | { status: "active" }
@@ -22,7 +23,7 @@ export type RemoveResult =
 export const HOME_AFTER_SIGN_IN = "/dashboard";
 
 export function safeNext(raw: string | null | undefined): string {
-  if (!raw || !raw.startsWith("/") || raw.startsWith("//") || raw.startsWith("/\\")) return HOME_AFTER_SIGN_IN;
+  if (!raw || !/^\/(?![\/\\])[^\s\\]*$/.test(raw)) return HOME_AFTER_SIGN_IN;
   return raw;
 }
 

@@ -73,6 +73,9 @@ async function daySalt(db: D1Database, day: string, now: number) {
     await db.batch([
       db.prepare("DELETE FROM visit_salts WHERE day < ?").bind(day),
       db.prepare("DELETE FROM page_views WHERE created_at < ?").bind(now - KEEP),
+      // Old rate-limit counters (the longest window is an hour) and old account notes go with them.
+      db.prepare("DELETE FROM rate_limits WHERE window_start < ?").bind(now - DAY),
+      db.prepare("DELETE FROM security_events WHERE created_at < ?").bind(now - 90 * DAY),
     ]);
   }
   const row = await db.prepare("SELECT salt FROM visit_salts WHERE day = ?").bind(day).first<{ salt: string }>();
@@ -105,7 +108,8 @@ export const visitRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
     const now = Date.now();
     const day = pkDay(now);
     const visitor = (await sha256(`${await daySalt(c.db, day, now)}|${c.ip}|${ua}`)).slice(0, 16);
-    await rateLimit(c.db, `visit:${visitor}`, 300, HOUR);
+    // By address alone: a changed browser name must not buy a fresh allowance.
+    await rateLimit(c.db, `visit:${(await sha256(`${day}|${c.ip}`)).slice(0, 16)}`, 600, HOUR);
 
     const cf = (c.request as Request & { cf?: { country?: string } }).cf;
     const campaign = str(b.campaign, 60).toLowerCase().replace(/[^\w\-. ]/g, "");

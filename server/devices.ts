@@ -1,12 +1,14 @@
 import { uuid } from "./crypto";
 import { fail } from "./http";
-import { type Session, requireSession } from "./session";
+import { type Session, note, requireSession, watchSession } from "./session";
 
 /* The device rule (docs/plan.md): at most 2 registered devices per account, one active at a time,
    and one device removal every 30 days. "Active" means the account's active_session_id is this session. */
 const MAX_DEVICES = 2;
 const SWAP_EVERY_MS = 30 * 24 * 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
+/* Switching the account from one device to the other, per day. Past this the account stays where it is. */
+const MAX_TAKEOVERS = 6;
 
 /* Admin accounts are exempt: any number of devices, all usable at the same time. */
 async function unlimited(db: D1Database, userId: string): Promise<boolean> {
@@ -65,22 +67,34 @@ export async function claimDevice(db: D1Database, session: Session, rawKey: stri
   }
 
   const user = await db.prepare("SELECT active_device_id FROM users WHERE id = ?").bind(uid).first<{ active_device_id: string | null }>();
+  const takeover = !exempt && !!user?.active_device_id && user.active_device_id !== device.id;
+  if (takeover) {
+    const since = await db
+      .prepare("SELECT count(*) AS n, min(created_at) AS first FROM device_events WHERE user_id = ? AND kind = 'takeover' AND created_at > ?")
+      .bind(uid, now - DAY_MS)
+      .first<{ n: number; first: number | null }>();
+    if ((since?.n ?? 0) >= MAX_TAKEOVERS) {
+      const noted = await db.prepare("SELECT 1 FROM security_events WHERE user_id = ? AND kind = 'takeover_limit' AND created_at > ?").bind(uid, now - DAY_MS).first();
+      if (!noted) await note(db, uid, "takeover_limit", `Switched devices ${MAX_TAKEOVERS} times in a day`).run();
+      return { status: "takeover_limit" as const, next_allowed_at: new Date((since?.first ?? now) + DAY_MS).toISOString() };
+    }
+  }
   const statements = [
     db.prepare("UPDATE users SET active_session_id = ?, active_device_id = ? WHERE id = ?").bind(session.id, device.id, uid),
     db.prepare("UPDATE sessions SET device_id = ? WHERE id = ?").bind(device.id, session.id),
     db.prepare("UPDATE devices SET last_seen_at = ?, label = ? WHERE id = ?").bind(now, label, device.id),
   ];
-  if (!exempt && user?.active_device_id && user.active_device_id !== device.id) {
+  if (takeover) {
     statements.push(db.prepare("INSERT INTO device_events (user_id, device_id, kind, created_at) VALUES (?, ?, 'takeover', ?)").bind(uid, device.id, now));
   }
   await db.batch(statements);
-  if (exempt) return { status: "active" as const, takeovers_today: 0 };
+  if (exempt) return { status: "active" as const, takeovers_today: 0, took_over: false };
 
   const takeovers = await db
     .prepare("SELECT count(*) AS n FROM device_events WHERE user_id = ? AND kind = 'takeover' AND created_at > ?")
     .bind(uid, now - DAY_MS)
     .first<{ n: number }>();
-  return { status: "active" as const, takeovers_today: takeovers?.n ?? 0 };
+  return { status: "active" as const, takeovers_today: takeovers?.n ?? 0, took_over: takeover };
 }
 
 /* The 30-second check-in. */
@@ -101,6 +115,7 @@ export async function checkDevice(db: D1Database, session: Session, rawKey: stri
 export async function requireActiveSession(db: D1Database, request: Request): Promise<Session> {
   const s = await requireSession(db, request);
   if (!(await isActiveSession(db, s))) throw fail(423, "device_locked", "Your account is active on another device.");
+  if (s.role !== "admin") await watchSession(db, s, request);
   return s;
 }
 

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { PageHead } from "@/components/app/AppShell";
 import Empty from "@/components/app/Empty";
 import { friendlyError } from "@/lib/auth";
-import { type AdminUser, type UserDetail, actionNames, getUser, listUsers, resetDevices, setPlan, setRole, signOutUser } from "@/lib/admin";
+import { type AdminUser, type UserDetail, actionNames, noteNames, getUser, listUsers, resetDevices, setPlan, setRole, signOutUser } from "@/lib/admin";
 import { day, fullDay, planNames } from "@/lib/format";
 import { formatPhone } from "@/lib/phone";
 import { type Role, roleNames, roles } from "@/lib/qc";
@@ -23,6 +23,8 @@ const isoDay = (d: Date) => d.toISOString().slice(0, 10);
 /* /admin/users — find an account, give it a plan by hand, change its role, or clear its devices. Admins only. */
 export default function Users({ user: me }: { user: AccountUser }) {
   const [q, setQ] = useState("");
+  // The overview's "Accounts to look at" links here with ?q=.
+  useEffect(() => { const asked = new URLSearchParams(window.location.search).get("q"); if (asked) setQ(asked); }, []);
   const [filter, setFilter] = useState("");
   const [users, setUsers] = useState<AdminUser[] | null>(null);
   const [more, setMore] = useState(false);
@@ -174,7 +176,13 @@ function Detail({ id, me, onClose, onChanged }: { id: string; me: AccountUser; o
             {d.devices.map((x) => <li key={x.id}><b>{x.label}</b>{x.active && <span className="badge good">Active</span>}<span className="muted small">added {day(new Date(x.created_at).toISOString())}, last used {day(new Date(x.last_seen_at).toISOString())}</span></li>)}
           </ul>
         ) : <p className="muted small">No devices registered.</p>}
-        {d.takeoversToday > 6 && <p className="note-warn">More than 6 takeovers today: this account may be shared.</p>}
+        {d.takeoversToday >= 6 && <p className="note-warn">6 takeovers today, the daily limit: this account may be shared.</p>}
+        <p className="muted small">{d.questionsToday} new question{d.questionsToday === 1 ? "" : "s"} given in the last 24 hours (limit 500).</p>
+        {d.notes.length > 0 && (
+          <ul className="devs">
+            {d.notes.map((n, i) => <li key={i}><b>{noteNames[n.kind] ?? n.kind}</b><span className="muted small">{n.detail ? `${n.detail} · ` : ""}{day(new Date(n.created_at).toISOString())}</span></li>)}
+          </ul>
+        )}
         <div className="role-row">
           <button type="button" className="dpill light small" disabled={busy || !d.devices.length} onClick={() => act(() => resetDevices(u.id), "Devices cleared.", `Clear both device slots for ${u.name || "this account"} and sign it out everywhere? It doesn't count as one of their 30-day swaps.`)}>Reset devices</button>
           {!self && <button type="button" className="dpill light small" disabled={busy} onClick={() => act(() => signOutUser(u.id), "Signed out everywhere.", "Sign this account out on every device?")}>Sign out everywhere</button>}

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { PageHead } from "@/components/app/AppShell";
 import Empty from "@/components/app/Empty";
 import { friendlyError } from "@/lib/auth";
-import { type Overview as Data, actionNames, getOverview } from "@/lib/admin";
+import { type Overview as Data, actionNames, getOverview, noteNames } from "@/lib/admin";
 import { planNames } from "@/lib/format";
 import { stages } from "@/lib/qc";
 import { paper } from "@/lib/site";
@@ -93,6 +93,20 @@ export default function Overview({ user }: { user: AccountUser }) {
                 <div><dt>Today</dt><dd>{d.visits.today}</dd></div>
                 <div><dt>Last 7 days</dt><dd>{d.visits.week}</dd></div>
               </dl>
+            </section>
+          )}
+
+          {d.watch.length > 0 && (
+            <section className="dcard panel">
+              <h2 className="panel-title">Accounts to look at</h2>
+              <ul className="activity">
+                {d.watch.map((w, i) => (
+                  <li key={i}>
+                    <span><a href={`/admin/users?q=${encodeURIComponent(w.email ?? w.phone ?? w.id)}`}><b>{w.name || w.email || w.phone || "Account"}</b></a> · {noteNames[w.kind] ?? w.kind}{w.detail ? <span className="muted"> · {w.detail}</span> : null}</span>
+                    <span className="muted small">{when(w.at)}</span>
+                  </li>
+                ))}
+              </ul>
             </section>
           )}
 

@@ -17,6 +17,7 @@ export default function AfterSignIn({ next }: { next: string }) {
       .then((res) => {
         if (!live) return;
         if (res.status === "active") window.location.replace(next);
+        else if (res.status === "takeover_limit") window.location.replace(next); // the page's own gate explains
         else setLimit(res.devices);
       })
       .catch((e) => live && setError(friendlyError(e)));

@@ -4,8 +4,8 @@ import type { Env } from "./env";
 import { HttpError, assertSameOrigin, body, clientIp, fail, json, redirect, safeNext, str } from "./http";
 import { linkEmail, mailConfigured, sendMail } from "./mail";
 import { type Provider, appleConfigured, clearStateCookie, finishOAuth, googleConfigured, startOAuth } from "./oauth";
-import { rateLimit } from "./ratelimit";
-import { clearSessionCookie, createSession, getSession, requireSession } from "./session";
+import { rateLimit, rateLimitPeek } from "./ratelimit";
+import { clearSessionCookie, createSession, getSession, requireSession, rotateSession } from "./session";
 import { adminRoutes } from "./admin";
 import { visitRoutes } from "./visits";
 import { studyRoutes } from "./study";
@@ -121,7 +121,11 @@ const routes: Record<string, (c: Ctx) => Promise<Response>> = {
     let userId: string;
     if (existing) {
       userId = existing.id;
-      await c.db.prepare("UPDATE users SET name = ?, password_hash = ? WHERE id = ?").bind(fullName, hash, userId).run();
+      // Nobody confirmed this address yet, so whoever signed up with it before loses their way in, sessions included.
+      await c.db.batch([
+        c.db.prepare("UPDATE users SET name = ?, password_hash = ?, active_session_id = NULL, active_device_id = NULL WHERE id = ?").bind(fullName, hash, userId),
+        c.db.prepare("DELETE FROM sessions WHERE user_id = ?").bind(userId),
+      ]);
     } else {
       userId = await createUser(c.db, { name: fullName, email: addr, passwordHash: hash });
     }
@@ -151,12 +155,17 @@ const routes: Record<string, (c: Ctx) => Promise<Response>> = {
   "POST /api/auth/signin": async (c) => {
     const b = await body(c.request);
     const addr = email(b.email);
-    await rateLimit(c.db, `signin:ip:${c.ip}`, 30, HOUR);
-    await rateLimit(c.db, `signin:email:${addr}`, 10, HOUR / 4);
+    // Only wrong tries count. The tight limit is per address and email together, so someone guessing at an account
+    // from elsewhere can't lock its owner out; the wider ones bound guessing from many addresses.
+    const limits: [string, number, number][] = [[`signin:ip:${c.ip}`, 30, HOUR], [`signin:pair:${addr}:${c.ip}`, 5, HOUR / 4], [`signin:email:${addr}`, 40, HOUR]];
+    for (const [key, limit, window] of limits) await rateLimitPeek(c.db, key, limit, window);
     await checkCaptcha(c.env, b.captcha, c.ip);
     const u = await userByEmail(c.db, addr);
     const ok = await verifyPassword(typeof b.password === "string" ? b.password : "", u?.password_hash ?? null);
-    if (!u || !ok) throw fail(401, "invalid_credentials", "That email and password don't match. Check them, or reset your password.");
+    if (!u || !ok) {
+      for (const [key, limit, window] of limits) await rateLimit(c.db, key, limit + 1, window);
+      throw fail(401, "invalid_credentials", "That email and password don't match. Check them, or reset your password.");
+    }
     if (!u.email_verified_at && mailConfigured(c.env)) throw fail(403, "email_not_confirmed", "Please confirm your email first. We sent you a link when you signed up.");
     return signedIn(await createSession(c.db, u.id, c.request));
   },
@@ -227,7 +236,11 @@ const routes: Record<string, (c: Ctx) => Promise<Response>> = {
   "POST /api/device/claim": async ({ db, request }) => {
     const s = await requireSession(db, request);
     const b = await body(request);
-    return json(await claimDevice(db, s, str(b.deviceKey, 64), str(b.label, 80)));
+    const res = await claimDevice(db, s, str(b.deviceKey, 64), str(b.label, 80));
+    if (res.status !== "active") return json(res);
+    const { took_over, ...out } = res;
+    // Taking the account over from another device gives this browser a new cookie, so a copy of the old one is dead.
+    return took_over ? json(out, { headers: { "set-cookie": await rotateSession(db, s) } }) : json(out);
   },
 
   "POST /api/device/check": async ({ db, request }) => {
