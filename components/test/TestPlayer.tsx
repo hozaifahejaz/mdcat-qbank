@@ -16,6 +16,10 @@ import type { AccountUser } from "@/lib/user";
 const modeNames: Record<Mode, string> = { tutor: "Practice", timed: "Timed test", mock: "Mock" };
 const tone = (s: string) => paper.find((p) => p.subject === s)?.tone ?? "var(--bg)";
 
+const SIZE_KEY = "q-text-size";
+const sizeNames = ["Normal", "Large", "Larger"];
+const HOLD_MS = 450;
+
 type Props = { user: AccountUser; attempt: OpenAttempt; note?: string };
 
 /* One screen for every way of answering questions. Every answer is saved on the server as it's picked, so leaving,
@@ -36,6 +40,11 @@ export default function TestPlayer({ user, attempt, note }: Props) {
   const [problem, setProblem] = useState("");
   const [busy, setBusy] = useState(false);
   const pending = useRef(0);
+  // Options the student has ruled out, per question. A thinking aid only: nothing is saved or marked.
+  const [struck, setStruck] = useState<Record<number, number[]>>({});
+  const [size, setSize] = useState(0);
+  useEffect(() => { try { setSize(Math.min(2, Math.max(0, Number(localStorage.getItem(SIZE_KEY)) || 0))); } catch {} }, []);
+  const nextSize = () => { const v = (size + 1) % 3; setSize(v); try { localStorage.setItem(SIZE_KEY, String(v)); } catch {} };
 
   // The clock is the server's: the deadline it set, corrected for how far this device's clock is off.
   const skew = useMemo(() => attempt.now - Date.now(), [attempt.now]);
@@ -88,8 +97,30 @@ export default function TestPlayer({ user, attempt, note }: Props) {
       .finally(() => { pending.current--; });
   };
 
+  const out = struck[i] ?? [];
+  const strike = (o: number) => {
+    if (reveal || busy) return;
+    const on = !out.includes(o);
+    setStruck((m) => ({ ...m, [i]: on ? [...out, o] : out.filter((x) => x !== o) }));
+    // Ruling out the picked option unpicks it.
+    if (on && chosen === o) {
+      setAnswers((a) => a.map((x, k) => (k === i ? null : x)));
+      if (mode !== "tutor") save(i, null, flagged[i]!);
+    }
+  };
+  // Press and hold on a touch screen crosses an option out; the tap that follows the hold must not pick it.
+  const hold = useRef<{ t: ReturnType<typeof setTimeout> | null; fired: boolean }>({ t: null, fired: false });
+  const holdStart = (o: number, e: React.PointerEvent) => {
+    if (e.pointerType === "mouse") return;
+    hold.current.fired = false;
+    hold.current.t = setTimeout(() => { hold.current.fired = true; strike(o); navigator.vibrate?.(12); }, HOLD_MS);
+  };
+  const holdEnd = () => { if (hold.current.t) clearTimeout(hold.current.t); hold.current.t = null; };
+
   const choose = (o: number) => {
     if (reveal || busy) return;
+    if (hold.current.fired) { hold.current.fired = false; return; }
+    if (out.includes(o)) setStruck((m) => ({ ...m, [i]: out.filter((x) => x !== o) }));
     const next = chosen === o && mode !== "tutor" ? null : o;
     setAnswers((a) => a.map((x, k) => (k === i ? next : x)));
     if (mode !== "tutor") save(i, next, flagged[i]!);
@@ -119,45 +150,91 @@ export default function TestPlayer({ user, attempt, note }: Props) {
     setBookmark(q.id, on).catch((e) => setProblem(friendlyError(e)));
   };
 
-  // Keyboard: A–D or 1–4 to answer, arrows to move.
+  const last = i === n - 1;
+  const finish = () => (mode === "tutor" ? submit() : setDialog("submit"));
+  // The one main button under every question: check, then move on; the last one ends the set.
+  const primary = mode === "tutor" && !reveal && chosen !== null ? { label: busy ? "Checking…" : "Check answer", act: check, strong: true }
+    : !last ? { label: mode === "tutor" && !reveal ? "Skip" : "Next", act: () => go(i + 1), strong: mode !== "tutor" || !!reveal }
+    : { label: mode === "tutor" ? "Finish" : "Submit", act: finish, strong: true };
+
+  // Keyboard: A–D or 1–4 to answer, Enter for the main button, arrows to move.
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
-      if (dialog || e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.metaKey || e.ctrlKey) return;
+      if (dialog || e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.metaKey || e.ctrlKey || e.altKey) return;
       const k = e.key.toLowerCase();
       const o = "abcd".indexOf(k) >= 0 ? "abcd".indexOf(k) : "1234".indexOf(k);
       if (o >= 0 && o < q.options.length) choose(o);
+      else if (e.key === "Enter") {
+        // Enter is the main button, even with an option still focused from a click. Other focused controls keep their own Enter.
+        const t = e.target as HTMLElement;
+        if (sheet || (t.closest("button, a") && !t.closest(".opt, .pfoot"))) return;
+        e.preventDefault();
+        if (!busy) primary.act();
+      }
       else if (e.key === "ArrowRight") go(i + 1);
       else if (e.key === "ArrowLeft") go(i - 1);
+      else if (e.key === "Escape") setSheet(false);
     };
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
   });
 
+  // On a phone the explanation opens below the fold: bring its first line into view once the answer is checked.
+  const explRef = useRef<HTMLDivElement>(null);
+  const shown = useRef<Question | null>(reveal);
+  useEffect(() => {
+    if (reveal && shown.current !== reveal && explRef.current) {
+      const r = explRef.current.getBoundingClientRect();
+      if (r.top > window.innerHeight * 0.6) window.scrollBy({ top: r.top - window.innerHeight * 0.35, behavior: "smooth" });
+    }
+    shown.current = reveal;
+  }, [reveal, i]);
+
   const groups = useMemo(() => subjects.map((s) => ({ s, idx: items.flatMap((x, k) => (x.q.subject === s ? [k] : [])) })).filter((g) => g.idx.length), [items]);
   const low = left !== null && left < 5 * 60;
+  const cellState = (k: number) => {
+    if (mode !== "tutor") return answers[k] !== null ? " done" : "";
+    const r = reveals[k];
+    return r ? (r.answer === answers[k] ? " ok" : " no") : "";
+  };
+  const cellWord = (k: number) => {
+    if (mode !== "tutor") return answers[k] !== null ? ", answered" : "";
+    const r = reveals[k];
+    return r ? (r.answer === answers[k] ? ", correct" : ", wrong") : "";
+  };
+  const marked = marks.has(q.id);
 
   return (
-    <div className="player">
+    <div className={`player ${mode === "tutor" ? "is-tutor" : "is-timed"} qsize-${size}`}>
       <header className="ptop-wrap">
         <div className="ptop dwrap">
-          <button type="button" className="dpill light small" onClick={() => (answered ? setDialog("exit") : (window.location.href = "/dashboard"))}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
-            <span className="hide-sm">Exit</span>
+          <button type="button" className="pico" aria-label="Exit" title="Exit" onClick={() => (answered ? setDialog("exit") : (window.location.href = "/dashboard"))}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
           </button>
           <div className="ptitle">
-            <b>{title}</b>
-            <span className="muted">{modeNames[mode]} · {answered} of {n} {mode === "tutor" ? "checked" : "answered"}</span>
+            <b>Question {i + 1} <span className="muted">of {n}</span></b>
+            <span className="muted">{modeNames[mode]} · {title}</span>
           </div>
           <div className="ptop-end">
-            <span className={`timer${low ? " low" : ""}`} role="timer" aria-label={left === null ? "Time spent" : "Time left"}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true"><circle cx="12" cy="13" r="8" /><path d="M12 9v4l2 2M9 2h6" /></svg>
-              {clock(left ?? elapsed)}
-            </span>
-            <ThemeToggle />
-            {mode !== "tutor" && <button type="button" className="dpill dark small hide-sm" onClick={() => setDialog("submit")}>Submit</button>}
+            {left !== null && (
+              <span className={`timer${low ? " low" : ""}`} role="timer" aria-label="Time left">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true"><circle cx="12" cy="13" r="8" /><path d="M12 9v4l2 2M9 2h6" /></svg>
+                {clock(left)}
+              </span>
+            )}
+            <button type="button" className="pico ptext" onClick={nextSize} aria-label={`Text size: ${sizeNames[size]}. Change`} title="Text size">
+              <span aria-hidden="true">A<small>A</small></span>
+            </button>
+            <span className="hide-xs"><ThemeToggle /></span>
           </div>
         </div>
-        <div className="pbar" aria-hidden="true"><i style={{ width: `${((i + 1) / n) * 100}%` }} /></div>
+        {n <= 40 ? (
+          <div className="pdots dwrap" role="progressbar" aria-label={mode === "tutor" ? "Questions checked" : "Questions answered"} aria-valuemin={0} aria-valuemax={n} aria-valuenow={answered}>
+            {items.map((_, k) => <i key={k} className={`${cellState(k)}${flagged[k] ? " flag" : ""}${k === i ? " now" : ""}`} />)}
+          </div>
+        ) : (
+          <div className="pbar" role="progressbar" aria-label={mode === "tutor" ? "Questions checked" : "Questions answered"} aria-valuemin={0} aria-valuemax={n} aria-valuenow={answered}><i style={{ width: `${(answered / n) * 100}%` }} /></div>
+        )}
       </header>
 
       <div className={`pbody dwrap${mode === "tutor" ? " solo" : ""}`}>
@@ -168,93 +245,105 @@ export default function TestPlayer({ user, attempt, note }: Props) {
             <article className="qcard dcard" aria-labelledby="stem">
               <div className="qmeta">
                 <span className="qchip" style={{ background: tone(q.subject) }}>{q.subject}</span>
-                <span className="muted">{q.chapter} · {q.topic}</span>
-                <span className="qnum">Q{i + 1}<span className="muted">/{n}</span></span>
+                <span className="qwhere muted" title={`${q.chapter} · ${q.topic}`}>{q.chapter} · {q.topic}</span>
+                <span className="qacts">
+                  {mode !== "tutor" && (
+                    <button type="button" className={`qact${flagged[i] ? " on" : ""}`} aria-pressed={flagged[i]} title="Come back to this question later" onClick={toggleFlag}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill={flagged[i] ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2.2" strokeLinejoin="round" aria-hidden="true"><path d="M5 21V4h11l-2 4 2 4H5" /></svg>
+                      <span>{flagged[i] ? "Flagged" : "Flag"}</span>
+                    </button>
+                  )}
+                  <button type="button" className={`qact${marked ? " on" : ""}`} aria-pressed={marked} title={marked ? "Remove bookmark" : "Save this question"} onClick={toggleMark}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill={marked ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2.2" strokeLinejoin="round" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4z" /></svg>
+                    <span>{marked ? "Saved" : "Save"}</span>
+                  </button>
+                </span>
               </div>
               <p id="stem" className="stem">{q.stem}</p>
               <ul className="opts" role="list">
                 {q.options.map((o, k) => {
-                  const state = reveal ? (k === reveal.answer ? "key" : k === chosen ? "miss" : "dim") : k === chosen ? "on" : "";
+                  const state = reveal ? (k === reveal.answer ? "key" : k === chosen ? "miss" : "dim") : k === chosen ? "on" : out.includes(k) ? "out" : "";
                   return (
                     <li key={k}>
-                      <button type="button" className={`opt ${state}`} aria-pressed={k === chosen} disabled={!!reveal} onClick={() => choose(k)}>
+                      <button type="button" className={`opt ${state}`} aria-pressed={k === chosen} disabled={!!reveal} onClick={() => choose(k)}
+                        onContextMenu={(e) => { e.preventDefault(); if (!hold.current.fired && !hold.current.t) strike(k); }}
+                        onPointerDown={(e) => holdStart(k, e)} onPointerUp={holdEnd} onPointerLeave={holdEnd} onPointerCancel={holdEnd}>
                         <span className="letter">{letters[k]}</span>
-                        <span className="otext">{o}</span>
-                        {state === "key" && <span className="otag good">Answer</span>}
-                        {state === "miss" && <span className="otag bad">Your answer</span>}
+                        <span className="otext">{o}{state === "out" && <span className="sr"> (crossed out)</span>}</span>
+                        {state === "key" && <span className="omark good"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg><span className="sr">{k === chosen ? "Your answer, correct" : "Correct answer"}</span></span>}
+                        {state === "miss" && <span className="omark bad"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg><span className="sr">Your answer</span></span>}
                       </button>
                     </li>
                   );
                 })}
               </ul>
-              {reveal && <Explanation q={reveal} chosen={chosen} onReport={() => setDialog("report")} />}
+              {reveal && <div ref={explRef}><Explanation q={reveal} chosen={chosen} onReport={() => setDialog("report")} /></div>}
+              {!reveal && (
+                <p className="qfoot">
+                  <span className="kbd-hint muted hide-sm">{mode === "tutor" ? "A to D to pick, Enter to check" : "A to D to pick, Enter for next"} · right-click to cross out</span>
+                  <span className="kbd-hint muted show-sm">Hold an option to cross it out</span>
+                  <button type="button" className="link quiet" onClick={() => setDialog("report")}>Report a problem</button>
+                </p>
+              )}
             </article>
           </Protected>
-
-          <div className="qtools">
-            {mode !== "tutor" && (
-              <button type="button" className={`tool${flagged[i] ? " on" : ""}`} aria-pressed={flagged[i]} onClick={toggleFlag}>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill={flagged[i] ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2.2" strokeLinejoin="round" aria-hidden="true"><path d="M5 21V4h11l-2 4 2 4H5" /></svg>
-                {flagged[i] ? "Flagged" : "Flag for review"}
-              </button>
-            )}
-            <button type="button" className={`tool${marks.has(q.id) ? " on" : ""}`} aria-pressed={marks.has(q.id)} onClick={toggleMark}>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill={marks.has(q.id) ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2.2" strokeLinejoin="round" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4z" /></svg>
-              {marks.has(q.id) ? "Bookmarked" : "Bookmark"}
-            </button>
-            <button type="button" className="tool" onClick={() => setDialog("report")}>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 8v5M12 16.5v.01" /></svg>
-              Report
-            </button>
-          </div>
-
-          <div className="qnav">
-            <button type="button" className="dpill light" disabled={i === 0} onClick={() => go(i - 1)}>Previous</button>
-            {mode !== "tutor" && <button type="button" className="dpill light show-sm" onClick={() => setSheet(true)}>All questions</button>}
-            {mode === "tutor" && !reveal ? (
-              <button type="button" className="dpill dark" disabled={chosen === null || busy} onClick={check}>{busy ? "Checking…" : "Check answer"}</button>
-            ) : i < n - 1 ? (
-              <button type="button" className="dpill dark" onClick={() => go(i + 1)}>Next</button>
-            ) : (
-              <button type="button" className="dpill dark" disabled={busy} onClick={() => (mode === "tutor" ? submit() : setDialog("submit"))}>{mode === "tutor" ? "Finish" : "Submit"}</button>
-            )}
-          </div>
-          <p className="kbd-hint muted hide-sm">Keys: A to D to answer, ← → to move</p>
         </main>
 
-        {mode !== "tutor" && (
-          <aside className={`palette dcard${sheet ? " open" : ""}`} aria-label="Questions">
-            <div className="pal-h">
-              <b>Questions</b>
-              <button type="button" className="link show-sm" onClick={() => setSheet(false)}>Close</button>
-            </div>
-            {groups.map((g) => (
-              <div key={g.s} className="pal-group">
-                <span className="pal-s">{g.s}</span>
-                <div className="pal-grid">
-                  {g.idx.map((k) => (
-                    <button
-                      key={k}
-                      type="button"
-                      className={`cell${answers[k] !== null ? " done" : ""}${flagged[k] ? " flag" : ""}${k === i ? " now" : ""}`}
-                      aria-label={`Question ${k + 1}${answers[k] !== null ? ", answered" : ""}${flagged[k] ? ", flagged" : ""}`}
-                      aria-current={k === i || undefined}
-                      onClick={() => go(k)}
-                    >{k + 1}</button>
-                  ))}
-                </div>
+        <aside className={`palette dcard${sheet ? " open" : ""}`} aria-label="All questions" aria-hidden={mode === "tutor" && !sheet ? true : undefined}>
+          <div className="pal-h">
+            <b>All questions</b>
+            <button type="button" className={`link${mode === "tutor" ? "" : " show-sm"}`} onClick={() => setSheet(false)}>Close</button>
+          </div>
+          {groups.map((g) => (
+            <div key={g.s} className="pal-group">
+              {groups.length > 1 && <span className="pal-s">{g.s}</span>}
+              <div className="pal-grid">
+                {g.idx.map((k) => (
+                  <button
+                    key={k}
+                    type="button"
+                    className={`cell${cellState(k)}${flagged[k] ? " flag" : ""}${k === i ? " now" : ""}`}
+                    aria-label={`Question ${k + 1}${cellWord(k)}${flagged[k] ? ", flagged" : ""}`}
+                    aria-current={k === i || undefined}
+                    onClick={() => go(k)}
+                  >{k + 1}</button>
+                ))}
               </div>
-            ))}
+            </div>
+          ))}
+          {mode === "tutor" ? (
+            <ul className="legend">
+              <li><i className="cell ok" />Correct</li>
+              <li><i className="cell no" />Wrong</li>
+              <li><i className="cell" />Not checked</li>
+            </ul>
+          ) : (
             <ul className="legend">
               <li><i className="cell done" />Answered</li>
               <li><i className="cell" />Not answered</li>
               <li><i className="cell flag" />Flagged</li>
             </ul>
-            <button type="button" className="dpill dark" onClick={() => setDialog("submit")}>Submit test</button>
-          </aside>
-        )}
-        {sheet && <div className="scrim show-sm" onClick={() => setSheet(false)} />}
+          )}
+          <button type="button" className={`dpill ${mode === "tutor" ? "light" : "dark"}`} disabled={busy} onClick={() => { setSheet(false); finish(); }}>{mode === "tutor" ? "Finish and see results" : "Submit test"}</button>
+        </aside>
+        {sheet && <button type="button" className="pscrim" aria-label="Close" onClick={() => setSheet(false)} />}
       </div>
+
+      <footer className="pfoot-wrap">
+        <div className={`pfoot dwrap${mode === "tutor" ? " solo" : ""}`}>
+          <div className="pfoot-in">
+            <button type="button" className="dpill light pprev" disabled={i === 0} onClick={() => go(i - 1)} aria-label="Previous question">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m14.5 5-7 7 7 7" /></svg>
+              <span className="hide-xs">Previous</span>
+            </button>
+            <button type="button" className={`dpill light pall${mode === "tutor" ? "" : " show-sm"}`} onClick={() => setSheet(true)} aria-label={`All questions, ${answered} of ${n} ${mode === "tutor" ? "checked" : "answered"}`}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="1.6" /><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.6" /><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.6" /><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.6" /></svg>
+              <span>{i + 1}/{n}</span>
+            </button>
+            <button type="button" className={`dpill ${primary.strong ? "dark" : "light"} pnext`} disabled={busy} onClick={primary.act}>{primary.label}</button>
+          </div>
+        </div>
+      </footer>
 
       {dialog === "submit" && (
         <Dialog title="Submit your test?" onClose={() => setDialog(null)}>
