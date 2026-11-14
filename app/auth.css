@@ -30,7 +30,7 @@ a { color: inherit; text-decoration: none; }
 .auth-top .end a { font-weight: 600; }
 .auth-top .end a:hover { color: var(--blue); }
 @media (max-width: 440px) { .auth-top .end .hint { display: none; } }
-.auth-main { display: grid; grid-template-columns: minmax(0, 460px) minmax(0, 1fr); gap: 20px; align-items: stretch; padding-block: 12px 40px; }
+.auth-main { display: grid; grid-template-columns: minmax(0, 460px) minmax(0, 1fr); gap: 20px; align-items: stretch; align-content: start; padding-block: 12px 40px; }
 .auth-main.solo { grid-template-columns: minmax(0, 520px); justify-content: center; align-items: start; }
 @media (max-width: 900px) { .auth-main { grid-template-columns: minmax(0, 1fr); max-width: 520px; margin-inline: auto; } }
 .auth-foot { padding-block: 0 28px; font-size: 0.8125rem; color: var(--muted); text-align: center; }

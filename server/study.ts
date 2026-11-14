@@ -1,4 +1,5 @@
 import { normalisePhone } from "../lib/phone";
+import { bankById } from "../lib/banks";
 import { paper } from "../lib/site";
 import { uuid } from "./crypto";
 import { requireActiveSession } from "./devices";
@@ -38,7 +39,7 @@ type AttemptRow = {
   paper: number | null; started_at: number; deadline_at: number | null; finished_at: number | null; seconds: number | null;
   score: number | null; total: number;
 };
-type AnswerRow = { idx: number; question_id: string; answer: number | null; flagged: number; checked: number };
+type AnswerRow = { idx: number; question_id: string; answer: number | null; flagged: number; checked: number; seconds: number | null };
 
 const parse = <T>(s: string, fallback: T): T => { try { return JSON.parse(s) as T; } catch { return fallback; } };
 
@@ -136,6 +137,50 @@ const LATEST = `SELECT l.question_id, l.answer, l.at, s.answer AS key, s.subject
      WHERE user_id = ?1 AND counted_at IS NOT NULL AND answer IS NOT NULL GROUP BY question_id
   ) l JOIN served s ON s.id = l.question_id`;
 
+/* The same, counting a question left blank in a submitted test: its answer is NULL. */
+const LATEST_ANY = `SELECT question_id, answer, max(counted_at) AS at FROM answers WHERE user_id = ? AND counted_at IS NOT NULL GROUP BY question_id`;
+
+/* Where a question stands for a student, which the practice screen filters by (any mix of them). */
+const FILTERS = ["unused", "incorrect", "marked", "omitted", "correct"] as const;
+type Filter = (typeof FILTERS)[number];
+
+/* Which questions a practice set draws from: a bank, then subjects, chapters or a topic of it. */
+function scope(b: Record<string, unknown>, pool: string) {
+  const bank = bankById(str(b.bank, 10)) ?? bankById("mdcat")!;
+  const where: string[] = ["bank = ?", `open_reports < ${REPORT_HIDE}${pool}`];
+  const args: unknown[] = [bank.id];
+  const list = (v: unknown, max: number) => (Array.isArray(v) ? v : typeof v === "string" && v ? v.split("|") : []).filter((x): x is string => typeof x === "string").slice(0, max);
+  const subject = str(b.subject, 40);
+  // Several whole subjects (books) at once, or one subject and some of its chapters.
+  const several = list(b.subjects, 10);
+  const chapters = list(b.chapters, 40);
+  if (subject) { where.push("subject = ?"); args.push(subject); }
+  else if (several.length) { where.push("subject IN (SELECT value FROM json_each(?))"); args.push(JSON.stringify(several)); }
+  if (chapters.length) { where.push("chapter IN (SELECT value FROM json_each(?))"); args.push(JSON.stringify(chapters)); }
+  const topic = str(b.topic, 120);
+  if (topic) { where.push("topic = ?"); args.push(topic); }
+  return { bank, where, args, subject, several, chapters, topic };
+}
+
+/* How everyone answered these questions: picks per option, once enough students have answered to mean something. */
+const MIN_STATS = 20;
+type Stats = { n: number; picks: number[] };
+async function statsFor(db: D1Database, ids: string[]): Promise<Map<string, Stats>> {
+  const out = new Map<string, Stats>();
+  if (!ids.length) return out;
+  const { results } = await db.prepare(`SELECT question_id, answer, count(*) AS n FROM answers
+    WHERE question_id IN (SELECT value FROM json_each(?)) AND counted_at IS NOT NULL AND answer IS NOT NULL GROUP BY question_id, answer`)
+    .bind(JSON.stringify(ids)).all<{ question_id: string; answer: number; n: number }>();
+  for (const r of results) {
+    const s = out.get(r.question_id) ?? { n: 0, picks: [0, 0, 0, 0] };
+    if (r.answer >= 0 && r.answer <= 3) { s.picks[r.answer]! += r.n; s.n += r.n; }
+    out.set(r.question_id, s);
+  }
+  for (const [id, s] of out) if (s.n < MIN_STATS) out.delete(id);
+  return out;
+}
+const secs = (v: unknown) => (Number.isFinite(Number(v)) && Number(v) > 0 ? Math.min(3600, Math.round(Number(v))) : null);
+
 const pkDate = (ms: number) => new Date(ms + PKT).toISOString().slice(0, 10);
 
 /* ---------- Routes ---------- */
@@ -144,17 +189,32 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
   /* How many questions each chapter has for this student, which tests are open to them, and their past papers. */
   "GET /api/study/catalog": async (c) => {
     const me = await student(c, false);
-    const [chapters, papers, mini] = await c.db.batch([
-      c.db.prepare(`SELECT subject, chapter, count(*) AS total, sum(free) AS free FROM served WHERE open_reports < ${REPORT_HIDE} GROUP BY subject, chapter`),
+    // ?bank= picks whose chapters to count (lib/banks.ts); mocks and past papers are always MDCAT.
+    const bank = bankById(new URL(c.request.url).searchParams.get("bank"))?.id ?? "mdcat";
+    const [chapters, papers, mini, mdcat, mine] = await c.db.batch([
+      c.db.prepare(`SELECT subject, chapter, count(*) AS total, sum(free) AS free FROM bank_served WHERE bank = ? AND open_reports < ${REPORT_HIDE} GROUP BY subject, chapter`).bind(bank),
       c.db.prepare(`SELECT paper AS year, count(*) AS n FROM served WHERE paper IS NOT NULL AND open_reports < ${REPORT_HIDE} GROUP BY paper ORDER BY paper DESC`),
       c.db.prepare("SELECT id, finished_at FROM attempts WHERE user_id = ? AND kind = 'mini-mock' ORDER BY started_at DESC LIMIT 1").bind(me.id),
+      c.db.prepare(`SELECT subject, count(*) AS total, sum(free) AS free FROM served WHERE open_reports < ${REPORT_HIDE} GROUP BY subject`),
+      // This student's latest answer to each question in the bank, by the bank's subject and chapter.
+      c.db.prepare(`SELECT b.subject, b.chapter, count(*) AS answered, sum(CASE WHEN l.answer = l.key THEN 1 ELSE 0 END) AS correct
+        FROM (${LATEST}) l JOIN bank_served b ON b.id = l.question_id AND b.bank = ?2 GROUP BY b.subject, b.chapter`).bind(me.id, bank),
     ]);
     const lastMini = mini!.results[0] as { id: string; finished_at: number | null } | undefined;
+    const done = mine!.results as { subject: string; chapter: string; answered: number; correct: number }[];
     const rows = (chapters!.results as { subject: string; chapter: string; total: number; free: number }[])
-      .map((r) => ({ subject: r.subject, chapter: r.chapter, total: r.total, open: me.paid ? r.total : r.free ?? 0 }));
-    const bySubject = (s: string, k: "total" | "open") => rows.filter((r) => r.subject === s).reduce((n, r) => n + r[k], 0);
+      .map((r) => {
+        const d = done.find((x) => x.subject === r.subject && x.chapter === r.chapter);
+        return { subject: r.subject, chapter: r.chapter, total: r.total, open: me.paid ? r.total : r.free ?? 0, answered: d?.answered ?? 0, correct: d?.correct ?? 0 };
+      });
+    const totals = mdcat!.results as { subject: string; total: number; free: number }[];
+    const bySubject = (s: string, k: "total" | "open") => {
+      const t = totals.find((x) => x.subject === s);
+      return !t ? 0 : k === "total" || me.paid ? t.total : t.free ?? 0;
+    };
     return json({
       paid: me.paid,
+      bank,
       chapters: rows,
       papers: (papers!.results as { year: number; n: number }[]).map((p) => ({ year: p.year, count: p.n })),
       mocks: MOCKS,
@@ -166,12 +226,45 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
     });
   },
 
+  /* For the practice screen: how many of the picked questions are unused, incorrect, marked, omitted or correct. */
+  "GET /api/study/pool": async (c) => {
+    const me = await student(c, false);
+    const p = new URL(c.request.url).searchParams;
+    const { where, args } = scope(Object.fromEntries(p), me.pool);
+    const r = await c.db.prepare(`SELECT count(*) AS total,
+        sum(CASE WHEN l.question_id IS NULL THEN 1 ELSE 0 END) AS unused,
+        sum(CASE WHEN l.question_id IS NOT NULL AND l.answer IS NULL THEN 1 ELSE 0 END) AS omitted,
+        sum(CASE WHEN l.answer = s.answer THEN 1 ELSE 0 END) AS correct,
+        sum(CASE WHEN l.answer IS NOT NULL AND l.answer != s.answer THEN 1 ELSE 0 END) AS incorrect,
+        sum(CASE WHEN m.question_id IS NOT NULL THEN 1 ELSE 0 END) AS marked,
+        sum(CASE WHEN m.question_id IS NOT NULL AND l.question_id IS NULL THEN 1 ELSE 0 END) AS m_unused,
+        sum(CASE WHEN m.question_id IS NOT NULL AND l.question_id IS NOT NULL AND l.answer IS NULL THEN 1 ELSE 0 END) AS m_omitted,
+        sum(CASE WHEN m.question_id IS NOT NULL AND l.answer = s.answer THEN 1 ELSE 0 END) AS m_correct,
+        sum(CASE WHEN m.question_id IS NOT NULL AND l.answer IS NOT NULL AND l.answer != s.answer THEN 1 ELSE 0 END) AS m_incorrect
+      FROM (SELECT DISTINCT id FROM bank_served WHERE ${where.join(" AND ")}) q
+      JOIN served s ON s.id = q.id
+      LEFT JOIN (${LATEST_ANY}) l ON l.question_id = q.id
+      LEFT JOIN bookmarks m ON m.user_id = ? AND m.question_id = q.id`)
+      .bind(...args, me.id, me.id).first<Record<string, number | null>>();
+    // markedIn: the marked ones by where they stand, so the screen can count a mix of filters without counting any twice.
+    return json({
+      total: r?.total ?? 0, unused: r?.unused ?? 0, incorrect: r?.incorrect ?? 0, marked: r?.marked ?? 0, omitted: r?.omitted ?? 0, correct: r?.correct ?? 0,
+      markedIn: { unused: r?.m_unused ?? 0, incorrect: r?.m_incorrect ?? 0, omitted: r?.m_omitted ?? 0, correct: r?.m_correct ?? 0 },
+    });
+  },
+
   /* Start a test. The server picks the questions, so the browser never holds more than the test it's sitting. */
   "POST /api/study/start": async (c) => {
     const me = await student(c, true);
     await rateLimit(c.db, `start:${me.id}`, 60, HOUR);
     const b = await body(c.request);
-    const kind = (["practice", "timed", "mock", "mini-mock", "past-paper"] as const).find((k) => k === b.kind) ?? "practice";
+    let kind: Kind = (["practice", "timed", "mock", "mini-mock", "past-paper"] as const).find((k) => k === b.kind) ?? "practice";
+    // A practice set has two switches: tutor (the explanation after each answer) and timed (a minute a question).
+    // Older links only say practice (tutor, no clock) or timed (answers at the end, on the clock).
+    const custom = kind === "practice" || kind === "timed";
+    const tutor = custom && (typeof b.tutor === "boolean" ? b.tutor : kind === "practice");
+    const clock = !custom || (typeof b.timed === "boolean" ? b.timed : kind === "timed");
+    if (custom) kind = tutor ? "practice" : "timed";
     const mode = modeOf[kind];
     let ids: string[] = [];
     let title = str(b.title, 120);
@@ -205,28 +298,34 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
     } else {
       const count = Math.min(100, Math.max(1, Number(b.count) || 25));
       const asked = Array.isArray(b.ids) ? b.ids.filter((x): x is string => typeof x === "string").slice(0, 200) : [];
-      const where: string[] = [`open_reports < ${REPORT_HIDE}${me.pool}`];
-      const args: unknown[] = [];
+      const sc = scope(asked.length ? { bank: b.bank } : b, me.pool);
+      const { bank, where, args } = sc;
       if (asked.length) {
         where.push("id IN (SELECT value FROM json_each(?))");
         args.push(JSON.stringify(asked));
       } else {
-        const subject = str(b.subject, 40);
-        const chapters = Array.isArray(b.chapters) ? b.chapters.filter((x): x is string => typeof x === "string").slice(0, 40) : [];
-        if (subject) { where.push("subject = ?"); args.push(subject); }
-        if (chapters.length) { where.push("chapter IN (SELECT value FROM json_each(?))"); args.push(JSON.stringify(chapters)); }
-        const topic = str(b.topic, 120);
-        if (topic) { where.push("topic = ?"); args.push(topic); }
-        if (b.from === "unseen") {
-          where.push("id NOT IN (SELECT question_id FROM answers WHERE user_id = ? AND counted_at IS NOT NULL)");
-          args.push(me.id);
-        } else if (b.from === "wrong") {
-          where.push(`id IN (SELECT question_id FROM (${LATEST.replaceAll("?1", "?")}) WHERE answer != key)`);
-          args.push(me.id);
+        const { subject, several, chapters, topic } = sc;
+        // Older links say from=unseen or from=wrong; the practice screen sends the list.
+        const picked = Array.isArray(b.filters) ? FILTERS.filter((f) => (b.filters as unknown[]).includes(f))
+          : b.from === "unseen" ? (["unused"] as Filter[]) : b.from === "wrong" ? (["incorrect"] as Filter[]) : [];
+        if (picked.length) {
+          const any: string[] = [];
+          for (const f of picked) {
+            if (f === "unused") { any.push("id NOT IN (SELECT question_id FROM answers WHERE user_id = ? AND counted_at IS NOT NULL)"); args.push(me.id); }
+            else if (f === "marked") { any.push("id IN (SELECT question_id FROM bookmarks WHERE user_id = ?)"); args.push(me.id); }
+            else {
+              const test = f === "omitted" ? "l.answer IS NULL" : f === "correct" ? "l.answer = s.answer" : "l.answer IS NOT NULL AND l.answer != s.answer";
+              any.push(`id IN (SELECT l.question_id FROM (${LATEST_ANY}) l JOIN served s ON s.id = l.question_id WHERE ${test})`);
+              args.push(me.id);
+            }
+          }
+          where.push(`(${any.join(" OR ")})`);
         }
-        title ||= subject ? `${subject}${topic ? ` · ${topic}` : chapters.length === 1 ? ` · ${chapters[0]}` : ""}` : "Mixed practice";
+        title ||= subject ? `${subject}${topic ? ` · ${topic}` : chapters.length === 1 ? ` · ${chapters[0]}` : ""}`
+          : several.length ? several.join(" + ") : "Mixed practice";
+        if (bank.id !== "mdcat") title = `${bank.name} · ${title}`.slice(0, 120);
       }
-      const { results } = await c.db.prepare(`SELECT id, subject FROM served WHERE ${where.join(" AND ")} ORDER BY random() LIMIT ${asked.length ? 200 : count}`).bind(...args).all<{ id: string; subject: string }>();
+      const { results } = await c.db.prepare(`SELECT DISTINCT id, subject FROM bank_served WHERE ${where.join(" AND ")} ORDER BY random() LIMIT ${asked.length ? 200 : count}`).bind(...args).all<{ id: string; subject: string }>();
       ids = asked.length ? asked.filter((id) => results.some((r) => r.id === id)) : results.map((r) => r.id);
       title ||= "Practice";
     }
@@ -235,7 +334,7 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
     const id = uuid();
     const now = Date.now();
     // Timed tests get a minute a question; the mock is the real paper's 3 hours for 180.
-    const deadline = mode === "tutor" ? null : now + ids.length * 60 * 1000;
+    const deadline = clock ? now + ids.length * 60 * 1000 : null;
     await c.db.batch([
       c.db.prepare(`INSERT INTO attempts (id, user_id, kind, mode, title, question_ids, mock_no, paper, started_at, deadline_at, total)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).bind(id, me.id, kind, mode, title, JSON.stringify(ids), mockNo, year, now, deadline, ids.length),
@@ -253,17 +352,18 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
     const fresh = await ownAttempt(c.db, me.id, a.id);
     if (fresh.finished_at) return json({ finished: true, id: a.id });
     const [rowsRes, marks] = await c.db.batch([
-      c.db.prepare("SELECT idx, question_id, answer, flagged, checked FROM answers WHERE attempt_id = ? ORDER BY idx").bind(a.id),
+      c.db.prepare("SELECT idx, question_id, answer, flagged, checked, seconds FROM answers WHERE attempt_id = ? ORDER BY idx").bind(a.id),
       c.db.prepare("SELECT question_id FROM bookmarks WHERE user_id = ?").bind(me.id),
     ]);
     const rows = rowsRes!.results as AnswerRow[];
     const qs = await servedByIds(c.db, rows.map((r) => r.question_id));
     const saved = new Set((marks!.results as { question_id: string }[]).map((m) => m.question_id));
+    const stats = a.mode === "tutor" ? await statsFor(c.db, rows.filter((r) => r.checked).map((r) => r.question_id)) : new Map<string, Stats>();
     return json({
       id: a.id, kind: a.kind, mode: a.mode, title: a.title, startedAt: a.started_at, deadlineAt: a.deadline_at, now: Date.now(),
       items: rows.filter((r) => qs.has(r.question_id)).map((r) => {
         const q = qs.get(r.question_id)!;
-        return { idx: r.idx, q: ask(q), answer: r.answer, flagged: !!r.flagged, checked: !!r.checked, bookmarked: saved.has(q.id), reveal: a.mode === "tutor" && r.checked ? full(q) : null };
+        return { idx: r.idx, q: ask(q), answer: r.answer, flagged: !!r.flagged, checked: !!r.checked, bookmarked: saved.has(q.id), seconds: r.seconds, reveal: a.mode === "tutor" && r.checked ? full(q) : null, stats: (r.checked && stats.get(q.id)) || null };
       }),
     });
   },
@@ -275,8 +375,8 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
     const idx = Number(b.idx);
     const answer = b.answer === null ? null : Number.isInteger(b.answer) && (b.answer as number) >= 0 && (b.answer as number) <= 3 ? (b.answer as number) : undefined;
     if (!Number.isInteger(idx) || answer === undefined) throw fail(400, "bad_answer", "That answer didn't save. Please try again.");
-    const res = await c.db.prepare(`UPDATE answers SET answer = ?, flagged = ? WHERE attempt_id = ? AND idx = ? AND checked = 0`)
-      .bind(answer, b.flagged ? 1 : 0, a.id, idx).run();
+    const res = await c.db.prepare(`UPDATE answers SET answer = ?, flagged = ?, seconds = coalesce(?, seconds) WHERE attempt_id = ? AND idx = ? AND checked = 0`)
+      .bind(answer, b.flagged ? 1 : 0, secs(b.seconds), a.id, idx).run();
     if (!res.meta.changes) throw fail(409, "locked", "This answer is already checked.");
     return json({ ok: true });
   },
@@ -293,11 +393,11 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
     const row = await c.db.prepare("SELECT question_id, checked, answer FROM answers WHERE attempt_id = ? AND idx = ?").bind(a.id, idx).first<{ question_id: string; checked: number; answer: number | null }>();
     if (!row) throw fail(404, "not_found", "That question isn't in this test.");
     if (!row.checked) {
-      await c.db.prepare("UPDATE answers SET answer = ?, checked = 1, counted_at = ? WHERE attempt_id = ? AND idx = ? AND checked = 0").bind(answer, Date.now(), a.id, idx).run();
+      await c.db.prepare("UPDATE answers SET answer = ?, checked = 1, counted_at = ?, seconds = coalesce(?, seconds) WHERE attempt_id = ? AND idx = ? AND checked = 0").bind(answer, Date.now(), secs(b.seconds), a.id, idx).run();
     }
     const q = (await servedByIds(c.db, [row.question_id])).get(row.question_id);
     if (!q) throw fail(404, "not_found", "This question was taken down for a fix.");
-    return json({ answer: row.checked ? row.answer : answer, reveal: full(q) });
+    return json({ answer: row.checked ? row.answer : answer, reveal: full(q), stats: (await statsFor(c.db, [q.id])).get(q.id) ?? null });
   },
 
   "POST /api/study/finish": async (c) => {
@@ -314,15 +414,16 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
     const a = await ownAttempt(c.db, me.id, new URL(c.request.url).searchParams.get("id"));
     if (!a.finished_at) throw fail(409, "open", "Finish this test to see the answers.", { attempt: a.id });
     const [rowsRes, marks] = await c.db.batch([
-      c.db.prepare(`SELECT idx, question_id, answer, flagged, checked FROM answers WHERE attempt_id = ? ${a.mode === "tutor" ? "AND checked = 1" : ""} ORDER BY idx`).bind(a.id),
+      c.db.prepare(`SELECT idx, question_id, answer, flagged, checked, seconds FROM answers WHERE attempt_id = ? ${a.mode === "tutor" ? "AND checked = 1" : ""} ORDER BY idx`).bind(a.id),
       c.db.prepare("SELECT question_id FROM bookmarks WHERE user_id = ?").bind(me.id),
     ]);
     const rows = rowsRes!.results as AnswerRow[];
     const qs = await servedByIds(c.db, rows.map((r) => r.question_id));
     const saved = new Set((marks!.results as { question_id: string }[]).map((m) => m.question_id));
+    const stats = await statsFor(c.db, rows.map((r) => r.question_id));
     return json({
       attempt: { ...result(a), mode: a.mode, seconds: a.seconds ?? 0 },
-      items: rows.filter((r) => qs.has(r.question_id)).map((r) => ({ q: full(qs.get(r.question_id)!), chosen: r.answer, flagged: !!r.flagged, bookmarked: saved.has(r.question_id) })),
+      items: rows.filter((r) => qs.has(r.question_id)).map((r) => ({ q: full(qs.get(r.question_id)!), chosen: r.answer, flagged: !!r.flagged, bookmarked: saved.has(r.question_id), seconds: r.seconds, stats: stats.get(r.question_id) ?? null })),
     });
   },
 

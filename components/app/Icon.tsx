@@ -17,6 +17,7 @@ const paths: Record<string, React.ReactNode> = {
   check: <><circle cx="12" cy="12" r="8.5" /><path d="m8.5 12.2 2.4 2.4 4.6-4.8" /></>,
   bolt: <><path d="M13 3 5.5 13.5H12L11 21l7.5-10.5H12z" /></>,
   play: <><path d="M8 5.5v13l10-6.5z" /></>,
+  trend: <><path d="M4 17.5 9.5 12l3.5 3.5 7-7" /><path d="M15 8.5h5v5" /></>,
   retry: <><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3M4.5 4.5v4h4" /></>,
   panel: <><rect x="3.5" y="4.5" width="17" height="15" rx="2" /><path d="M14.5 4.5v15" /></>,
   chevron: <><path d="m9 6 6 6-6 6" /></>,

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import AppShell from "@/components/app/AppShell";
-import Explanation from "@/components/test/Explanation";
+import Explanation, { AnsweredOptions, ResultStrip } from "@/components/test/Explanation";
 import Protected from "@/components/test/Protected";
 import { ReportDialog } from "@/components/test/TestPlayer";
 import { friendlyError } from "@/lib/auth";
@@ -56,6 +56,8 @@ function Result({ user, data }: { user: AccountUser; data: Data }) {
   const [saved, setSaved] = useState(() => new Set(data.items.filter((r) => r.bookmarked).map((r) => r.q.id)));
   const [filter, setFilter] = useState<Filter>("all");
   const [report, setReport] = useState<Question | null>(null);
+  // Every question starts closed so the list reads as a summary; one tap opens a question, or all of them.
+  const [openAll, setOpenAll] = useState(false);
   const right = rows.filter((r) => r.status === "correct").length;
   const wrong = rows.filter((r) => r.status === "wrong").length;
   const skipped = rows.filter((r) => r.status === "skipped").length;
@@ -88,7 +90,7 @@ function Result({ user, data }: { user: AccountUser; data: Data }) {
           </div>
           <div className="hello-ctas">
             {retry.length > 0 && <a className="dpill dark" href={testHref({ kind: "practice", ids: retry, title: `Retry: ${attempt.title}` })}>Retry {retry.length} wrong and skipped</a>}
-            <a className="dpill light" href="/dashboard">Back to dashboard</a>
+            <a className="dpill light" href="/history">All results</a>
           </div>
         </div>
         <dl className="result-facts">
@@ -128,9 +130,10 @@ function Result({ user, data }: { user: AccountUser; data: Data }) {
             ))}
           </div>
         </div>
+        {shown.length > 0 && <button type="button" className="link rlist-all" onClick={() => setOpenAll((v) => !v)}>{openAll ? "Close all" : "Open all explanations"}</button>}
         <Protected user={user}>
           <ol className="rlist">
-            {shown.map(({ r, i }) => <ReviewItem key={`${r.q.id}-${i}`} r={r} n={i + 1} saved={saved.has(r.q.id)} onSave={() => toggleSave(r.q.id)} onReport={() => setReport(r.q)} />)}
+            {shown.map(({ r, i }) => <ReviewItem key={`${r.q.id}-${i}-${openAll}`} open={openAll} r={r} n={i + 1} saved={saved.has(r.q.id)} onSave={() => toggleSave(r.q.id)} onReport={() => setReport(r.q)} />)}
             {!shown.length && <li className="muted">Nothing here.</li>}
           </ol>
         </Protected>
@@ -140,11 +143,11 @@ function Result({ user, data }: { user: AccountUser; data: Data }) {
   );
 }
 
-function ReviewItem({ r, n, saved, onSave, onReport }: { r: Scored & { status: Status }; n: number; saved: boolean; onSave: () => void; onReport: () => void }) {
+function ReviewItem({ r, n, open, saved, onSave, onReport }: { r: Scored & { status: Status }; n: number; open: boolean; saved: boolean; onSave: () => void; onReport: () => void }) {
   const label = { correct: "Correct", wrong: "Wrong", skipped: "Skipped" }[r.status];
   return (
     <li className={`ritem ${r.status}`}>
-      <details open={r.status !== "correct"}>
+      <details open={open}>
         <summary>
           <span className={`rstat ${r.status}`}>{label}</span>
           <span className="rq"><b>Q{n}.</b> {r.q.stem}</span>
@@ -152,19 +155,8 @@ function ReviewItem({ r, n, saved, onSave, onReport }: { r: Scored & { status: S
           <svg className="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
         </summary>
         <div className="rbody">
-          <p className="muted small">{r.q.subject} · {r.q.chapter} · {r.q.topic}</p>
-          <ul className="opts compact" role="list">
-            {r.q.options.map((o, k) => (
-              <li key={k}>
-                <div className={`opt ${k === r.q.answer ? "key" : k === r.chosen ? "miss" : "dim"}`}>
-                  <span className="letter">{letters[k]}</span>
-                  <span className="otext">{o}</span>
-                  {k === r.q.answer && <span className="otag good">Answer</span>}
-                  {k === r.chosen && k !== r.q.answer && <span className="otag bad">Your answer</span>}
-                </div>
-              </li>
-            ))}
-          </ul>
+          <AnsweredOptions q={r.q} chosen={r.chosen} stats={r.stats} />
+          <ResultStrip q={r.q} chosen={r.chosen} stats={r.stats} seconds={r.seconds} />
           <Explanation q={r.q} chosen={r.chosen} onReport={onReport} />
           <button type="button" className={`tool${saved ? " on" : ""}`} aria-pressed={saved} onClick={onSave}>{saved ? "Bookmarked" : "Bookmark"}</button>
         </div>

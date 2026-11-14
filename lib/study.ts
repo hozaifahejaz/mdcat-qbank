@@ -9,7 +9,9 @@ export type Kind = TestResult["kind"] | "mini-mock";
 
 export type Catalog = {
   paid: boolean;
-  chapters: { subject: string; chapter: string; total: number; open: number }[];
+  bank: string;
+  /* answered and correct: this student's latest answer to each question of the chapter. */
+  chapters: { subject: string; chapter: string; total: number; open: number; answered: number; correct: number }[];
   papers: { year: number; count: number }[];
   mocks: number;
   mockReady: boolean;
@@ -18,31 +20,66 @@ export type Catalog = {
   miniOpen: string | null;
 };
 
+/* Where a question stands for the student. A practice set can draw from any mix of them. */
+export const filters = ["unused", "incorrect", "marked", "omitted", "correct"] as const;
+export type Filter = (typeof filters)[number];
+export type Pool = Record<Filter, number> & { total: number; markedIn: Record<Exclude<Filter, "marked">, number> };
+/* How many questions a mix of filters matches. None picked means every question. */
+export function poolMatch(p: Pool, picked: Filter[]) {
+  if (!picked.length) return p.total;
+  const states = (["unused", "incorrect", "omitted", "correct"] as const);
+  return states.reduce((n, s) => n + (picked.includes(s) ? p[s] : picked.includes("marked") ? p.markedIn[s] : 0), 0);
+}
+/* How everyone answered a question: picks per option. Null until enough students have answered it. */
+export type Stats = { n: number; picks: number[] };
+
 export type StartOptions = {
-  kind: Kind; subject?: string; chapters?: string[]; topic?: string; count?: number; from?: "all" | "unseen" | "wrong";
+  kind: Kind; bank?: string; subject?: string; subjects?: string[]; chapters?: string[]; topic?: string; count?: number; from?: "all" | "unseen" | "wrong";
+  /* Practice sets: which questions to draw from, and the two switches (explanations as you go, and a clock). */
+  filters?: Filter[]; tutor?: boolean; timed?: boolean;
   ids?: string[]; mock?: number; paper?: number; title?: string;
 };
 
-export type Item = { idx: number; q: Asked; answer: number | null; flagged: boolean; checked: boolean; bookmarked: boolean; reveal: Question | null };
+export type Item = { idx: number; q: Asked; answer: number | null; flagged: boolean; checked: boolean; bookmarked: boolean; seconds: number | null; reveal: Question | null; stats: Stats | null };
 export type OpenAttempt = { id: string; kind: Kind; mode: Mode; title: string; startedAt: number; deadlineAt: number | null; now: number; items: Item[] };
 
-export type Scored = { q: Question; chosen: number | null; flagged: boolean; bookmarked: boolean };
+export type Scored = { q: Question; chosen: number | null; flagged: boolean; bookmarked: boolean; seconds: number | null; stats: Stats | null };
 export type Review = { attempt: TestResult & { mode: Mode; seconds: number }; items: Scored[] };
 export type Mistake = { q: Question; chosen: number; date: string; tries: number };
 
-/* Questions available for a chapter (or a subject, or the whole bank) to this student. */
-export const openCount = (c: Catalog | null, subject?: string, chapters?: string[]) =>
-  (c?.chapters ?? []).filter((x) => (!subject || x.subject === subject) && (!chapters?.length || chapters.includes(x.chapter))).reduce((n, x) => n + x.open, 0);
-export const totalCount = (c: Catalog | null, subject?: string, chapters?: string[]) =>
-  (c?.chapters ?? []).filter((x) => (!subject || x.subject === subject) && (!chapters?.length || chapters.includes(x.chapter))).reduce((n, x) => n + x.total, 0);
+/* Questions available for a chapter (or a subject, several subjects, or the whole bank) to this student. */
+const pick = (c: Catalog | null, subject?: string | string[], chapters?: string[]) =>
+  (c?.chapters ?? []).filter((x) => (!subject || (Array.isArray(subject) ? !subject.length || subject.includes(x.subject) : x.subject === subject)) && (!chapters?.length || chapters.includes(x.chapter)));
+export const openCount = (c: Catalog | null, subject?: string | string[], chapters?: string[]) => pick(c, subject, chapters).reduce((n, x) => n + x.open, 0);
+export const totalCount = (c: Catalog | null, subject?: string | string[], chapters?: string[]) => pick(c, subject, chapters).reduce((n, x) => n + x.total, 0);
+export const doneCount = (c: Catalog | null, subject?: string | string[], chapters?: string[]) =>
+  pick(c, subject, chapters).reduce((t, x) => ({ answered: t.answered + x.answered, correct: t.correct + x.correct }), { answered: 0, correct: 0 });
 
-let catalog: Promise<Catalog> | null = null;
-export const getCatalog = () => (catalog ??= api<Catalog>("/api/study/catalog").catch((e) => { catalog = null; throw e; }));
+/* One catalog per bank (lib/banks.ts); no bank is MDCAT. */
+const catalogs = new Map<string, Promise<Catalog>>();
+export const getCatalog = (bank = "mdcat") => {
+  let p = catalogs.get(bank);
+  if (!p) {
+    p = api<Catalog>(`/api/study/catalog?bank=${encodeURIComponent(bank)}`).catch((e) => { catalogs.delete(bank); throw e; });
+    catalogs.set(bank, p);
+  }
+  return p;
+};
 
 export const startTest = (o: StartOptions) => api<{ id: string; count: number; short: boolean }>("/api/study/start", { body: o });
 export const getOpenAttempt = (id: string) => api<OpenAttempt | { finished: true; id: string }>(`/api/study/attempt?id=${encodeURIComponent(id)}`);
-export const saveAnswer = (id: string, idx: number, answer: number | null, flagged: boolean) => api("/api/study/answer", { body: { id, idx, answer, flagged } });
-export const checkAnswer = (id: string, idx: number, answer: number) => api<{ answer: number; reveal: Question }>("/api/study/check", { body: { id, idx, answer } });
+export const saveAnswer = (id: string, idx: number, answer: number | null, flagged: boolean, seconds?: number) => api("/api/study/answer", { body: { id, idx, answer, flagged, seconds } });
+export const checkAnswer = (id: string, idx: number, answer: number, seconds?: number) => api<{ answer: number; reveal: Question; stats: Stats | null }>("/api/study/check", { body: { id, idx, answer, seconds } });
+/* How many of a selection are unused, incorrect, marked, omitted and correct for this student. */
+export const getPool = (o: Pick<StartOptions, "bank" | "subject" | "subjects" | "chapters" | "topic">) => {
+  const p = new URLSearchParams();
+  if (o.bank) p.set("bank", o.bank);
+  if (o.subject) p.set("subject", o.subject);
+  if (o.subjects?.length) p.set("subjects", o.subjects.join("|"));
+  if (o.chapters?.length) p.set("chapters", o.chapters.join("|"));
+  if (o.topic) p.set("topic", o.topic);
+  return api<Pool>(`/api/study/pool?${p}`);
+};
 export const finishTest = (id: string) => api<{ id: string }>("/api/study/finish", { body: { id } });
 export const getReview = (id: string) => api<Review>(`/api/study/review?id=${encodeURIComponent(id)}`);
 export const getHistory = () => api<{ tests: TestResult[] }>("/api/study/history").then((r) => r.tests);
@@ -54,11 +91,16 @@ export const reportQuestion = (questionId: string, reason: string, details: stri
 /* Where a test link goes: /test with what to ask, which the test screen turns into a saved test. */
 export function testHref(o: StartOptions): string {
   const p = new URLSearchParams({ kind: o.kind });
+  if (o.bank && o.bank !== "mdcat") p.set("bank", o.bank);
   if (o.subject) p.set("subject", o.subject);
+  if (o.subjects?.length) p.set("subjects", o.subjects.join("|"));
   if (o.chapters?.length) p.set("chapters", o.chapters.join("|"));
   if (o.topic) p.set("topic", o.topic);
   if (o.count) p.set("count", String(o.count));
   if (o.from && o.from !== "all") p.set("from", o.from);
+  if (o.filters?.length) p.set("filters", o.filters.join("|"));
+  if (o.tutor !== undefined) p.set("tutor", o.tutor ? "1" : "0");
+  if (o.timed !== undefined) p.set("timed", o.timed ? "1" : "0");
   if (o.ids?.length) p.set("ids", o.ids.join(","));
   if (o.mock) p.set("mock", String(o.mock));
   if (o.paper) p.set("paper", String(o.paper));
@@ -74,11 +116,16 @@ export function readTestHref(search: string): StartOptions {
   const list = (k: string, sep: string) => p.get(k)?.split(sep).filter(Boolean);
   return {
     kind,
+    bank: p.get("bank") ?? undefined,
     subject: p.get("subject") ?? undefined,
+    subjects: list("subjects", "|"),
     chapters: list("chapters", "|"),
     topic: p.get("topic") ?? undefined,
     count: Number(p.get("count")) || undefined,
     from: (p.get("from") as StartOptions["from"]) ?? undefined,
+    filters: list("filters", "|")?.filter((f): f is Filter => (filters as readonly string[]).includes(f)),
+    tutor: p.has("tutor") ? p.get("tutor") === "1" : undefined,
+    timed: p.has("timed") ? p.get("timed") === "1" : undefined,
     ids: list("ids", ","),
     mock: Number(p.get("mock")) || undefined,
     paper: Number(p.get("paper")) || undefined,

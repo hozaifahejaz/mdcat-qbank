@@ -59,12 +59,10 @@ export default function SampleQuestion() {
         {!done ? (
           <>
             <div className="res-top"><strong>Pick an answer</strong></div>
-            <p className="muted">You'll see the same explanation every question in the bank comes with:</p>
+            <p className="muted">Every question in the bank explains:</p>
             <ul className="ticks-list">
               <li>Why the right answer is right</li>
               <li>Why each wrong option is wrong</li>
-              <li>The chapter and topic it's from on the PMDC syllabus</li>
-              <li>A report button if you think something's off</li>
             </ul>
           </>
         ) : (
@@ -93,10 +91,6 @@ export default function SampleQuestion() {
           </>
         )}
       </div>
-
-      <p className="sample">
-        Sample questions. In the full bank, a second subject expert solves every question blind and checks it against the textbook before it goes live.
-      </p>
     </div>
   );
 }

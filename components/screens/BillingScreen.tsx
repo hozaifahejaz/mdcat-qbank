@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import AppShell, { PageHead } from "@/components/app/AppShell";
+import AppShell, { AccountTabs, PageHead } from "@/components/app/AppShell";
 import { getReceipts, methodNames, money, plans, type Receipt } from "@/lib/billing";
 import { day, fullDay, planNames } from "@/lib/format";
 import { site, supportHref } from "@/lib/site";
@@ -25,9 +25,8 @@ function Billing({ user }: { user: AccountUser }) {
   const paid = user.plan !== "free";
   return (
     <div className="dgrid">
-      <PageHead title="Plan and billing">
-        <a className="dpill light" href="/account">Account and devices</a>
-      </PageHead>
+      <PageHead title="Plan and billing" />
+      <AccountTabs active="/account/billing" />
 
       <div className="cols even">
         <section className={`dcard panel plan${paid ? "" : " free"}`} aria-labelledby="plan-h">

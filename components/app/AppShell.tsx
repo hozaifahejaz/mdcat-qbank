@@ -13,13 +13,14 @@ import { type AccountUser, getCurrentUser } from "@/lib/user";
 
 /* The sidebar, grouped like the study loop: practise, then review what went wrong. */
 /* short is the label under a phone tab, when the full one is too long. */
-export type NavLink = { href: string; label: string; icon: string; short?: string };
+/* phoneOnly links show in the phone tab bar but not in the sidebar, where the dashboard already covers them. */
+/* inAccount links are reached from the name at the foot of the sidebar; on phones they sit in the More sheet. */
+export type NavLink = { href: string; label: string; icon: string; short?: string; phoneOnly?: boolean; inAccount?: boolean };
 export type NavGroup = { label?: string; links: NavLink[] };
 
 const groups: NavGroup[] = [
   { links: [{ href: "/dashboard", label: "Home", icon: "home" }] },
   {
-    label: "Practise",
     links: [
       { href: "/practice", label: "Practice", icon: "practice" },
       { href: "/mocks", label: "Mocks", icon: "mock" },
@@ -27,17 +28,16 @@ const groups: NavGroup[] = [
     ],
   },
   {
-    label: "Review",
     links: [
+      { href: "/progress", label: "Progress", icon: "trend", phoneOnly: true },
       { href: "/mistakes", label: "My mistakes", icon: "mistakes", short: "Mistakes" },
       { href: "/history", label: "Results", icon: "results" },
     ],
   },
   {
-    label: "Account",
     links: [
-      { href: "/account/billing", label: "Plan and billing", icon: "billing" },
-      { href: "/account", label: "Account", icon: "account" },
+      { href: "/account/billing", label: "Plan and billing", icon: "billing", inAccount: true },
+      { href: "/account", label: "Account", icon: "account", inAccount: true },
     ],
   },
 ];
@@ -47,7 +47,7 @@ export const links = groups.flatMap((g) => g.links);
 /* Which links the frame shows. Phones get a bottom tab bar instead of the sidebar: the places people go most,
    and More for the rest. The admin panel passes its own (components/admin/AdminFrame.tsx). */
 export type Nav = { kind: "student" | "admin"; home: string; groups: NavGroup[]; tabs: string[] };
-const studentNav: Nav = { kind: "student", home: "/dashboard", groups, tabs: ["/dashboard", "/practice", "/mocks", "/mistakes"] };
+const studentNav: Nav = { kind: "student", home: "/dashboard", groups, tabs: ["/dashboard", "/practice", "/mocks", "/progress"] };
 
 export function initials(name: string) {
   return (name || "?").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]!.toUpperCase()).join("");
@@ -61,7 +61,7 @@ export function AppFrame({ active, title, user, aside, nav = studentNav, childre
   const navLinks = nav.groups.flatMap((g) => g.links);
   const here = navLinks.find((l) => l.href === active);
   const tabs = nav.tabs;
-  const moreLinks = navLinks.filter((l) => !tabs.includes(l.href));
+  const moreLinks = navLinks.filter((l) => !tabs.includes(l.href) && !l.phoneOnly);
   const admin = nav.kind === "admin";
   /* The chip by the name: plan for students, role in the admin panel. */
   const chip = !user ? null
@@ -83,23 +83,28 @@ export function AppFrame({ active, title, user, aside, nav = studentNav, childre
       <aside className={`side ${open ? "open" : ""}`} aria-label="Sidebar">
         <div className="side-top">
           <Logo href={nav.home} />
+          <ThemeToggle />
           <button type="button" className="icon-btn side-close" onClick={() => setOpen(false)} aria-label="Close menu"><Icon name="close" /></button>
         </div>
         <nav aria-label="Main" className="side-nav">
-          {nav.groups.map((g, i) => (
-            <div key={i} className="side-group">
-              {g.label && <span className="side-label">{g.label}</span>}
-              <ul>
-                {g.links.map((l) => (
-                  <li key={l.href}>
-                    <a href={l.href} aria-current={l.href === active ? "page" : undefined}><Icon name={l.icon} />{l.label}</a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+          {nav.groups.map((g, i) => {
+            const shown = g.links.filter((l) => !l.inAccount && (!l.phoneOnly || l.href === active));
+            return shown.length > 0 && (
+              <div key={i} className="side-group">
+                {g.label && <span className="side-label">{g.label}</span>}
+                <ul>
+                  {shown.map((l) => (
+                    <li key={l.href}>
+                      <a href={l.href} aria-current={l.href === active ? "page" : undefined}><Icon name={l.icon} />{l.label}</a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            );
+          })}
         </nav>
         <div className="side-foot">
+          {!admin && user?.plan === "free" && <a className="dpill dark small" href="/pricing">Get the Season Pass</a>}
           <ul>
             {switchLink && <li><a href={switchLink.href}><Icon name={switchLink.icon} />{switchLink.label}</a></li>}
             <li><a href={supportHref}><Icon name="help" />Help</a></li>
@@ -107,7 +112,7 @@ export function AppFrame({ active, title, user, aside, nav = studentNav, childre
               <button type="button" onClick={async () => { await signOut(); window.location.replace("/"); }}><Icon name="signout" />Sign out</button>
             </li>
           </ul>
-          <a className="me" href="/account">
+          <a className="me" href="/account" aria-current={here?.inAccount ? "page" : undefined}>
             <span className="avatar">{user ? initials(user.name) : ""}</span>
             <span className="me-name">{user?.name || "Your account"}</span>
             {chip}
@@ -130,7 +135,6 @@ export function AppFrame({ active, title, user, aside, nav = studentNav, childre
           <h1 className="m-title">{title ?? here?.label ?? "Study"}</h1>
           <div className="topbar-end">
             {!admin && user?.plan === "free" && <a className="dpill dark small hide-xs" href="/pricing">Upgrade</a>}
-            <a className="help-link hide-xs" href={supportHref}>Need help?</a>
             <ThemeToggle />
             <a className="avatar m-avatar" href="/account" aria-label="Account">{user ? initials(user.name) : ""}</a>
           </div>
@@ -202,6 +206,16 @@ function Shell({ active, title, bare, children }: { active?: string; title?: str
         <div className="dgrid" aria-busy="true"><div className="sk" style={{ height: 120 }} /><div className="sk" style={{ height: 360 }} /></div>
       )}
     </AppFrame>
+  );
+}
+
+/* Account and Plan and billing are one place with two tabs. */
+export function AccountTabs({ active }: { active: "/account" | "/account/billing" }) {
+  return (
+    <nav className="ptabs" aria-label="Account">
+      <a className="tab" href="/account" aria-current={active === "/account" ? "page" : undefined}>Account</a>
+      <a className="tab" href="/account/billing" aria-current={active === "/account/billing" ? "page" : undefined}>Plan and billing</a>
+    </nav>
   );
 }
 
