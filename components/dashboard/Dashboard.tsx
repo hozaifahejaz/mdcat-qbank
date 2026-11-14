@@ -7,15 +7,11 @@ import Icon from "@/components/app/Icon";
 import BarChart from "@/components/dashboard/BarChart";
 import MobileHome from "@/components/dashboard/MobileHome";
 import { getDashboard, type Dashboard as Data, type SubjectStat } from "@/lib/dashboard-data";
-import { band, day, fullDay, kindNames, pct, tz } from "@/lib/format";
+import { band, day, fullDay, kindNames, pct } from "@/lib/format";
 import { paper, site } from "@/lib/site";
 import { useNarrow } from "@/lib/narrow";
+import { getCatalog } from "@/lib/study";
 import { type AccountUser, getCurrentUser } from "@/lib/user";
-
-function greeting() {
-  const h = Number(new Date().toLocaleString("en-GB", { hour: "numeric", hour12: false, timeZone: tz }));
-  return h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
-}
 
 function daysUntil(iso: string) {
   return Math.max(0, Math.ceil((new Date(iso + "T09:00:00+05:00").getTime() - Date.now()) / 86_400_000));
@@ -23,6 +19,13 @@ function daysUntil(iso: string) {
 
 function sumChapters(s: SubjectStat) {
   return s.chapters.reduce((t, c) => ({ answered: t.answered + c.answered, available: t.available + c.available, correct: t.correct + c.correct }), { answered: 0, available: 0, correct: 0 });
+}
+
+/* Full mocks open once every subject has enough questions. Until then nothing on the dashboard points at them. */
+function useMockReady() {
+  const [ready, setReady] = useState(false);
+  useEffect(() => { getCatalog().then((c) => setReady(c.mockReady), () => {}); }, []);
+  return ready;
 }
 
 const COACH_KEY = "dash-coach-hidden";
@@ -57,7 +60,7 @@ export default function Dashboard() {
     try { localStorage.setItem(COACH_KEY, show ? "0" : "1"); } catch {}
   }
 
-  const aside = narrow === false && user && data && coach ? <Coach user={user} data={data} onHide={() => toggleCoach(false)} /> : null;
+  const aside = narrow === false && user && data && coach ? <Coach data={data} onHide={() => toggleCoach(false)} /> : null;
   return (
     <AppFrame active="/dashboard" user={user} aside={aside}>
       {user && data && narrow !== null ? narrow ? <MobileHome data={data} /> : <Body data={data} coachHidden={!coach} onShowCoach={() => toggleCoach(true)} /> : <Skeleton />}
@@ -84,6 +87,8 @@ export function Body({ data, coachHidden, onShowCoach, progress }: { data: Data;
   const lastMock = mocks.at(-1);
   const prevMock = mocks.at(-2);
   const change = lastMock && prevMock ? lastMock.score - prevMock.score : null;
+  const mockReady = useMockReady();
+  const showMock = mockReady || !!lastMock;
 
   return (
     <div className="dgrid home">
@@ -94,12 +99,12 @@ export function Body({ data, coachHidden, onShowCoach, progress }: { data: Data;
             <h1 id="home-h">MDCAT {site.season}</h1>
             <span className="status-chip good"><i />{daysUntil(site.examDate)} days to go</span>
           </div>
-          <p className="muted">Exam expected {fullDay(site.examDate)}{data.streakDays > 0 && <> · {data.streakDays}-day practice streak</>}</p>
+          <p className="muted">Exam expected {fullDay(site.examDate)}{showMock && data.streakDays > 0 && <> · {data.streakDays}-day practice streak</>}</p>
         </div>
         <div className="hello-ctas">
-          {coachHidden && <button type="button" className="dpill light small hide-m" onClick={onShowCoach}><Icon name="spark" size={16} />Study coach</button>}
-          <a className="dpill light small" href="/practice">Practise</a>
-          <a className="dpill dark small" href="/mocks/new">Start a full mock</a>
+          {coachHidden && <button type="button" className="dpill light small hide-m" onClick={onShowCoach}><Icon name="spark" size={16} />Up next</button>}
+          {data.resume && <a className="dpill light small" href={data.resume.href}>Continue your test</a>}
+          <a className="dpill dark small" href="/practice">Create a test</a>
         </div>
       </section>
       )}
@@ -117,6 +122,7 @@ export function Body({ data, coachHidden, onShowCoach, progress }: { data: Data;
           <strong>{month.answered ? `${pct(month.correct, month.answered)}%` : "–"}</strong>
           <p className="muted">Right in the <b>last 30 days</b>{totals.answered > 0 && <span className="overall"> · {pct(totals.correct, totals.answered)}% overall</span>}</p>
         </div>
+        {showMock ? (
         <div className="kpi">
           <h2><span className="kpi-ic" style={{ color: "var(--warn)" }}><Icon name="mock" /></span>Latest mock</h2>
           <strong>{lastMock ? <>{lastMock.score}<small>/180</small></> : "–"}</strong>
@@ -124,6 +130,13 @@ export function Body({ data, coachHidden, onShowCoach, progress }: { data: Data;
             {change !== null ? <><b className={change >= 0 ? "up" : "down"}>{change >= 0 ? "+" : ""}{change}</b> on the mock before</> : "Sit one to see your score"}
           </p>
         </div>
+        ) : (
+        <div className="kpi">
+          <h2><span className="kpi-ic" style={{ color: "var(--warn)" }}><Icon name="flame" /></span>Streak</h2>
+          <strong>{data.streakDays}<small className="unit">{data.streakDays === 1 ? "day" : "days"}</small></strong>
+          <p className="muted">{data.streakDays > 0 ? "Days in a row with practice" : "Practise today to start one"}</p>
+        </div>
+        )}
       </section>
 
       {!progress && <CoachStrip data={data} />}
@@ -135,17 +148,13 @@ export function Body({ data, coachHidden, onShowCoach, progress }: { data: Data;
       <section className="box" aria-labelledby="subj-h">
         <div className="panel-h">
           <h2 id="subj-h">Subjects</h2>
-          <div className="hello-ctas">
-            <a className="dpill light small" href="/mistakes">Retry mistakes</a>
-            <a className="dpill light small" href="/practice">Choose chapters</a>
-          </div>
         </div>
         <ul className="m-list show-m">
           {data.subjects.map((s) => {
             const t = sumChapters(s);
             const acc = pct(t.correct, t.answered);
             const p = paper.find((x) => x.subject === s.subject)!;
-            const b = t.answered ? band(acc) : { cls: "", word: "Not started" };
+            const b = t.answered ? band(acc) : { cls: "", word: t.available ? "Not started" : "Coming soon" };
             return (
               <li key={s.subject}>
                 <a href={`/practice?subject=${encodeURIComponent(s.subject)}`}>
@@ -174,7 +183,7 @@ export function Body({ data, coachHidden, onShowCoach, progress }: { data: Data;
                 const t = sumChapters(s);
                 const acc = pct(t.correct, t.answered);
                 const p = paper.find((x) => x.subject === s.subject)!;
-                const b = t.answered ? band(acc) : { cls: "", word: "Not started" };
+                const b = t.answered ? band(acc) : { cls: "", word: t.available ? "Not started" : "Coming soon" };
                 return (
                   <tr key={s.subject}>
                     <th scope="row">
@@ -254,7 +263,7 @@ export function Body({ data, coachHidden, onShowCoach, progress }: { data: Data;
 
 /* The right-hand panel: what to do next, worked out from the student's own numbers. Every suggestion is a link
    into practice, not a chat; an AI tutor is a later phase of the plan. */
-function coachTips(data: Data) {
+function coachTips(data: Data, mockReady: boolean) {
   if (!hasQuestions(data)) return [];
   const weakest = [...data.weakTopics].sort((a, b) => a.correct / a.answered - b.correct / b.answered).slice(0, 2);
   const nextMock = data.recent.filter((t) => t.kind === "mock").length + 1;
@@ -262,33 +271,30 @@ function coachTips(data: Data) {
     ...weakest.map((w) => ({ href: `/practice?${new URLSearchParams({ subject: w.subject, chapter: w.chapter, topic: w.topic })}`, icon: "target", tone: "var(--bad)", label: `${w.topic} · ${pct(w.correct, w.answered)}%` })),
     ...(data.resume ? [{ href: data.resume.href, icon: "play", tone: "var(--blue)", label: `Finish ${data.resume.title.split(" · ").at(-1)}` }] : []),
     ...(data.mistakesToRetry ? [{ href: "/mistakes", icon: "retry", tone: "var(--warn)", label: `Retry ${data.mistakesToRetry} mistakes` }] : []),
-    { href: "/mocks/new", icon: "mock", tone: "var(--good)", label: `Sit full mock ${nextMock}` },
+    ...(mockReady ? [{ href: "/mocks/new", icon: "mock", tone: "var(--good)", label: `Sit full mock ${nextMock}` }] : []),
     { href: "/practice?mode=timed", icon: "bolt", tone: "#8a63ff", label: "Timed test, 25 questions" },
   ];
 }
 
-function Coach({ user, data, onHide }: { user: AccountUser; data: Data; onHide: () => void }) {
-  const firstName = user.name.split(/\s+/)[0] || "there";
+function Coach({ data, onHide }: { data: Data; onHide: () => void }) {
   const today = data.daily.at(-1)?.answered ?? 0;
-  const tips = coachTips(data);
+  const tips = coachTips(data, useMockReady());
 
   return (
     <aside className="coach" aria-labelledby="coach-h">
       <div className="coach-top">
-        <h2 id="coach-h">Study coach</h2>
-        <button type="button" className="icon-btn" onClick={onHide} aria-label="Hide study coach" title="Hide"><Icon name="panel" /></button>
+        <h2 id="coach-h">Up next</h2>
+        <button type="button" className="icon-btn" onClick={onHide} aria-label="Hide Up next" title="Hide"><Icon name="panel" /></button>
       </div>
       <div className="coach-body">
-        <span className="coach-mark"><Icon name="spark" size={22} /></span>
-        <p className="coach-hi">{greeting()}, {firstName}</p>
-        <p className="muted">{tips.length ? "Here’s what would help most today." : "Questions are being written and checked. Suggestions show here once you can practise."}</p>
+        {!tips.length && <p className="muted">Questions are being written and checked. Suggestions show here once you can practise.</p>}
         <ul className="coach-tips">
           {tips.map((t) => (
-            <li key={t.label}><a href={t.href}><span style={{ color: t.tone }}><Icon name={t.icon} size={16} /></span>{t.label}</a></li>
+            <li key={t.label}><a href={t.href}><span style={{ color: t.tone }}><Icon name={t.icon} size={16} /></span><b>{t.label}</b><Icon name="chevron" size={16} /></a></li>
           ))}
         </ul>
+        <Goal today={today} goal={data.dailyGoal} />
       </div>
-      <Goal today={today} goal={data.dailyGoal} />
     </aside>
   );
 }
@@ -308,6 +314,7 @@ function Goal({ today, goal }: { today: number; goal: number }) {
 
 /* Phones: the coach's suggestions as a swipeable row and the daily goal, near the top instead of in a side panel. */
 function CoachStrip({ data }: { data: Data }) {
+  const mockReady = useMockReady();
   return (
     <section className="m-coach show-m" aria-labelledby="mcoach-h">
       <div className="m-coach-h">
@@ -315,7 +322,7 @@ function CoachStrip({ data }: { data: Data }) {
       </div>
       {!hasQuestions(data) && <p className="muted small">Questions are being written and checked. Suggestions show here once you can practise.</p>}
       <ul className="m-tips">
-        {coachTips(data).map((t) => (
+        {coachTips(data, mockReady).map((t) => (
           <li key={t.label}><a href={t.href}><span style={{ color: t.tone }}><Icon name={t.icon} size={18} /></span>{t.label}</a></li>
         ))}
       </ul>

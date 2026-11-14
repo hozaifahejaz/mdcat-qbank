@@ -20,7 +20,7 @@ const copy = {
 };
 
 /* Sign in and sign up share one screen: Google and Apple on top, then phone (SMS code) or email and password.
-   Every method always shows; one that isn't switched on yet (docs/auth-setup.md) says it's coming soon. */
+   Only the methods that are switched on (docs/auth-setup.md) show, so nobody meets a button that does nothing. */
 export default function AuthPage({ mode }: { mode: Mode }) {
   const [next, setNext] = useState("/dashboard");
   const [config, setConfig] = useState<AuthConfig | null | undefined>(undefined);
@@ -56,14 +56,20 @@ export default function AuthPage({ mode }: { mode: Mode }) {
         </div>
         {config && (
           <>
-            <ProviderButtons next={next} google={config.google} apple={config.apple} onUnavailable={setError} />
-            <div className="or">or</div>
-            <div className="tabs" role="tablist" aria-label="Sign-in method">
-              <button type="button" role="tab" aria-selected={method === "phone"} onClick={() => { setMethod("phone"); setError(""); }}>Phone{!config.phone && <span className="soon-tag">Soon</span>}</button>
-              <button type="button" role="tab" aria-selected={method === "email"} onClick={() => { setMethod("email"); setError(""); }}>Email</button>
-            </div>
+            {(config.google || config.apple) && (
+              <>
+                <ProviderButtons next={next} google={config.google} apple={config.apple} onUnavailable={setError} />
+                <div className="or">or</div>
+              </>
+            )}
+            {config.phone && (
+              <div className="tabs" role="tablist" aria-label="Sign-in method">
+                <button type="button" role="tab" aria-selected={method === "phone"} onClick={() => { setMethod("phone"); setError(""); }}>Phone</button>
+                <button type="button" role="tab" aria-selected={method === "email"} onClick={() => { setMethod("email"); setError(""); }}>Email</button>
+              </div>
+            )}
             {error && <p className="note bad" role="alert">{error}</p>}
-            <div role="tabpanel">
+            <div role={config.phone ? "tabpanel" : undefined}>
               {method === "phone" && <PhoneForm key={`p-${mode}`} mode={mode} siteKey={siteKey} available={config.phone} onSignedIn={() => setSignedIn(true)} />}
               {method === "email" && <EmailForm key={`e-${mode}`} mode={mode} next={next} siteKey={siteKey} onSignedIn={() => setSignedIn(true)} />}
             </div>
