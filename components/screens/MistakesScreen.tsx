@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import AppShell, { PageHead } from "@/components/app/AppShell";
 import Empty from "@/components/app/Empty";
-import Explanation from "@/components/test/Explanation";
+import Explanation, { AnsweredOptions } from "@/components/test/Explanation";
 import Protected from "@/components/test/Protected";
 import { friendlyError } from "@/lib/auth";
 import { type Question, subjects } from "@/lib/bank";
@@ -72,6 +72,7 @@ function Mistakes({ user }: { user: AccountUser }) {
                 </button>
                 {open === q.id && (
                   <div className="rbody">
+                    <AnsweredOptions q={q} chosen={m?.chosen} />
                     <Explanation q={q} chosen={m?.chosen} />
                     <div className="hello-ctas">
                       <a className="dpill light small" href={testHref({ kind: "practice", ids: [q.id], title: q.topic || q.chapter })}>Try it again</a>
