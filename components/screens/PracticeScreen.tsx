@@ -148,7 +148,8 @@ function BankPractice({ bank }: { bank: Bank }) {
         ))}
       </nav>
 
-      <div className="dcard setup">
+      <div className="setup-grid">
+      <div className="dcard setup su-a">
         <section className="setup-sec" aria-labelledby="mode-h">
           <h2 id="mode-h">Test mode</h2>
           <div className="switches">
@@ -161,7 +162,7 @@ function BankPractice({ bank }: { bank: Bank }) {
         <section className="setup-sec" aria-labelledby="q-h">
           <div className="setup-h">
             <h2 id="q-h">Questions</h2>
-            {picked.length > 0 && <button type="button" className="link" onClick={() => setPicked([])}>All questions</button>}
+            {picked.length > 0 ? <button type="button" className="link" onClick={() => setPicked([])}>All questions</button> : <span className="muted small">All questions</span>}
           </div>
           <ul className="fchecks">
             {filters.map((f) => (
@@ -174,9 +175,11 @@ function BankPractice({ bank }: { bank: Bank }) {
               </li>
             ))}
           </ul>
-          {picked.length === 0 && <p className="muted small">Nothing ticked means all questions.</p>}
         </section>
 
+      </div>
+
+      <div className="dcard setup su-b">
         <section className="setup-sec" aria-labelledby="ch-h">
           <div className="setup-h">
             <h2 id="ch-h">{isBook ? "Books" : "Subjects"}</h2>
@@ -231,6 +234,9 @@ function BankPractice({ bank }: { bank: Bank }) {
           </ul>
         </section>
 
+      </div>
+
+      <div className="dcard setup su-c">
         <section className="setup-sec" aria-labelledby="n-h">
           <h2 id="n-h">Number of questions</h2>
           <div className="chips big">
@@ -238,7 +244,6 @@ function BankPractice({ bank }: { bank: Bank }) {
           </div>
           {catalog && !catalog.paid && locked > 0 && <p className="muted small">Free plan: {nf(pool)} of {nf(pool + locked)} questions here. <a className="link" href="/pricing">A pass opens them all.</a></p>}
         </section>
-      </div>
 
       <div className="setup-go">
         <span className="setup-go-txt">
@@ -250,6 +255,8 @@ function BankPractice({ bank }: { bank: Bank }) {
           : pool ? <button type="button" className="dpill dark" onClick={() => setPicked([])}>Use all questions</button>
           : locked ? <a className="dpill dark" href="/pricing">Get a pass</a>
           : <button type="button" className="dpill dark" disabled>Coming soon</button>}
+      </div>
+      </div>
       </div>
     </div>
   );
