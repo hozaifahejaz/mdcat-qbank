@@ -6,12 +6,19 @@ import Empty from "@/components/app/Empty";
 import Icon from "@/components/app/Icon";
 import BarChart from "@/components/dashboard/BarChart";
 import MobileHome from "@/components/dashboard/MobileHome";
+import NextCard from "@/components/dashboard/NextCard";
+import { BankButtons } from "@/components/screens/PracticeScreen";
 import { getDashboard, type Dashboard as Data, type SubjectStat } from "@/lib/dashboard-data";
-import { band, day, fullDay, kindNames, pct } from "@/lib/format";
+import { band, day, fullDay, kindNames, pct, tz } from "@/lib/format";
 import { paper, site } from "@/lib/site";
 import { useNarrow } from "@/lib/narrow";
 import { getCatalog } from "@/lib/study";
 import { type AccountUser, getCurrentUser } from "@/lib/user";
+
+function greeting() {
+  const h = Number(new Date().toLocaleString("en-GB", { hour: "numeric", hour12: false, timeZone: tz }));
+  return h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
+}
 
 function daysUntil(iso: string) {
   return Math.max(0, Math.ceil((new Date(iso + "T09:00:00+05:00").getTime() - Date.now()) / 86_400_000));
@@ -63,7 +70,7 @@ export default function Dashboard() {
   const aside = narrow === false && user && data && coach ? <Coach data={data} onHide={() => toggleCoach(false)} /> : null;
   return (
     <AppFrame active="/dashboard" user={user} aside={aside}>
-      {user && data && narrow !== null ? narrow ? <MobileHome data={data} /> : <Body data={data} coachHidden={!coach} onShowCoach={() => toggleCoach(true)} /> : <Skeleton />}
+      {user && data && narrow !== null ? narrow ? <MobileHome data={data} /> : <Body data={data} name={user.name} coachHidden={!coach} onShowCoach={() => toggleCoach(true)} /> : <Skeleton />}
     </AppFrame>
   );
 }
@@ -80,7 +87,7 @@ export function Skeleton() {
 
 /* The full dashboard on laptops. progress: the phone's Progress tab, which shows the same numbers under its own
    heading, without the exam header and the Up next strip. */
-export function Body({ data, coachHidden, onShowCoach, progress }: { data: Data; coachHidden?: boolean; onShowCoach?: () => void; progress?: boolean }) {
+export function Body({ data, name, coachHidden, onShowCoach, progress }: { data: Data; name?: string; coachHidden?: boolean; onShowCoach?: () => void; progress?: boolean }) {
   const totals = data.subjects.map(sumChapters).reduce((t, s) => ({ answered: t.answered + s.answered, available: t.available + s.available, correct: t.correct + s.correct }), { answered: 0, available: 0, correct: 0 });
   const month = data.daily.slice(-30).reduce((t, d) => ({ answered: t.answered + d.answered, correct: t.correct + d.correct }), { answered: 0, correct: 0 });
   const mocks = data.recent.filter((t) => t.kind === "mock").sort((a, b) => a.date.localeCompare(b.date));
@@ -95,18 +102,20 @@ export function Body({ data, coachHidden, onShowCoach, progress }: { data: Data;
       {progress ? <section className="hello page-head"><div><h1>Progress</h1><p className="muted">How your practice is going.</p></div></section> : (
       <section className="home-head" aria-labelledby="home-h">
         <div>
-          <div className="title-row">
-            <h1 id="home-h">MDCAT {site.season}</h1>
-            <span className="status-chip good"><i />{daysUntil(site.examDate)} days to go</span>
-          </div>
-          <p className="muted">Exam expected {fullDay(site.examDate)}{showMock && data.streakDays > 0 && <> · {data.streakDays}-day practice streak</>}</p>
+          <h1 id="home-h">{greeting()}{name ? `, ${name.split(/\s+/)[0]}` : ""}</h1>
+          <p className="muted"><b>{daysUntil(site.examDate)} days</b> to MDCAT {site.season}, expected {fullDay(site.examDate)}</p>
         </div>
-        <div className="hello-ctas">
-          {coachHidden && <button type="button" className="dpill light small hide-m" onClick={onShowCoach}><Icon name="spark" size={16} />Up next</button>}
-          {data.resume && <a className="dpill light small" href={data.resume.href}>Continue your test</a>}
-          <a className="dpill dark small" href="/practice">Create a test</a>
-        </div>
+        {coachHidden && <div className="hello-ctas"><button type="button" className="dpill light small hide-m" onClick={onShowCoach}><Icon name="spark" size={16} />Suggestions</button></div>}
       </section>
+      )}
+
+      {!progress && hasQuestions(data) && <NextCard data={data} />}
+
+      {!progress && (
+        <section aria-labelledby="banks-h" className="home-banks">
+          <h2 id="banks-h">Question banks</h2>
+          <BankButtons />
+        </section>
       )}
 
       {!hasQuestions(data) && <p className="demo"><i />Questions coming soon. Your stats fill in as you practise.</p>}
@@ -269,7 +278,6 @@ function coachTips(data: Data, mockReady: boolean) {
   const nextMock = data.recent.filter((t) => t.kind === "mock").length + 1;
   return [
     ...weakest.map((w) => ({ href: `/practice?${new URLSearchParams({ subject: w.subject, chapter: w.chapter, topic: w.topic })}`, icon: "target", tone: "var(--bad)", label: `${w.topic} · ${pct(w.correct, w.answered)}%` })),
-    ...(data.resume ? [{ href: data.resume.href, icon: "play", tone: "var(--blue)", label: `Finish ${data.resume.title.split(" · ").at(-1)}` }] : []),
     ...(data.mistakesToRetry ? [{ href: "/mistakes", icon: "retry", tone: "var(--warn)", label: `Retry ${data.mistakesToRetry} mistakes` }] : []),
     ...(mockReady ? [{ href: "/mocks/new", icon: "mock", tone: "var(--good)", label: `Sit full mock ${nextMock}` }] : []),
     { href: "/practice?mode=timed", icon: "bolt", tone: "#8a63ff", label: "Timed test, 25 questions" },
@@ -283,8 +291,8 @@ function Coach({ data, onHide }: { data: Data; onHide: () => void }) {
   return (
     <aside className="coach" aria-labelledby="coach-h">
       <div className="coach-top">
-        <h2 id="coach-h">Up next</h2>
-        <button type="button" className="icon-btn" onClick={onHide} aria-label="Hide Up next" title="Hide"><Icon name="panel" /></button>
+        <h2 id="coach-h">Suggestions</h2>
+        <button type="button" className="icon-btn" onClick={onHide} aria-label="Hide suggestions" title="Hide"><Icon name="panel" /></button>
       </div>
       <div className="coach-body">
         {!tips.length && <p className="muted">Questions are being written and checked. Suggestions show here once you can practise.</p>}

@@ -1,5 +1,6 @@
 "use client";
 
+import NextCard from "@/components/dashboard/NextCard";
 import { BankButtons } from "@/components/screens/PracticeScreen";
 import type { Dashboard } from "@/lib/dashboard-data";
 import { band, pct } from "@/lib/format";
@@ -11,6 +12,7 @@ const weekday = (iso: string) => new Date(iso + "T12:00:00").toLocaleDateString(
 export default function MobileHome({ data }: { data: Dashboard }) {
   return (
     <div className="dgrid m-home">
+      {data.resume && <NextCard data={data} />}
       <section aria-labelledby="mh-start">
         <h1 id="mh-start" className="m-home-h">Start practising</h1>
         <BankButtons />

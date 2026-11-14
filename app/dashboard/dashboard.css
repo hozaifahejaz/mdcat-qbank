@@ -286,7 +286,7 @@
 .dc-plot { display: grid; grid-template-columns: 34px minmax(0, 1fr); grid-template-rows: auto auto; column-gap: 8px; row-gap: 8px; }
 .dc-y { position: relative; font-size: .75rem; color: var(--muted); font-variant-numeric: tabular-nums; }
 .dc-y span { position: absolute; right: 0; line-height: 1; }
-.dc-cols { position: relative; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 4px; height: 216px; }
+.dc-cols { position: relative; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 4px; height: 180px; }
 .dc-empty { position: absolute; inset: 0; margin: 0; display: grid; place-items: center; padding: 0 16px; text-align: center; font-size: .875rem; color: var(--muted); pointer-events: none; }
 .dc-grid { position: absolute; left: 0; right: 0; height: 0; border-top: 1px dashed var(--line); pointer-events: none; }
 .dc-grid:first-child { border-top-style: solid; }
@@ -469,3 +469,31 @@
 .week-bars em { font-style: normal; font-size: .6875rem; font-weight: 600; color: var(--muted); }
 .week-bars .today em { color: var(--ink); }
 .week-more { font-size: .875rem; font-weight: 600; color: var(--blue); }
+
+/* Home: the next step as one card, then the question banks */
+.next-card { display: flex; align-items: center; justify-content: space-between; gap: 16px 24px; flex-wrap: wrap; padding: 20px 22px; border-radius: 18px; background: var(--blue-soft); }
+.next-txt { display: grid; gap: 6px; min-width: 0; flex: 1 1 260px; }
+.next-k { font-size: .8125rem; font-weight: 700; color: var(--blue); }
+.next-txt b { font-size: 1.25rem; font-weight: 800; letter-spacing: -0.02em; line-height: 1.25; }
+.next-meter > span:last-child { white-space: nowrap; }
+.next-meter { display: flex; align-items: center; gap: 12px; font-size: .875rem; color: var(--muted); }
+.next-meter .meter { flex: 0 1 220px; height: 6px; background: color-mix(in srgb, var(--blue) 18%, transparent); }
+.next-act { display: flex; align-items: center; gap: 16px; }
+.next-act .dpill { padding-inline: 28px; }
+.next-alt { font-size: .875rem; font-weight: 600; color: var(--ink); }
+.next-alt:hover { text-decoration: underline; }
+.home-head p.muted b { color: var(--ink); }
+.home-banks { display: grid; gap: 10px; }
+.home-banks h2 { font-size: 1.125rem; font-weight: 700; letter-spacing: -0.02em; }
+.home .bank-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.home .bank-btn { grid-template-columns: minmax(0, 1fr); gap: 10px; padding: 14px; box-shadow: inset 0 0 0 1px var(--line); border-radius: 16px; align-content: start; height: 100%; }
+.home .bank-btn:hover { box-shadow: inset 0 0 0 1.5px var(--ink); transform: none; }
+.home .bank-go { display: none; }
+.home .bank-mark { width: 42px; height: 42px; border-radius: 12px; font-size: .6875rem; }
+.home .bank-txt b { font-size: 1rem; line-height: 1.25; }
+@media (max-width: 760px) {
+  .next-card { padding: 16px; }
+  .next-txt b { font-size: 1.0625rem; }
+  .next-act { width: 100%; }
+  .next-act .dpill { flex: 1; }
+}
