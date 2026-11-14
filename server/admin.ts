@@ -24,6 +24,15 @@ const staff = (c: Ctx) => requireRole(c, ["writer", "reviewer", "admin"]);
 const reviewer = (c: Ctx) => requireRole(c, ["reviewer", "admin"]);
 const admin = (c: Ctx) => requireRole(c, ["admin"]);
 
+/* The owner's account. Only the owner can change it, and only the owner can make or unmake an admin, so a second
+   admin account that falls into the wrong hands can't take the site over. */
+const OWNER_EMAIL = "hozaiphaa@gmail.com";
+const isOwner = async (db: D1Database, id: string) =>
+  (await db.prepare("SELECT email FROM users WHERE id = ?").bind(id).first<{ email: string | null }>())?.email?.toLowerCase() === OWNER_EMAIL;
+async function guardOwner(db: D1Database, me: Staff, targetId: string) {
+  if (targetId !== me.id && (await isOwner(db, targetId))) throw fail(403, "owner", "Only the owner can change the owner's account.");
+}
+
 const log = (db: D1Database, actor: Staff, action: string, target: string, detail = "") =>
   db.prepare("INSERT INTO admin_log (actor_id, action, target, detail, created_at) VALUES (?, ?, ?, ?, ?)").bind(actor.id, action, target, detail, Date.now());
 
@@ -335,9 +344,14 @@ const questionRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
     return json({ question: present(await getQuestion(c.db, r.id), me) });
   },
 
+  /* A question's history. Writers see it for their own questions only. While a question waits for its blind solve,
+     nobody but its writer sees the history: earlier lines can name the key ("Picked A, key C"). */
   "GET /api/admin/questions/log": async (c) => {
-    await staff(c);
+    const me = await staff(c);
     const id = str(new URL(c.request.url).searchParams.get("id"), 20);
+    const q = await c.db.prepare("SELECT writer_id, stage, blind_answer FROM questions WHERE id = ?").bind(id).first<{ writer_id: string; stage: StageId; blind_answer: number | null }>();
+    if (!q && me.role !== "admin") return json({ log: [] });
+    if (q && q.writer_id !== me.id && (me.role === "writer" || (q.stage === "blind" && q.blind_answer === null))) return json({ log: [] });
     const { results } = await c.db
       .prepare("SELECT l.action, l.detail, l.created_at, u.name AS actor FROM admin_log l LEFT JOIN users u ON u.id = l.actor_id WHERE l.target = ? ORDER BY l.id DESC LIMIT 50")
       .bind(id)
@@ -411,6 +425,8 @@ async function targetUser(db: D1Database, id: string): Promise<UserListRow> {
   return u;
 }
 
+const USER_PAGE = 100;
+
 const userRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
   "GET /api/admin/users": async (c) => {
     await admin(c);
@@ -425,27 +441,33 @@ const userRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
     }
     if (filter === "paid") where.push(`u.plan != 'free' AND (u.plan_expires_at IS NULL OR u.plan_expires_at > ${Date.now()})`);
     else if (filter === "staff") where.push("u.role != 'student'");
-    else if (filter === "free") where.push("u.plan = 'free'");
-    const sql = `${USER_SELECT}${where.length ? ` WHERE ${where.join(" AND ")}` : ""} ORDER BY u.created_at DESC LIMIT 200`;
+    // Free means no pass in force, so an expired pass counts as free.
+    else if (filter === "free") where.push(`(u.plan = 'free' OR (u.plan_expires_at IS NOT NULL AND u.plan_expires_at <= ${Date.now()}))`);
+    const offset = Math.max(0, Math.floor(Number(p.get("offset")) || 0));
+    const sql = `${USER_SELECT}${where.length ? ` WHERE ${where.join(" AND ")}` : ""} ORDER BY u.created_at DESC, u.id LIMIT ${USER_PAGE + 1} OFFSET ${offset}`;
     const { results } = await c.db.prepare(sql).bind(...args).all<UserListRow>();
-    return json({ users: results.map(presentUser) });
+    return json({ users: results.slice(0, USER_PAGE).map(presentUser), hasMore: results.length > USER_PAGE });
   },
 
   "GET /api/admin/users/one": async (c) => {
     await admin(c);
     const id = str(new URL(c.request.url).searchParams.get("id"), 64);
     const u = await targetUser(c.db, id);
-    const [devices, identities, logRows, takeovers] = await c.db.batch([
+    const [devices, identities, logRows, takeovers, notes, given] = await c.db.batch([
       c.db.prepare("SELECT d.id, d.label, d.created_at, d.last_seen_at, (d.id = u.active_device_id) AS active FROM devices d JOIN users u ON u.id = d.user_id WHERE d.user_id = ? AND d.removed_at IS NULL ORDER BY d.created_at").bind(id),
       c.db.prepare("SELECT provider FROM identities WHERE user_id = ?").bind(id),
       c.db.prepare("SELECT l.action, l.detail, l.created_at, a.name AS actor FROM admin_log l LEFT JOIN users a ON a.id = l.actor_id WHERE l.target = ? ORDER BY l.id DESC LIMIT 30").bind(id),
       c.db.prepare("SELECT count(*) AS n FROM device_events WHERE user_id = ? AND kind = 'takeover' AND created_at > ?").bind(id, Date.now() - DAY),
+      c.db.prepare("SELECT kind, detail, created_at FROM security_events WHERE user_id = ? ORDER BY id DESC LIMIT 20").bind(id),
+      c.db.prepare("SELECT coalesce(max(count), 0) AS n FROM rate_limits WHERE key = ? AND window_start >= ?").bind(`given:${id}`, Date.now() - DAY),
     ]);
     return json({
       user: presentUser(u),
       devices: (devices!.results as { active: number | null }[]).map((d) => ({ ...d, active: d.active === 1 })),
       methods: [...new Set((identities!.results as { provider: string }[]).map((r) => r.provider))],
       takeoversToday: (takeovers!.results[0] as { n: number }).n,
+      questionsToday: (given!.results[0] as { n: number }).n,
+      notes: notes!.results,
       log: logRows!.results,
     });
   },
@@ -457,6 +479,8 @@ const userRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
     const role = roles.find((r) => r === b.role);
     if (!role) throw fail(400, "bad_role", "Pick a role.");
     if (u.id === me.id && role !== "admin") throw fail(400, "self", "You can't remove your own admin access. Ask another admin.");
+    await guardOwner(c.db, me, u.id);
+    if ((role === "admin" || u.role === "admin") && role !== u.role && !(await isOwner(c.db, me.id))) throw fail(403, "owner", "Only the owner can add or remove an admin.");
     await c.db.batch([
       c.db.prepare("UPDATE users SET role = ? WHERE id = ?").bind(role, u.id),
       log(c.db, me, "user.role", u.id, `${u.role} → ${role}`),
@@ -469,11 +493,14 @@ const userRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
     const me = await admin(c);
     const b = await body(c.request);
     const u = await targetUser(c.db, str(b.id, 64));
+    await guardOwner(c.db, me, u.id);
     const plan = PLANS.find((p) => p === b.plan);
     if (!plan) throw fail(400, "bad_plan", "Pick a plan.");
     let expires: number | null = null;
     if (plan !== "free") {
-      expires = Date.parse(str(b.expiresAt, 40));
+      // A bare date means the end of that day in Pakistan, not 5 am.
+      const raw = str(b.expiresAt, 40);
+      expires = Date.parse(/^\d{4}-\d{2}-\d{2}$/.test(raw) ? `${raw}T23:59:59+05:00` : raw);
       if (!Number.isFinite(expires)) throw fail(400, "bad_date", "Pick an end date for the plan.");
       if (expires < Date.now()) throw fail(400, "bad_date", "The end date has to be in the future.");
     }
@@ -490,6 +517,7 @@ const userRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
     const me = await admin(c);
     const b = await body(c.request);
     const u = await targetUser(c.db, str(b.id, 64));
+    await guardOwner(c.db, me, u.id);
     await c.db.batch([
       c.db.prepare("UPDATE devices SET removed_at = ? WHERE user_id = ? AND removed_at IS NULL").bind(Date.now(), u.id),
       c.db.prepare("UPDATE users SET active_session_id = NULL, active_device_id = NULL WHERE id = ?").bind(u.id),
@@ -503,6 +531,7 @@ const userRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
     const me = await admin(c);
     const b = await body(c.request);
     const u = await targetUser(c.db, str(b.id, 64));
+    await guardOwner(c.db, me, u.id);
     if (u.id === me.id) throw fail(400, "self", "Use Sign out on your own account page instead.");
     await c.db.batch([
       c.db.prepare("UPDATE users SET active_session_id = NULL, active_device_id = NULL WHERE id = ?").bind(u.id),
@@ -536,6 +565,7 @@ const overviewRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
     let visits = null;
     let waitlist = 0;
     let activity: unknown[] = [];
+    let watch: unknown[] = [];
     if (me.role === "admin") {
       const [u, plans, act] = await c.db.batch([
         c.db.prepare("SELECT count(*) AS total, sum(created_at > ?) AS week, sum(role != 'student') AS staff FROM users").bind(now - 7 * DAY),
@@ -550,8 +580,10 @@ const overviewRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
       activity = act!.results;
       visits = await visitSummary(c.db);
       waitlist = (await c.db.prepare("SELECT count(*) AS n FROM waitlist").first<{ n: number }>())?.n ?? 0;
+      watch = (await c.db.prepare(`SELECT e.user_id AS id, u.name, u.email, u.phone, e.kind, e.detail, max(e.created_at) AS at
+        FROM security_events e JOIN users u ON u.id = e.user_id WHERE e.created_at > ? GROUP BY e.user_id, e.kind ORDER BY at DESC LIMIT 20`).bind(now - 7 * DAY).all()).results;
     }
-    return json({ byStage, liveBySubject, sentBackToMe: mine?.n ?? 0, waitingBlind: waitingBlind?.n ?? 0, openReports, waitlist, users, visits, activity });
+    return json({ byStage, liveBySubject, sentBackToMe: mine?.n ?? 0, waitingBlind: waitingBlind?.n ?? 0, openReports, waitlist, users, visits, activity, watch });
   },
 };
 

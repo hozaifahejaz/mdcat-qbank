@@ -11,7 +11,7 @@ import { type OpenAttempt, getOpenAttempt, readTestHref, startTest } from "@/lib
 type State =
   | { kind: "loading" }
   | { kind: "ready"; attempt: OpenAttempt; note: string }
-  | { kind: "problem"; title: string; text: string; pass: boolean };
+  | { kind: "problem"; title: string; text: string; pass: boolean; resume?: string };
 
 /* /test?id=… sits or resumes a saved test. /test?kind=practice|timed|mock|mini-mock|past-paper plus what to ask
    (subject, chapters, topic, count, from, ids, mock, paper, title) starts one on the server first, then swaps the
@@ -43,9 +43,10 @@ export default function TestScreen() {
         const code = e instanceof ApiError ? e.code : "";
         setState({
           kind: "problem",
-          title: code === "needs_pass" ? "This needs a pass" : code === "empty" || code === "not_ready" ? "Questions coming soon" : code === "not_found" ? "We couldn't find that test" : "This test didn't open",
+          title: code === "open_test" ? "You have a test running" : code === "needs_pass" ? "This needs a pass" : code === "empty" || code === "not_ready" ? "Questions coming soon" : code === "not_found" ? "We couldn't find that test" : "This test didn't open",
           text: friendlyError(e),
           pass: code === "needs_pass",
+          resume: code === "open_test" && e instanceof ApiError && typeof e.extra.attempt === "string" ? e.extra.attempt : undefined,
         });
       }
     })();
@@ -60,7 +61,8 @@ export default function TestScreen() {
               <Empty title={state.title} text={state.text}>
                 <div className="hello-ctas">
                   {state.pass && <a className="dpill dark small" href="/pricing">See passes</a>}
-                  <a className={`dpill ${state.pass ? "light" : "dark"} small`} href="/dashboard">Back to dashboard</a>
+                  {state.resume && <a className="dpill dark small" href={`/test?id=${encodeURIComponent(state.resume)}`}>Go to that test</a>}
+                  <a className={`dpill ${state.pass || state.resume ? "light" : "dark"} small`} href="/dashboard">Back to dashboard</a>
                 </div>
               </Empty>
             </section>

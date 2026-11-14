@@ -13,6 +13,7 @@ export function json(data: unknown, init: ResponseInit = {}): Response {
   const headers = new Headers(init.headers);
   headers.set("content-type", "application/json; charset=utf-8");
   headers.set("cache-control", "no-store");
+  headers.set("x-content-type-options", "nosniff");
   return new Response(JSON.stringify(data), { ...init, headers });
 }
 
@@ -33,12 +34,12 @@ export async function body<T extends Record<string, unknown>>(request: Request):
 
 export const str = (v: unknown, max = 500): string => (typeof v === "string" ? v.trim().slice(0, max) : "");
 
-/* Cross-site request forgery guard for JSON POSTs: browsers send Origin on POST, and it must be ours.
-   The session cookie is also SameSite=Lax, so this is the second lock, not the only one. */
+/* Cross-site request forgery guard for JSON requests that change something: browsers always send Origin on those,
+   and it must be ours. The session cookie is also SameSite=Lax, so this is the second lock, not the only one. */
 export function assertSameOrigin(request: Request): void {
-  const origin = request.headers.get("origin");
-  if (origin && origin !== new URL(request.url).origin) throw fail(403, "bad_origin", "Request blocked.");
-  if (!(request.headers.get("content-type") ?? "").includes("application/json")) throw fail(415, "bad_type", "Expected JSON.");
+  if (request.headers.get("origin") !== new URL(request.url).origin) throw fail(403, "bad_origin", "Request blocked.");
+  const type = (request.headers.get("content-type") ?? "").split(";")[0]!.trim().toLowerCase();
+  if (type !== "application/json") throw fail(415, "bad_type", "Expected JSON.");
 }
 
 export function readCookie(request: Request, name: string): string | null {
@@ -60,6 +61,6 @@ export const clientIp = (request: Request) => request.headers.get("cf-connecting
 /* Only paths on this site, so ?next= can't send anyone elsewhere. */
 export function safeNext(raw: unknown): string {
   const s = typeof raw === "string" ? raw : "";
-  if (!s.startsWith("/") || s.startsWith("//") || s.startsWith("/\\")) return "/dashboard";
+  if (!/^\/(?![\/\\])[^\s\\]*$/.test(s)) return "/dashboard";
   return s;
 }

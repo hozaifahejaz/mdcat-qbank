@@ -102,6 +102,12 @@ function Result({ user, data }: { user: AccountUser; data: Data }) {
         </dl>
       </section>
 
+      {data.withdrawn > 0 && (
+        <p className="note-chip">
+          {data.withdrawn} question{data.withdrawn === 1 ? " from this test was" : "s from this test were"} taken down for a fix, so {data.withdrawn === 1 ? "it isn't" : "they aren't"} shown or counted here.
+        </p>
+      )}
+
       <section className="dcard panel" aria-labelledby="bys-h">
         <div className="panel-h"><h2 id="bys-h">By subject</h2></div>
         <ul className="bys">

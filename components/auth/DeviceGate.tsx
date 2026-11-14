@@ -11,6 +11,7 @@ type State =
   | { kind: "active" }
   | { kind: "locked"; label: string | null }
   | { kind: "limit"; devices: Device[] }
+  | { kind: "switches"; until: string }
   | { kind: "error"; message: string };
 
 const CHECK_EVERY_MS = 30_000;
@@ -24,7 +25,7 @@ export default function DeviceGate({ children }: { children: React.ReactNode }) 
 
   const claim = useCallback(async () => {
     const res = await claimDevice();
-    setState(res.status === "active" ? { kind: "active" } : { kind: "limit", devices: res.devices });
+    setState(res.status === "active" ? { kind: "active" } : res.status === "takeover_limit" ? { kind: "switches", until: res.next_allowed_at } : { kind: "limit", devices: res.devices });
   }, []);
 
   const toSignIn = useCallback(() => {
@@ -64,6 +65,20 @@ export default function DeviceGate({ children }: { children: React.ReactNode }) 
   if (state.kind === "active") return <>{children}</>;
   if (state.kind === "limit") {
     return <div className="center-state"><DeviceLimit devices={state.devices} onFreed={() => { setState({ kind: "loading" }); claim(); }} /></div>;
+  }
+  if (state.kind === "switches") {
+    return (
+      <div className="center-state">
+        <div className="card state-card" role="alert">
+          <h1>Your account is in use on your other device</h1>
+          <p className="muted">It has moved between devices several times today, so it stays on the other one for now. You can use it here again after {new Date(state.until).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}, or carry on there.</p>
+          <div className="actions">
+            <button type="button" className="pill pill-dark" onClick={() => { setState({ kind: "loading" }); check(); }}>Try again</button>
+            <button type="button" className="pill pill-light" onClick={async () => { await signOut(); window.location.replace("/"); }}>Sign out</button>
+          </div>
+        </div>
+      </div>
+    );
   }
   if (state.kind === "locked") return <Locked label={state.label} onTakeOver={() => claim().catch((e) => setState({ kind: "error", message: friendlyError(e) }))} />;
   if (state.kind === "error") {

@@ -4,8 +4,8 @@ import { paper } from "../lib/site";
 import { uuid } from "./crypto";
 import { requireActiveSession } from "./devices";
 import { body, fail, json, str } from "./http";
-import { rateLimit } from "./ratelimit";
-import { requireSession } from "./session";
+import { rateLimit, spend, used } from "./ratelimit";
+import { note, requireSession } from "./session";
 import { effectivePlan, userById } from "./users";
 
 /* The student side of the bank (/api/study/*): which questions a student can practise, their tests, answers,
@@ -23,6 +23,9 @@ const GRACE = 30 * 1000;
 /* Open reports that hide a question from new tests until a reviewer looks. */
 const REPORT_HIDE = 3;
 export const MOCKS = 12;
+/* New questions an account can be given in 24 hours: a full mock and a long day's practice, with room to spare. */
+const DAILY_QUESTIONS = 500;
+const STARTS_PER_HOUR = 15;
 const MINI_SPLIT = [13, 8, 6, 2, 1]; // 30 questions in the paper's proportions
 const subjects = paper.map((p) => p.subject);
 
@@ -53,7 +56,7 @@ async function student(c: Ctx, active: boolean) {
   const u = await userById(c.db, s.user_id);
   if (!u) throw fail(401, "signed_out", "Please sign in.");
   const paid = effectivePlan(u) !== "free";
-  return { id: u.id, paid, pool: paid ? "" : " AND free = 1" };
+  return { id: u.id, paid, staff: u.role !== "student", pool: paid ? "" : " AND free = 1" };
 }
 
 async function servedByIds(db: D1Database, ids: string[]): Promise<Map<string, Served>> {
@@ -87,6 +90,13 @@ async function idsBySubject(db: D1Database, pool: string) {
   return new Map(subjects.map((s) => [s, results.filter((r) => r.subject === s).map((r) => r.id)]));
 }
 
+/* Questions sitting in one of the student's open timed tests or mocks. Their keys stay shut everywhere else
+   (practice, bookmarks, mistakes) until that test is submitted. Binds the user id once. */
+const IN_OPEN_TEST = `SELECT x.question_id FROM answers x JOIN attempts t ON t.id = x.attempt_id
+  WHERE t.user_id = ? AND t.finished_at IS NULL AND t.mode != 'tutor'`;
+/* Practice sets left open this long are closed as they stand. */
+const STALE_PRACTICE = 7 * DAY;
+
 /* ---------- Finishing a test ---------- */
 
 /* Marks a test done: every unanswered timed question counts as skipped, and the score is read against the keys. */
@@ -99,15 +109,31 @@ async function finish(db: D1Database, a: AttemptRow, at: number) {
     .bind(a.id)
     .first<{ asked: number; right: number | null }>();
   const total = a.mode === "tutor" ? r?.asked ?? 0 : a.total;
+  // A practice set closed with nothing checked isn't a result: it goes, instead of showing as 0/0.
+  if (a.mode === "tutor" && total === 0) {
+    await db.batch([
+      db.prepare("DELETE FROM answers WHERE attempt_id = ?").bind(a.id),
+      db.prepare("DELETE FROM attempts WHERE id = ? AND finished_at IS NULL").bind(a.id),
+    ]);
+    return false;
+  }
   await db.prepare("UPDATE attempts SET finished_at = ?, seconds = ?, score = ?, total = ? WHERE id = ? AND finished_at IS NULL")
     .bind(end, Math.round((end - a.started_at) / 1000), r?.right ?? 0, total, a.id).run();
+  return true;
 }
 
-/* Timed tests left open past their clock are submitted as they stood, the next time the student loads anything. */
+/* Timed tests left open past their clock are submitted as they stood, the next time the student loads anything.
+   Practice sets nobody came back to for a week are closed the same way, at their last checked answer. */
 async function finishExpired(db: D1Database, userId: string) {
   const now = Date.now();
   const { results } = await db.prepare("SELECT * FROM attempts WHERE user_id = ? AND finished_at IS NULL AND deadline_at < ?").bind(userId, now - GRACE).all<AttemptRow>();
   for (const a of results) await finish(db, a, a.deadline_at!);
+  const stale = await db
+    .prepare(`SELECT a.*, (SELECT max(x.counted_at) FROM answers x WHERE x.attempt_id = a.id) AS last_at
+      FROM attempts a WHERE a.user_id = ? AND a.finished_at IS NULL AND a.mode = 'tutor' AND a.started_at < ?`)
+    .bind(userId, now - STALE_PRACTICE)
+    .all<AttemptRow & { last_at: number | null }>();
+  for (const a of stale.results) if ((a.last_at ?? a.started_at) < now - STALE_PRACTICE) await finish(db, a, a.last_at ?? a.started_at);
 }
 
 async function ownAttempt(db: D1Database, userId: string, id: unknown): Promise<AttemptRow> {
@@ -259,7 +285,8 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
   /* Start a test. The server picks the questions, so the browser never holds more than the test it's sitting. */
   "POST /api/study/start": async (c) => {
     const me = await student(c, true);
-    await rateLimit(c.db, `start:${me.id}`, 60, HOUR);
+    if (!me.staff) await rateLimit(c.db, `start:${me.id}`, STARTS_PER_HOUR, HOUR);
+    await finishExpired(c.db, me.id);
     const b = await body(c.request);
     let kind: Kind = (["practice", "timed", "mock", "mini-mock", "past-paper"] as const).find((k) => k === b.kind) ?? "practice";
     // A practice set has two switches: tutor (the explanation after each answer) and timed (a minute a question).
@@ -269,6 +296,11 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
     const clock = !custom || (typeof b.timed === "boolean" ? b.timed : kind === "timed");
     if (custom) kind = tutor ? "practice" : "timed";
     const mode = modeOf[kind];
+    // One timed test or mock at a time: a second one could share questions with the first and open their answers early.
+    if (mode !== "tutor") {
+      const running = await c.db.prepare("SELECT id, title FROM attempts WHERE user_id = ? AND finished_at IS NULL AND mode != 'tutor' ORDER BY started_at DESC LIMIT 1").bind(me.id).first<{ id: string; title: string }>();
+      if (running) throw fail(409, "open_test", `You still have ${running.title} running. Finish or submit it before starting another timed test.`, { attempt: running.id });
+    }
     let ids: string[] = [];
     let title = str(b.title, 120);
     let mockNo: number | null = null;
@@ -303,6 +335,8 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
       const asked = Array.isArray(b.ids) ? b.ids.filter((x): x is string => typeof x === "string").slice(0, 200) : [];
       const sc = scope(asked.length ? { bank: b.bank } : b, me.pool);
       const { bank, where, args } = sc;
+      where.push(`id NOT IN (${IN_OPEN_TEST})`);
+      args.push(me.id);
       if (asked.length) {
         where.push("id IN (SELECT value FROM json_each(?))");
         args.push(JSON.stringify(asked));
@@ -336,6 +370,16 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
 
     const id = uuid();
     const now = Date.now();
+    if (!me.staff) {
+      // Counted when the questions are handed out, so a set that is opened and thrown away still counts.
+      const left = DAILY_QUESTIONS - (await used(c.db, `given:${me.id}`, DAY));
+      if (ids.length > left) {
+        const noted = await c.db.prepare("SELECT 1 FROM security_events WHERE user_id = ? AND kind = 'daily_limit' AND created_at > ?").bind(me.id, now - DAY).first();
+        if (!noted) await note(c.db, me.id, "daily_limit", `Reached ${DAILY_QUESTIONS} new questions in a day`).run();
+        throw fail(429, "daily_limit", left > 0 ? `You can start ${left} more question${left === 1 ? "" : "s"} today. Pick a shorter set, or carry on with a test you already have open.` : "That's the most new questions for one day. Review what you've done today, and start new sets tomorrow.");
+      }
+      await spend(c.db, `given:${me.id}`, ids.length, DAY);
+    }
     // Timed tests get a minute a question; the mock is the real paper's 3 hours for 180.
     const deadline = clock ? now + ids.length * 60 * 1000 : null;
     await c.db.batch([
@@ -407,8 +451,9 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
     const me = await student(c, true);
     const b = await body(c.request);
     const a = await ownAttempt(c.db, me.id, b.id);
-    if (!a.finished_at) await finish(c.db, a, Date.now());
-    return json({ id: a.id });
+    const kept = a.finished_at ? true : await finish(c.db, a, Date.now());
+    // empty: a practice set closed before any answer was checked. There's nothing to review, so it isn't kept.
+    return json({ id: a.id, empty: !kept });
   },
 
   /* A submitted test with every question's key and explanation. */
@@ -426,6 +471,8 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
     const stats = await statsFor(c.db, rows.map((r) => r.question_id));
     return json({
       attempt: { ...result(a), mode: a.mode, seconds: a.seconds ?? 0 },
+      // Questions taken down since the test was sat. They still count in the saved score but can't be shown.
+      withdrawn: rows.filter((r) => !qs.has(r.question_id)).length,
       items: rows.filter((r) => qs.has(r.question_id)).map((r) => ({ q: full(qs.get(r.question_id)!), chosen: r.answer, flagged: !!r.flagged, bookmarked: saved.has(r.question_id), seconds: r.seconds, stats: stats.get(r.question_id) ?? null })),
     });
   },
@@ -433,7 +480,7 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
   "GET /api/study/history": async (c) => {
     const me = await student(c, false);
     await finishExpired(c.db, me.id);
-    const { results } = await c.db.prepare("SELECT * FROM attempts WHERE user_id = ? AND finished_at IS NOT NULL ORDER BY finished_at DESC LIMIT 300").bind(me.id).all<AttemptRow>();
+    const { results } = await c.db.prepare("SELECT * FROM attempts WHERE user_id = ? AND finished_at IS NOT NULL AND total > 0 ORDER BY finished_at DESC LIMIT 300").bind(me.id).all<AttemptRow>();
     return json({ tests: results.map(result) });
   },
 
@@ -444,16 +491,23 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
     const now = Date.now();
     const days = 84;
     const since = Date.parse(`${pkDate(now - (days - 1) * DAY)}T00:00:00+05:00`);
-    const [daily, latest, chapters, recent, open, marks] = await c.db.batch([
+    const [daily, latest, chapters, recent, open, marks, bySubject, miniUsed] = await c.db.batch([
       c.db.prepare(`SELECT date((a.counted_at + ${PKT}) / 1000, 'unixepoch') AS d, count(*) AS n, sum(CASE WHEN a.answer = s.answer THEN 1 ELSE 0 END) AS c
         FROM answers a JOIN served s ON s.id = a.question_id WHERE a.user_id = ? AND a.counted_at >= ? AND a.answer IS NOT NULL GROUP BY d`).bind(me.id, since),
       c.db.prepare(LATEST).bind(me.id),
       c.db.prepare(`SELECT subject, chapter, count(*) AS n FROM served WHERE open_reports < ${REPORT_HIDE}${me.pool}${ON_MDCAT} GROUP BY subject, chapter`),
-      c.db.prepare("SELECT * FROM attempts WHERE user_id = ? AND finished_at IS NOT NULL ORDER BY finished_at DESC LIMIT 10").bind(me.id),
+      c.db.prepare("SELECT * FROM attempts WHERE user_id = ? AND finished_at IS NOT NULL AND total > 0 ORDER BY finished_at DESC LIMIT 10").bind(me.id),
       c.db.prepare(`SELECT a.*, (SELECT count(*) FROM answers x WHERE x.attempt_id = a.id AND x.answer IS NOT NULL) AS done
         FROM attempts a WHERE a.user_id = ? AND a.finished_at IS NULL ORDER BY a.started_at DESC LIMIT 1`).bind(me.id),
       c.db.prepare("SELECT count(*) AS n FROM bookmarks WHERE user_id = ?").bind(me.id),
+      c.db.prepare(`SELECT subject, count(*) AS n, sum(free) AS free FROM served WHERE open_reports < ${REPORT_HIDE} GROUP BY subject`),
+      c.db.prepare("SELECT 1 FROM attempts WHERE user_id = ? AND kind = 'mini-mock' LIMIT 1").bind(me.id),
     ]);
+    // Which mock the dashboard should offer: a full one once the bank can fill it, else the mini mock if it's open to them.
+    const bank = bySubject!.results as { subject: string; n: number; free: number | null }[];
+    const fullReady = me.paid && paper.every((p) => (bank.find((x) => x.subject === p.subject)?.n ?? 0) >= p.count);
+    const miniPool = bank.reduce((n, x) => n + (me.paid ? x.n : x.free ?? 0), 0);
+    const nextMock = fullReady ? "full" : miniPool >= 10 && (me.paid || !miniUsed!.results.length) ? "mini" : null;
     const byDay = new Map((daily!.results as { d: string; n: number; c: number }[]).map((r) => [r.d, r]));
     const series = Array.from({ length: days }, (_, i) => {
       const d = pkDate(now - (days - 1 - i) * DAY);
@@ -480,6 +534,7 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
     const o = open!.results[0] as (AttemptRow & { done: number }) | undefined;
     return json({
       streakDays: streak,
+      nextMock,
       dailyGoal: 40,
       daily: series,
       bookmarks: (marks!.results[0] as { n: number }).n,
@@ -506,7 +561,7 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
     const { results } = await c.db
       .prepare(`SELECT l.question_id, l.answer, l.at, (SELECT count(*) FROM answers w JOIN served s2 ON s2.id = w.question_id
           WHERE w.user_id = ?1 AND w.question_id = l.question_id AND w.counted_at IS NOT NULL AND w.answer IS NOT NULL AND w.answer != s2.answer) AS tries
-        FROM (${LATEST}) l WHERE l.answer != l.key ORDER BY l.at DESC LIMIT 300`)
+        FROM (${LATEST}) l WHERE l.answer != l.key AND l.question_id NOT IN (${IN_OPEN_TEST.replace("?", "?1")}) ORDER BY l.at DESC LIMIT 300`)
       .bind(me.id)
       .all<{ question_id: string; answer: number; at: number; tries: number }>();
     const qs = await servedByIds(c.db, results.map((r) => r.question_id));
@@ -518,7 +573,7 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
 
   "GET /api/study/bookmarks": async (c) => {
     const me = await student(c, true);
-    const { results } = await c.db.prepare("SELECT question_id FROM bookmarks WHERE user_id = ? ORDER BY created_at DESC LIMIT 500").bind(me.id).all<{ question_id: string }>();
+    const { results } = await c.db.prepare(`SELECT question_id FROM bookmarks WHERE user_id = ? AND question_id NOT IN (${IN_OPEN_TEST}) ORDER BY created_at DESC LIMIT 500`).bind(me.id, me.id).all<{ question_id: string }>();
     const qs = await servedByIds(c.db, results.map((r) => r.question_id));
     return json({ bookmarks: results.map((r) => qs.get(r.question_id)).filter((q): q is Served => !!q && (me.paid || !!q.free)).map(full) });
   },
@@ -528,7 +583,8 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
     const b = await body(c.request);
     const id = str(b.questionId, 20);
     if (b.on) {
-      const q = await c.db.prepare("SELECT id FROM served WHERE id = ?").bind(id).first();
+      // Only a question this student was given, so bookmarking can't be used to probe the bank.
+      const q = await c.db.prepare("SELECT s.id FROM served s WHERE s.id = ?1 AND EXISTS (SELECT 1 FROM answers a WHERE a.user_id = ?2 AND a.question_id = ?1)").bind(id, me.id).first();
       if (!q) throw fail(404, "not_found", "That question isn't available.");
       await c.db.prepare("INSERT OR IGNORE INTO bookmarks (user_id, question_id, created_at) VALUES (?, ?, ?)").bind(me.id, id, Date.now()).run();
     } else {
@@ -545,7 +601,8 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
     const id = str(b.questionId, 20);
     const reason = str(b.reason, 120);
     if (!reason) throw fail(400, "bad_reason", "Pick what's wrong first.");
-    const q = await c.db.prepare("SELECT id FROM served WHERE id = ?").bind(id).first();
+    // Only someone who was actually given the question can report it, so reports can't be used to take questions down.
+    const q = await c.db.prepare("SELECT s.id FROM served s WHERE s.id = ?1 AND EXISTS (SELECT 1 FROM answers a WHERE a.user_id = ?2 AND a.question_id = ?1)").bind(id, me.id).first();
     if (!q) throw fail(404, "not_found", "That question isn't available.");
     const dup = await c.db.prepare("SELECT 1 FROM reports WHERE question_id = ? AND user_id = ? AND status = 'open'").bind(id, me.id).first();
     if (!dup) {
