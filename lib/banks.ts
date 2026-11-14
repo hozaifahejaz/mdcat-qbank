@@ -53,10 +53,14 @@ export const mdcatSyllabus = {
     "Work and energy",
     "Circular motion",
     "Waves",
+    "Physical optics",
     "Thermodynamics",
     "Electrostatics",
     "Current electricity",
+    "Alternating current",
     "Modern and nuclear physics",
+    "Medical physics",
+    "Space and environment",
   ],
   English: [
     "Grammar and sentence correction",
@@ -122,9 +126,10 @@ const fsc2: BankSubject[] = [
   },
   {
     name: "Physics",
+    // The PECTAA Physics 12 textbook (National Curriculum 2023), chapters 13 to 21 in book order.
     chapters: [
-      "Electrostatics", "Current electricity", "Electromagnetism", "Electromagnetic induction", "Alternating current",
-      "Physics of solids", "Electronics", "Dawn of modern physics", "Atomic spectra", "Nuclear physics",
+      "Thermal physics", "Simple harmonic motion", "Physical optics", "Electrostatics", "Alternating current",
+      "Quantum physics", "Nuclear and particle physics", "Medical physics", "Space and environment",
     ],
   },
   { name: "English", chapters: ["Grammar", "Vocabulary", "Reading comprehension"] },
