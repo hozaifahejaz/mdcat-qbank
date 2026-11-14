@@ -155,14 +155,14 @@ section.tests { padding-top: 64px; }
 /* Pricing */
 .plans { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; align-items: stretch; }
 @media (max-width: 900px) { .plans { grid-template-columns: minmax(0, 1fr); max-width: 480px; margin-inline: auto; } }
-.plan { padding: 30px 28px; display: grid; grid-template-rows: auto auto auto 1fr auto; gap: 14px; position: relative; }
+.plan { padding: 30px 28px; display: flex; flex-direction: column; gap: 14px; position: relative; }
 .plan h3 { font-size: 1.125rem; }
 .plan .for { font-size: 0.9375rem; color: var(--muted); min-height: 3em; }
 .price { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
 .price small { font-size: 1.25rem; font-weight: 700; letter-spacing: -0.02em; }
 .price b { font-size: 3.5rem; font-weight: 800; letter-spacing: -0.05em; line-height: 1; }
 .price span { font-size: 0.9375rem; color: var(--muted); }
-.plan ul { list-style: none; margin: 6px 0 0; padding: 18px 0 0; border-top: 1px solid var(--line); display: grid; gap: 10px; align-content: start; font-size: 0.9375rem; }
+.plan ul { flex: 1; list-style: none; margin: 6px 0 0; padding: 18px 0 0; border-top: 1px solid var(--line); display: grid; gap: 10px; align-content: start; font-size: 0.9375rem; }
 .plan li { display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: 10px; }
 .plan li::before { content: "✓"; color: var(--good); font-weight: 800; }
 .plan li.plus { font-weight: 700; }

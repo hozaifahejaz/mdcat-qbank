@@ -12,6 +12,8 @@ import type { Subject } from "@/lib/dashboard-data";
 import { day, letters } from "@/lib/format";
 import type { AccountUser } from "@/lib/user";
 
+const PAGE = 15;
+
 export default function MistakesScreen() {
   return <AppShell active="/mistakes">{(user) => <Mistakes user={user} />}</AppShell>;
 }
@@ -24,6 +26,8 @@ function Mistakes({ user }: { user: AccountUser }) {
   const [saved, setSaved] = useState<Question[]>([]);
   const [open, setOpen] = useState<string | null>(null);
   const [error, setError] = useState("");
+  // A long list is shown a page at a time.
+  const [limit, setLimit] = useState(PAGE);
 
   useEffect(() => {
     getMistakes().then(setMistakes, (e) => setError(friendlyError(e)));
@@ -58,7 +62,7 @@ function Mistakes({ user }: { user: AccountUser }) {
         </div>
         <Protected user={user}>
           <ul className="mlist">
-            {rows.map(({ q, m }) => (
+            {rows.slice(0, limit).map(({ q, m }) => (
               <li key={q.id}>
                 <button type="button" className="mrow" aria-expanded={open === q.id} onClick={() => setOpen(open === q.id ? null : q.id)}>
                   <span className="mq">
@@ -84,6 +88,7 @@ function Mistakes({ user }: { user: AccountUser }) {
             ))}
             {!rows.length && <li><Empty title={tab === "wrong" ? "No mistakes yet" : "No bookmarks yet"} text={tab === "wrong" ? "Questions you get wrong land here so you can retry them." : "Bookmark a question while you practise to keep it here."} /></li>}
           </ul>
+          {rows.length > limit && <button type="button" className="dpill light small more-btn" onClick={() => setLimit((n) => n + PAGE)}>Show {Math.min(PAGE, rows.length - limit)} more</button>}
         </Protected>
       </section>
     </div>

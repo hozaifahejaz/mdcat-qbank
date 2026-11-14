@@ -20,7 +20,6 @@ const faqs = [
   { q: "Is this a coaching course?", a: "No. It's a practice tool: MCQs, explanations, timed mocks and past papers. Most students use it alongside their academy or self-study, and it costs a fraction of a course." },
   { q: "Where do the questions come from?", a: "Our own subject experts write them from the PMDC syllabus and the textbooks it's based on. Past-paper questions are rebuilt in our own words with our own explanations. Nothing is copied from academy books or other apps." },
   { q: "What if I find a mistake?", a: "Tap \"Report\" on the question. We answer every report within 48 hours, and if we were wrong we fix the question for everyone and correct your stats." },
-  { q: "Can I use it on my phone and laptop?", a: "Yes. Your progress syncs between them, and an unfinished test picks up where you left off." },
   { q: "How do I pay?", a: "JazzCash, Easypaisa, debit or credit card, or bank transfer. It's a one-time payment for the season, with no renewal." },
   { q: "Do you cover NUMS, AKU or other tests?", a: "PMDC MDCAT first. NUMS is next, and we'll add other university tests after that." },
   { q: "Are you affiliated with PMDC?", a: `No. ${site.name} is independent and not affiliated with PMDC, NUMS or any university.` },
@@ -58,7 +57,7 @@ export default function Home() {
               <span className="tag"><i />PMDC MDCAT · {site.season} season</span>
               <h1>Practise the MCQs that <span>decide your seat.</span></h1>
               <p className="sub muted">
-                Chapter-wise MDCAT questions with a full explanation on every one, plus timed mocks built like the real paper. One payment covers the whole season.
+                Chapter-wise MDCAT questions, every one explained, and timed mocks built like the real paper.
               </p>
               <div className="ctas">
                 <a className="pill pill-dark" href="#try">Try a question</a>
@@ -91,24 +90,23 @@ export default function Home() {
 
           <section id="how">
             <div className="center rv">
-              <span className="tag"><i />How it works</span>
               <h2>Practise, test, fix. Repeat until August.</h2>
             </div>
             <div className="steps">
               <div className="step rv" style={{ background: "var(--sky)" }}>
                 <span className="n">1</span>
                 <h3>Practise by chapter</h3>
-                <p>Pick a subject, chapter or topic from the PMDC syllabus and get instant explanations as you go. Bookmark anything you want to see again.</p>
+                <p>Pick a subject or chapter and get the explanation after every question.</p>
               </div>
               <div className="step rv" style={{ background: "var(--mint)" }}>
                 <span className="n">2</span>
                 <h3>Sit full-length mocks</h3>
-                <p>180 MCQs in 3 hours, with the real paper's subject split and mix of easy, moderate and hard questions. Past papers by year too.</p>
+                <p>180 MCQs in 3 hours, split by subject like the real paper.</p>
               </div>
               <div className="step rv" style={{ background: "var(--lemon)" }}>
                 <span className="n">3</span>
                 <h3>Fix your weak chapters</h3>
-                <p>Your dashboard shows your score by subject and chapter, and "My mistakes" collects every question you got wrong to retry.</p>
+                <p>See your score by subject and retry every question you got wrong.</p>
               </div>
             </div>
             <div className="card split rv">
@@ -124,14 +122,12 @@ export default function Home() {
 
           <section id="pricing">
             <div className="center rv">
-              <span className="tag"><i />Pricing</span>
               <h2>One payment. The whole season.</h2>
-              <p className="muted">No subscription and no add-ons. A season pass covers you from the day you join until the {site.examMonth} MDCAT.{!site.launched && " Questions open soon; payments open with them."}</p>
+              <p className="muted">No subscription. A season pass lasts until the {site.examMonth} MDCAT.{!site.launched && " Payments open soon."}</p>
             </div>
             <div className="plans">
               <div className="card plan rv">
                 <h3>Free</h3>
-                <p className="for">Try the questions and explanations before you pay anything.</p>
                 <div className="price"><small>Rs.</small><b>0</b></div>
                 <ul>
                   <li>{site.launched ? "A free set of questions in every subject" : "Free questions in every subject, from launch"}</li>
@@ -143,7 +139,6 @@ export default function Home() {
               <div className="card plan best rv">
                 <span className="badge">Best for most</span>
                 <h3>MDCAT season pass</h3>
-                <p className="for">Everything you need to practise for MDCAT, until exam day.</p>
                 <div className="price"><small>Rs.</small><b>{prices.seasonPass}</b><span>per season</span></div>
                 <span className="early">Early bird Rs. {prices.earlyBird} until {prices.earlyBirdUntil}</span>
                 <ul>
@@ -158,12 +153,11 @@ export default function Home() {
               </div>
               <div className="card plan rv">
                 <h3>One month</h3>
-                <p className="for">For students who want to start small or only need a few weeks.</p>
                 <div className="price"><small>Rs.</small><b>{prices.monthly}</b><span>for 30 days</span></div>
                 <ul>
                   <li className="plus">Everything in the season pass</li>
                   <li>30 days of full access</li>
-                  <li>No renewal: buy again only if you need more</li>
+                  <li>No renewal</li>
                 </ul>
                 <a className="pill pill-dark" href={buy("monthly")}>Get one month</a>
               </div>
@@ -178,13 +172,12 @@ export default function Home() {
           <section id="devices" aria-labelledby="devices-h">
             <div className="card apps rv">
               <div className="apps-copy">
-                <span className="tag"><i />Your devices</span>
                 <h2 id="devices-h">Your pass, on your phone and laptop.</h2>
                 <ul>
-                  <li>Practise on your phone, then finish on your laptop</li>
-                  <li>Your progress, bookmarks and mistakes stay in sync</li>
+                  <li>Your progress stays in sync</li>
                   <li>Unfinished tests pick up where you left off</li>
                 </ul>
+                <span className="tag"><i />iOS and Android apps coming soon</span>
               </div>
               <div className="devices" aria-hidden="true">
                 <div className="laptop">
@@ -226,7 +219,7 @@ export default function Home() {
             <h2>Start practising before MDCAT {site.season}.</h2>
             {site.launched ? (
               <>
-                <p>Make a free account and try the questions. Upgrade when you&apos;re ready, and your progress carries over.</p>
+                <p>Make a free account and try the questions.</p>
                 <div className="ctas">
                   <a className="pill pill-dark" href="/signup">Start free</a>
                   <a className="pill pill-light" href="#try">Try a question</a>
@@ -234,7 +227,7 @@ export default function Home() {
               </>
             ) : (
               <>
-                <p>The question bank opens soon. Leave your email or number and we&apos;ll tell you the day it does, with the early-bird price.</p>
+                <p>The question bank opens soon. Leave your email or number and we&apos;ll tell you the day it does.</p>
                 <Waitlist />
               </>
             )}

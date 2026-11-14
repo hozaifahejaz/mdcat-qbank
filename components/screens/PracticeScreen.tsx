@@ -15,16 +15,24 @@ export default function PracticeScreen() {
   return <AppShell active="/practice">{() => <Practice />}</AppShell>;
 }
 
-/* /practice shows the question banks; /practice?bank=fsc1 that bank's subjects. Older links that name a subject
-   (?subject=Biology&chapter=Enzymes from the dashboard and coach) open the MDCAT bank with it ticked. */
+const BANK_KEY = "practice-bank";
+
+/* /practice opens Create a test on the bank used last (MDCAT the first time); /practice?bank=fsc1 on that bank. The
+   bank tabs on the page switch between them. Older links that name a subject (?subject=Biology&chapter=Enzymes from
+   the dashboard) open the MDCAT bank with it ticked. */
 function Practice() {
-  const [bank, setBank] = useState<Bank | null | undefined>(undefined);
+  const [bank, setBank] = useState<Bank | undefined>(undefined);
   useEffect(() => {
     const p = new URLSearchParams(window.location.search);
-    setBank(bankById(p.get("bank")) ?? (p.get("subject") || p.get("mode") ? bankById("mdcat")! : null));
+    let last: string | null = null;
+    try { last = localStorage.getItem(BANK_KEY); } catch {}
+    const picked = bankById(p.get("bank"));
+    const b = picked ?? (p.get("subject") || p.get("mode") ? undefined : bankById(last)) ?? bankById("mdcat")!;
+    if (picked) { try { localStorage.setItem(BANK_KEY, picked.id); } catch {} }
+    setBank(b);
   }, []);
   if (bank === undefined) return <div className="dgrid" aria-busy="true"><div className="sk" style={{ height: 320 }} /></div>;
-  return bank ? <BankPractice bank={bank} /> : <BankList />;
+  return <BankPractice bank={bank} />;
 }
 
 /* The five banks as big buttons. The phone home screen uses the same ones. */
@@ -41,15 +49,6 @@ export function BankButtons() {
         </li>
       ))}
     </ul>
-  );
-}
-
-function BankList() {
-  return (
-    <div className="dgrid">
-      <PageHead title="Practice" sub="Pick a question bank." />
-      <BankButtons />
-    </div>
   );
 }
 
@@ -140,7 +139,7 @@ function BankPractice({ bank }: { bank: Bank }) {
 
   return (
     <div className="dgrid setup-page">
-      <PageHead title="Create a test" sub={bank.name} />
+      <PageHead title="Create a test" />
 
       <nav className="ptabs" aria-label="Question bank">
         {banks.map((b) => (

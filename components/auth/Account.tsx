@@ -5,7 +5,7 @@ import { api } from "@/lib/api";
 import { type Device, formatPhone, friendlyError, myDevices, removeDevice, signOut } from "@/lib/auth";
 import { planNames } from "@/lib/format";
 import type { AccountUser } from "@/lib/user";
-import AppShell, { PageHead } from "@/components/app/AppShell";
+import AppShell, { AccountTabs, PageHead } from "@/components/app/AppShell";
 import DeviceList from "@/components/auth/DeviceList";
 
 const providerName: Record<string, string> = { email: "Email and password", phone: "Phone (SMS code)", google: "Google", apple: "Apple" };
@@ -58,11 +58,11 @@ function AccountBody({ me }: { me: AccountUser }) {
   }
 
   return (
-    <div className="dgrid narrow acct">
-      <PageHead title="Account">
-        <a className="dpill light" href="/account/billing">Plan and billing</a>
-      </PageHead>
+    <div className="dgrid acct">
+      <PageHead title="Account" />
+      <AccountTabs active="/account" />
 
+      <div className="cols even">
       <section className="dcard panel">
         <h2 className="panel-title">Your details</h2>
         <dl className="kv">
@@ -96,6 +96,7 @@ function AccountBody({ me }: { me: AccountUser }) {
         ) : !error && <div className="sk" style={{ height: 120 }} />}
         {error && <p className="note-bad" role="alert">{error}</p>}
       </section>
+      </div>
 
       <section className="dcard panel acct-out">
         <p className="muted">Signing out here frees this device&apos;s slot for your other one.</p>

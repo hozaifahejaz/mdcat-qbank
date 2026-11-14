@@ -140,8 +140,9 @@ function MockIntro() {
   const title = mini ? "Mini mock" : `Full mock ${n}`;
   const ready = mini ? catalog?.miniReady : catalog?.mockReady;
   return (
-    <div className="dgrid narrow">
+    <div className="dgrid">
       <section className="dcard intro">
+        <div className="intro-col">
         <span className="kind">{mini ? "Free mini mock" : "Full mock"}</span>
         <h1>{title}</h1>
         <div className="intro-facts">
@@ -151,6 +152,9 @@ function MockIntro() {
         </div>
         <Split />
         <SplitLegend />
+        </div>
+        <div className="intro-col">
+        <h2 className="panel-title">Before you start</h2>
         <ul className="rules">
           <li>The clock runs once you start, and keeps running if you leave. At zero the test submits itself.</li>
           <li>Move freely between questions and flag any to come back to.</li>
@@ -162,6 +166,7 @@ function MockIntro() {
           : !mini && !catalog.paid ? <a className="dpill dark block" href="/pricing">Full mocks come with a pass</a>
           : ready ? <a className="dpill dark block" href={testHref(mini ? { kind: "mini-mock" } : { kind: "mock", mock: n })}>Start {mini ? "the mini mock" : "mock"}</a>
           : <button type="button" className="dpill dark block" disabled>Mocks open soon</button>}
+        </div>
       </section>
     </div>
   );
@@ -218,7 +223,7 @@ function History() {
   const rows = (recent ?? []).filter((t) => kind === "all" || t.kind === kind);
   return (
     <div className="dgrid">
-      <PageHead title="Test history" sub={recent?.length ? `${recent.length} test${recent.length > 1 ? "s" : ""}` : undefined} />
+      <PageHead title="Results" sub={recent?.length ? `${recent.length} test${recent.length > 1 ? "s" : ""}` : undefined} />
       <section className="dcard panel">
         <div className="chips" role="group" aria-label="Type">
           {(["all", "mock", "mini-mock", "past-paper", "timed", "practice"] as const).map((k) => (
