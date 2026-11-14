@@ -16,6 +16,10 @@ import type { AccountUser } from "@/lib/user";
 const modeNames: Record<Mode, string> = { tutor: "Practice", timed: "Timed test", mock: "Mock" };
 const tone = (s: string) => paper.find((p) => p.subject === s)?.tone ?? "var(--bg)";
 
+const SIZE_KEY = "q-text-size";
+const sizeNames = ["Normal", "Large", "Larger"];
+const HOLD_MS = 450;
+
 type Props = { user: AccountUser; attempt: OpenAttempt; note?: string };
 
 /* One screen for every way of answering questions. Every answer is saved on the server as it's picked, so leaving,
@@ -36,6 +40,11 @@ export default function TestPlayer({ user, attempt, note }: Props) {
   const [problem, setProblem] = useState("");
   const [busy, setBusy] = useState(false);
   const pending = useRef(0);
+  // Options the student has ruled out, per question. A thinking aid only: nothing is saved or marked.
+  const [struck, setStruck] = useState<Record<number, number[]>>({});
+  const [size, setSize] = useState(0);
+  useEffect(() => { try { setSize(Math.min(2, Math.max(0, Number(localStorage.getItem(SIZE_KEY)) || 0))); } catch {} }, []);
+  const nextSize = () => { const v = (size + 1) % 3; setSize(v); try { localStorage.setItem(SIZE_KEY, String(v)); } catch {} };
 
   // The clock is the server's: the deadline it set, corrected for how far this device's clock is off.
   const skew = useMemo(() => attempt.now - Date.now(), [attempt.now]);
@@ -88,8 +97,30 @@ export default function TestPlayer({ user, attempt, note }: Props) {
       .finally(() => { pending.current--; });
   };
 
+  const out = struck[i] ?? [];
+  const strike = (o: number) => {
+    if (reveal || busy) return;
+    const on = !out.includes(o);
+    setStruck((m) => ({ ...m, [i]: on ? [...out, o] : out.filter((x) => x !== o) }));
+    // Ruling out the picked option unpicks it.
+    if (on && chosen === o) {
+      setAnswers((a) => a.map((x, k) => (k === i ? null : x)));
+      if (mode !== "tutor") save(i, null, flagged[i]!);
+    }
+  };
+  // Press and hold on a touch screen crosses an option out; the tap that follows the hold must not pick it.
+  const hold = useRef<{ t: ReturnType<typeof setTimeout> | null; fired: boolean }>({ t: null, fired: false });
+  const holdStart = (o: number, e: React.PointerEvent) => {
+    if (e.pointerType === "mouse") return;
+    hold.current.fired = false;
+    hold.current.t = setTimeout(() => { hold.current.fired = true; strike(o); navigator.vibrate?.(12); }, HOLD_MS);
+  };
+  const holdEnd = () => { if (hold.current.t) clearTimeout(hold.current.t); hold.current.t = null; };
+
   const choose = (o: number) => {
     if (reveal || busy) return;
+    if (hold.current.fired) { hold.current.fired = false; return; }
+    if (out.includes(o)) setStruck((m) => ({ ...m, [i]: out.filter((x) => x !== o) }));
     const next = chosen === o && mode !== "tutor" ? null : o;
     setAnswers((a) => a.map((x, k) => (k === i ? next : x)));
     if (mode !== "tutor") save(i, next, flagged[i]!);
@@ -174,7 +205,7 @@ export default function TestPlayer({ user, attempt, note }: Props) {
   const marked = marks.has(q.id);
 
   return (
-    <div className={`player ${mode === "tutor" ? "is-tutor" : "is-timed"}`}>
+    <div className={`player ${mode === "tutor" ? "is-tutor" : "is-timed"} qsize-${size}`}>
       <header className="ptop-wrap">
         <div className="ptop dwrap">
           <button type="button" className="pico" aria-label="Exit" title="Exit" onClick={() => (answered ? setDialog("exit") : (window.location.href = "/dashboard"))}>
@@ -191,10 +222,19 @@ export default function TestPlayer({ user, attempt, note }: Props) {
                 {clock(left)}
               </span>
             )}
+            <button type="button" className="pico ptext" onClick={nextSize} aria-label={`Text size: ${sizeNames[size]}. Change`} title="Text size">
+              <span aria-hidden="true">A<small>A</small></span>
+            </button>
             <span className="hide-xs"><ThemeToggle /></span>
           </div>
         </div>
-        <div className="pbar" role="progressbar" aria-label={mode === "tutor" ? "Questions checked" : "Questions answered"} aria-valuemin={0} aria-valuemax={n} aria-valuenow={answered}><i style={{ width: `${(answered / n) * 100}%` }} /></div>
+        {n <= 40 ? (
+          <div className="pdots dwrap" role="progressbar" aria-label={mode === "tutor" ? "Questions checked" : "Questions answered"} aria-valuemin={0} aria-valuemax={n} aria-valuenow={answered}>
+            {items.map((_, k) => <i key={k} className={`${cellState(k)}${flagged[k] ? " flag" : ""}${k === i ? " now" : ""}`} />)}
+          </div>
+        ) : (
+          <div className="pbar" role="progressbar" aria-label={mode === "tutor" ? "Questions checked" : "Questions answered"} aria-valuemin={0} aria-valuemax={n} aria-valuenow={answered}><i style={{ width: `${(answered / n) * 100}%` }} /></div>
+        )}
       </header>
 
       <div className={`pbody dwrap${mode === "tutor" ? " solo" : ""}`}>
@@ -222,12 +262,14 @@ export default function TestPlayer({ user, attempt, note }: Props) {
               <p id="stem" className="stem">{q.stem}</p>
               <ul className="opts" role="list">
                 {q.options.map((o, k) => {
-                  const state = reveal ? (k === reveal.answer ? "key" : k === chosen ? "miss" : "dim") : k === chosen ? "on" : "";
+                  const state = reveal ? (k === reveal.answer ? "key" : k === chosen ? "miss" : "dim") : k === chosen ? "on" : out.includes(k) ? "out" : "";
                   return (
                     <li key={k}>
-                      <button type="button" className={`opt ${state}`} aria-pressed={k === chosen} disabled={!!reveal} onClick={() => choose(k)}>
+                      <button type="button" className={`opt ${state}`} aria-pressed={k === chosen} disabled={!!reveal} onClick={() => choose(k)}
+                        onContextMenu={(e) => { e.preventDefault(); if (!hold.current.fired && !hold.current.t) strike(k); }}
+                        onPointerDown={(e) => holdStart(k, e)} onPointerUp={holdEnd} onPointerLeave={holdEnd} onPointerCancel={holdEnd}>
                         <span className="letter">{letters[k]}</span>
-                        <span className="otext">{o}</span>
+                        <span className="otext">{o}{state === "out" && <span className="sr"> (crossed out)</span>}</span>
                         {state === "key" && <span className="omark good"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg><span className="sr">{k === chosen ? "Your answer, correct" : "Correct answer"}</span></span>}
                         {state === "miss" && <span className="omark bad"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg><span className="sr">Your answer</span></span>}
                       </button>
@@ -238,7 +280,8 @@ export default function TestPlayer({ user, attempt, note }: Props) {
               {reveal && <div ref={explRef}><Explanation q={reveal} chosen={chosen} onReport={() => setDialog("report")} /></div>}
               {!reveal && (
                 <p className="qfoot">
-                  <span className="kbd-hint muted hide-sm">{mode === "tutor" ? "Press A to D to pick, Enter to check" : "Press A to D to pick, Enter for the next question"}</span>
+                  <span className="kbd-hint muted hide-sm">{mode === "tutor" ? "A to D to pick, Enter to check" : "A to D to pick, Enter for next"} · right-click to cross out</span>
+                  <span className="kbd-hint muted show-sm">Hold an option to cross it out</span>
                   <button type="button" className="link quiet" onClick={() => setDialog("report")}>Report a problem</button>
                 </p>
               )}
