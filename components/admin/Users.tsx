@@ -25,11 +25,24 @@ export default function Users({ user: me }: { user: AccountUser }) {
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState("");
   const [users, setUsers] = useState<AdminUser[] | null>(null);
+  const [more, setMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [err, setErr] = useState("");
   const [sel, setSel] = useState<string | null>(null);
   const [toast, setToast] = useState("");
 
-  const load = useCallback(() => listUsers(q, filter).then(setUsers, (e) => setErr(friendlyError(e))), [q, filter]);
+  const load = useCallback(() => listUsers(q, filter).then((r) => { setUsers(r.users); setMore(r.hasMore); }, (e) => setErr(friendlyError(e))), [q, filter]);
+  const loadMore = async () => {
+    if (!users) return;
+    setLoadingMore(true);
+    try {
+      const r = await listUsers(q, filter, users.length);
+      // An account that signed up in between can shift the pages, so skip any we already have.
+      setUsers((have) => [...(have ?? []), ...r.users.filter((u) => !(have ?? []).some((x) => x.id === u.id))]);
+      setMore(r.hasMore);
+    } catch (e) { setErr(friendlyError(e)); }
+    setLoadingMore(false);
+  };
   useEffect(() => { const t = setTimeout(load, q ? 250 : 0); return () => clearTimeout(t); }, [load, q]);
   useEffect(() => {
     const p = new URLSearchParams(window.location.search);
@@ -54,7 +67,7 @@ export default function Users({ user: me }: { user: AccountUser }) {
           {users === null ? <div className="sk" style={{ height: 240 }} />
             : users.length === 0 ? <Empty title="No accounts found" text={q ? "Try another search." : "Accounts appear here as students sign up."} />
             : (
-              <table className="utable">
+              <div className="table-scroll"><table className="utable">
                 <thead><tr><th>Account</th><th>Plan</th><th>Role</th><th className="hide-sm">Devices</th><th className="hide-sm">Joined</th></tr></thead>
                 <tbody>
                   {users.map((u) => (
@@ -72,9 +85,9 @@ export default function Users({ user: me }: { user: AccountUser }) {
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </table></div>
             )}
-          {users && users.length === 200 && <p className="muted small">Showing the newest 200. Search to find others.</p>}
+          {users && more && <div><button type="button" className="dpill light small" disabled={loadingMore} onClick={loadMore}>{loadingMore ? "Loading…" : "Show more accounts"}</button></div>}
         </section>
 
         {sel && <Detail key={sel} id={sel} me={me} onClose={() => setSel(null)} onChanged={(m) => { setToast(m); load(); }} />}

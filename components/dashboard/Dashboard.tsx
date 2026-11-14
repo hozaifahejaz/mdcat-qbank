@@ -279,7 +279,8 @@ function coachTips(data: Data, mockReady: boolean) {
   return [
     ...weakest.map((w) => ({ href: `/practice?${new URLSearchParams({ subject: w.subject, chapter: w.chapter, topic: w.topic })}`, icon: "target", tone: "var(--bad)", label: `${w.topic} · ${pct(w.correct, w.answered)}%` })),
     ...(data.mistakesToRetry ? [{ href: "/mistakes", icon: "retry", tone: "var(--warn)", label: `Retry ${data.mistakesToRetry} mistakes` }] : []),
-    ...(mockReady ? [{ href: "/mocks/new", icon: "mock", tone: "var(--good)", label: `Sit full mock ${nextMock}` }] : []),
+    ...(data.nextMock === "full" ? [{ href: "/mocks/new", icon: "mock", tone: "var(--good)", label: `Sit full mock ${nextMock}` }] : []),
+    ...(data.nextMock === "mini" ? [{ href: "/mocks/new?mini=1", icon: "mock", tone: "var(--good)", label: "Take the mini mock" }] : []),
     { href: "/practice?mode=timed", icon: "bolt", tone: "#8a63ff", label: "Timed test, 25 questions" },
   ];
 }

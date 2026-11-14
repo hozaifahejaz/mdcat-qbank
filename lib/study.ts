@@ -44,7 +44,7 @@ export type Item = { idx: number; q: Asked; answer: number | null; flagged: bool
 export type OpenAttempt = { id: string; kind: Kind; mode: Mode; title: string; startedAt: number; deadlineAt: number | null; now: number; items: Item[] };
 
 export type Scored = { q: Question; chosen: number | null; flagged: boolean; bookmarked: boolean; seconds: number | null; stats: Stats | null };
-export type Review = { attempt: TestResult & { mode: Mode; seconds: number }; items: Scored[] };
+export type Review = { attempt: TestResult & { mode: Mode; seconds: number }; withdrawn: number; items: Scored[] };
 export type Mistake = { q: Question; chosen: number; date: string; tries: number };
 
 /* Questions available for a chapter (or a subject, several subjects, or the whole bank) to this student. */
@@ -80,7 +80,7 @@ export const getPool = (o: Pick<StartOptions, "bank" | "subject" | "subjects" | 
   if (o.topic) p.set("topic", o.topic);
   return api<Pool>(`/api/study/pool?${p}`);
 };
-export const finishTest = (id: string) => api<{ id: string }>("/api/study/finish", { body: { id } });
+export const finishTest = (id: string) => api<{ id: string; empty?: boolean }>("/api/study/finish", { body: { id } });
 export const getReview = (id: string) => api<Review>(`/api/study/review?id=${encodeURIComponent(id)}`);
 export const getHistory = () => api<{ tests: TestResult[] }>("/api/study/history").then((r) => r.tests);
 export const getMistakes = () => api<{ mistakes: Mistake[] }>("/api/study/mistakes").then((r) => r.mistakes);

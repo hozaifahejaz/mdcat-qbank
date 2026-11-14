@@ -28,6 +28,8 @@ export type Dashboard = {
   daily: DayActivity[];
   bookmarks: number;
   mistakesToRetry: number;
+  /* The mock this student can start now: a full one, the mini mock, or none yet. */
+  nextMock: "full" | "mini" | null;
   resume?: { title: string; done: number; total: number; href: string };
   subjects: SubjectStat[];
   weakTopics: WeakTopic[];
