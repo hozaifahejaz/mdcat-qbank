@@ -58,14 +58,11 @@ export const mdcatSyllabus = {
     "Work and energy",
     "Circular motion",
     "Waves",
-    "Physical optics",
     "Thermodynamics",
     "Electrostatics",
     "Current electricity",
     "Alternating current",
     "Modern and nuclear physics",
-    "Medical physics",
-    "Space and environment",
   ],
   English: [
     "Grammar and sentence correction",
@@ -156,8 +153,11 @@ export const banks: Bank[] = [
     id: "aku", name: "AKU Admission Test", short: "AKU", blurb: "Aga Khan University",
     subjects: [
       // AKU tests the HSSC curriculum, which also has ecosystems (not on the PMDC MDCAT syllabus).
+      // It also has physical optics (light), which is not on the PMDC MDCAT syllabus either.
       { name: "Biology", chapters: [...mdcatSyllabus.Biology, "Ecology"] },
-      ...(["Chemistry", "Physics", "English"] as const).map(mdcatSubject),
+      mdcatSubject("Chemistry"),
+      { name: "Physics", chapters: [...mdcatSyllabus.Physics, "Physical optics"] },
+      mdcatSubject("English"),
       { name: "Mathematics", chapters: ["Algebra", "Functions and graphs", "Trigonometry", "Statistics"] },
     ],
   },

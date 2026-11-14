@@ -4,6 +4,11 @@
 -- FSc Part 2 lists them in bank_questions under the textbook chapter. Not in the free set. INSERT OR IGNORE keeps the
 -- file safe to run twice; if the site owner's admin account doesn't exist (a fresh local database) nothing is inserted.
 
+-- Not every chapter is on every test. Checked against the PMDC MDCAT 2025 uniform curriculum (26-05-2025), which has
+-- no light (physical) optics, medical imaging, astrophysics or climate unit. So chapter 15 (Physical Optics) is FSc
+-- Part 2 and AKU (the HSSC curriculum has physical optics), and chapters 20 and 21 are FSc Part 2 only. Their questions
+-- get questions.mdcat = 0, which keeps them out of the MDCAT bank and the mocks.
+
 -- Inserted in batches of 20 to stay under D1's statement size limit.
 
 INSERT OR IGNORE INTO questions
@@ -638,6 +643,9 @@ JOIN users u ON u.email = 'hozaiphaa@gmail.com';
 
 INSERT INTO question_counters (prefix, n) VALUES ('PHY', 446) ON CONFLICT (prefix) DO UPDATE SET n = max(n, 446);
 
+-- Chapters not on the MDCAT (or NUMS) syllabus: 15, 20, 21.
+UPDATE questions SET mdcat = 0 WHERE id LIKE 'PHY-%' AND ((id BETWEEN 'PHY-0094' AND 'PHY-0136') OR (id BETWEEN 'PHY-0339' AND 'PHY-0392') OR (id BETWEEN 'PHY-0393' AND 'PHY-0446'));
+
 -- Chapter 13 in the other banks.
 INSERT OR IGNORE INTO bank_questions (bank, question_id, subject, chapter)
 SELECT b.column1, q.id, 'Physics', b.column2
@@ -653,7 +661,7 @@ WHERE q.id BETWEEN 'PHY-0044' AND 'PHY-0093' AND q.source LIKE 'Physics 12 (PECT
 -- Chapter 15 in the other banks.
 INSERT OR IGNORE INTO bank_questions (bank, question_id, subject, chapter)
 SELECT b.column1, q.id, 'Physics', b.column2
-FROM questions q JOIN (VALUES ('fsc2', 'Physical optics'), ('nums', 'Physical optics'), ('aku', 'Physical optics')) AS b
+FROM questions q JOIN (VALUES ('fsc2', 'Physical optics'), ('aku', 'Physical optics')) AS b
 WHERE q.id BETWEEN 'PHY-0094' AND 'PHY-0136' AND q.source LIKE 'Physics 12 (PECTAA, Punjab), Ch. 15 %';
 
 -- Chapter 16 in the other banks.
@@ -683,11 +691,11 @@ WHERE q.id BETWEEN 'PHY-0291' AND 'PHY-0338' AND q.source LIKE 'Physics 12 (PECT
 -- Chapter 20 in the other banks.
 INSERT OR IGNORE INTO bank_questions (bank, question_id, subject, chapter)
 SELECT b.column1, q.id, 'Physics', b.column2
-FROM questions q JOIN (VALUES ('fsc2', 'Medical physics'), ('nums', 'Medical physics'), ('aku', 'Medical physics')) AS b
+FROM questions q JOIN (VALUES ('fsc2', 'Medical physics')) AS b
 WHERE q.id BETWEEN 'PHY-0339' AND 'PHY-0392' AND q.source LIKE 'Physics 12 (PECTAA, Punjab), Ch. 20 %';
 
 -- Chapter 21 in the other banks.
 INSERT OR IGNORE INTO bank_questions (bank, question_id, subject, chapter)
 SELECT b.column1, q.id, 'Physics', b.column2
-FROM questions q JOIN (VALUES ('fsc2', 'Space and environment'), ('nums', 'Space and environment'), ('aku', 'Space and environment')) AS b
+FROM questions q JOIN (VALUES ('fsc2', 'Space and environment')) AS b
 WHERE q.id BETWEEN 'PHY-0393' AND 'PHY-0446' AND q.source LIKE 'Physics 12 (PECTAA, Punjab), Ch. 21 %';
