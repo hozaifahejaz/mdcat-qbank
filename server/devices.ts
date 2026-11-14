@@ -8,6 +8,12 @@ const MAX_DEVICES = 2;
 const SWAP_EVERY_MS = 30 * 24 * 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+/* Admin accounts are exempt: any number of devices, all usable at the same time. */
+async function unlimited(db: D1Database, userId: string): Promise<boolean> {
+  const u = await db.prepare("SELECT role FROM users WHERE id = ?").bind(userId).first<{ role: string }>();
+  return u?.role === "admin";
+}
+
 export type DeviceRow = { id: string; label: string; created_at: number; last_seen_at: number; active: boolean };
 
 export async function listDevices(db: D1Database, userId: string): Promise<DeviceRow[]> {
@@ -35,6 +41,7 @@ export async function claimDevice(db: D1Database, session: Session, rawKey: stri
   const label = cleanLabel(rawLabel);
   const uid = session.user_id;
   const now = Date.now();
+  const exempt = await unlimited(db, uid);
 
   let device = await db
     .prepare("SELECT id FROM devices WHERE user_id = ? AND device_key = ? AND removed_at IS NULL")
@@ -50,7 +57,7 @@ export async function claimDevice(db: D1Database, session: Session, rawKey: stri
          SELECT ?1, ?2, ?3, ?4, ?5, ?5
           WHERE (SELECT count(*) FROM devices WHERE user_id = ?2 AND removed_at IS NULL) < ?6`,
       )
-      .bind(id, uid, key, label, now, MAX_DEVICES)
+      .bind(id, uid, key, label, now, exempt ? Number.MAX_SAFE_INTEGER : MAX_DEVICES)
       .run();
     if (!res.meta.changes) return { status: "device_limit" as const, devices: await listDevices(db, uid) };
     await db.prepare("INSERT INTO device_events (user_id, device_id, kind, created_at) VALUES (?, ?, 'register', ?)").bind(uid, id, now).run();
@@ -63,10 +70,11 @@ export async function claimDevice(db: D1Database, session: Session, rawKey: stri
     db.prepare("UPDATE sessions SET device_id = ? WHERE id = ?").bind(device.id, session.id),
     db.prepare("UPDATE devices SET last_seen_at = ?, label = ? WHERE id = ?").bind(now, label, device.id),
   ];
-  if (user?.active_device_id && user.active_device_id !== device.id) {
+  if (!exempt && user?.active_device_id && user.active_device_id !== device.id) {
     statements.push(db.prepare("INSERT INTO device_events (user_id, device_id, kind, created_at) VALUES (?, ?, 'takeover', ?)").bind(uid, device.id, now));
   }
   await db.batch(statements);
+  if (exempt) return { status: "active" as const, takeovers_today: 0 };
 
   const takeovers = await db
     .prepare("SELECT count(*) AS n FROM device_events WHERE user_id = ? AND kind = 'takeover' AND created_at > ?")
@@ -79,6 +87,7 @@ export async function claimDevice(db: D1Database, session: Session, rawKey: stri
 export async function checkDevice(db: D1Database, session: Session, rawKey: string) {
   const key = cleanKey(rawKey);
   await db.prepare("UPDATE devices SET last_seen_at = ? WHERE user_id = ? AND device_key = ? AND removed_at IS NULL").bind(Date.now(), session.user_id, key).run();
+  if (await unlimited(db, session.user_id)) return { status: "active" as const };
   const u = await db
     .prepare("SELECT u.active_session_id, u.active_device_id, d.label FROM users u LEFT JOIN devices d ON d.id = u.active_device_id WHERE u.id = ?")
     .bind(session.user_id)
@@ -97,6 +106,7 @@ export async function requireActiveSession(db: D1Database, request: Request): Pr
 
 /* True only for the account's active session. Every paid-content endpoint should require it. */
 export async function isActiveSession(db: D1Database, session: Session): Promise<boolean> {
+  if (await unlimited(db, session.user_id)) return true;
   const u = await db.prepare("SELECT active_session_id FROM users WHERE id = ?").bind(session.user_id).first<{ active_session_id: string | null }>();
   return u?.active_session_id === session.id;
 }
