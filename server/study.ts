@@ -79,8 +79,11 @@ function shuffle<T>(list: T[], rand: () => number): T[] {
   return a;
 }
 
+/* Leaves out questions that are only for other banks, e.g. FSc chapters not on the MDCAT syllabus (questions.mdcat). */
+const ON_MDCAT = " AND id NOT IN (SELECT id FROM questions WHERE mdcat = 0)";
+
 async function idsBySubject(db: D1Database, pool: string) {
-  const { results } = await db.prepare(`SELECT id, subject FROM served WHERE open_reports < ${REPORT_HIDE}${pool} ORDER BY id`).all<{ id: string; subject: string }>();
+  const { results } = await db.prepare(`SELECT id, subject FROM served WHERE open_reports < ${REPORT_HIDE}${pool}${ON_MDCAT} ORDER BY id`).all<{ id: string; subject: string }>();
   return new Map(subjects.map((s) => [s, results.filter((r) => r.subject === s).map((r) => r.id)]));
 }
 
@@ -195,7 +198,7 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
       c.db.prepare(`SELECT subject, chapter, count(*) AS total, sum(free) AS free FROM bank_served WHERE bank = ? AND open_reports < ${REPORT_HIDE} GROUP BY subject, chapter`).bind(bank),
       c.db.prepare(`SELECT paper AS year, count(*) AS n FROM served WHERE paper IS NOT NULL AND open_reports < ${REPORT_HIDE} GROUP BY paper ORDER BY paper DESC`),
       c.db.prepare("SELECT id, finished_at FROM attempts WHERE user_id = ? AND kind = 'mini-mock' ORDER BY started_at DESC LIMIT 1").bind(me.id),
-      c.db.prepare(`SELECT subject, count(*) AS total, sum(free) AS free FROM served WHERE open_reports < ${REPORT_HIDE} GROUP BY subject`),
+      c.db.prepare(`SELECT subject, count(*) AS total, sum(free) AS free FROM served WHERE open_reports < ${REPORT_HIDE}${ON_MDCAT} GROUP BY subject`),
       // This student's latest answer to each question in the bank, by the bank's subject and chapter.
       c.db.prepare(`SELECT b.subject, b.chapter, count(*) AS answered, sum(CASE WHEN l.answer = l.key THEN 1 ELSE 0 END) AS correct
         FROM (${LATEST}) l JOIN bank_served b ON b.id = l.question_id AND b.bank = ?2 GROUP BY b.subject, b.chapter`).bind(me.id, bank),
@@ -445,7 +448,7 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
       c.db.prepare(`SELECT date((a.counted_at + ${PKT}) / 1000, 'unixepoch') AS d, count(*) AS n, sum(CASE WHEN a.answer = s.answer THEN 1 ELSE 0 END) AS c
         FROM answers a JOIN served s ON s.id = a.question_id WHERE a.user_id = ? AND a.counted_at >= ? AND a.answer IS NOT NULL GROUP BY d`).bind(me.id, since),
       c.db.prepare(LATEST).bind(me.id),
-      c.db.prepare(`SELECT subject, chapter, count(*) AS n FROM served WHERE open_reports < ${REPORT_HIDE}${me.pool} GROUP BY subject, chapter`),
+      c.db.prepare(`SELECT subject, chapter, count(*) AS n FROM served WHERE open_reports < ${REPORT_HIDE}${me.pool}${ON_MDCAT} GROUP BY subject, chapter`),
       c.db.prepare("SELECT * FROM attempts WHERE user_id = ? AND finished_at IS NOT NULL ORDER BY finished_at DESC LIMIT 10").bind(me.id),
       c.db.prepare(`SELECT a.*, (SELECT count(*) FROM answers x WHERE x.attempt_id = a.id AND x.answer IS NOT NULL) AS done
         FROM attempts a WHERE a.user_id = ? AND a.finished_at IS NULL ORDER BY a.started_at DESC LIMIT 1`).bind(me.id),
