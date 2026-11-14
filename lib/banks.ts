@@ -61,6 +61,7 @@ export const mdcatSyllabus = {
     "Thermodynamics",
     "Electrostatics",
     "Current electricity",
+    "Alternating current",
     "Modern and nuclear physics",
   ],
   English: [
@@ -128,9 +129,10 @@ const fsc2: BankSubject[] = [
   },
   {
     name: "Physics",
+    // The PECTAA Physics 12 textbook (National Curriculum 2023), chapters 13 to 21 in book order.
     chapters: [
-      "Electrostatics", "Current electricity", "Electromagnetism", "Electromagnetic induction", "Alternating current",
-      "Physics of solids", "Electronics", "Dawn of modern physics", "Atomic spectra", "Nuclear physics",
+      "Thermal physics", "Simple harmonic motion", "Physical optics", "Electrostatics", "Alternating current",
+      "Quantum physics", "Nuclear and particle physics", "Medical physics", "Space and environment",
     ],
   },
   { name: "English", chapters: ["Grammar", "Vocabulary", "Reading comprehension"] },
@@ -151,8 +153,11 @@ export const banks: Bank[] = [
     id: "aku", name: "AKU Admission Test", short: "AKU", blurb: "Aga Khan University",
     subjects: [
       // AKU tests the HSSC curriculum, which also has ecosystems (not on the PMDC MDCAT syllabus).
+      // It also has physical optics (light), which is not on the PMDC MDCAT syllabus either.
       { name: "Biology", chapters: [...mdcatSyllabus.Biology, "Ecology"] },
-      ...(["Chemistry", "Physics", "English"] as const).map(mdcatSubject),
+      mdcatSubject("Chemistry"),
+      { name: "Physics", chapters: [...mdcatSyllabus.Physics, "Physical optics"] },
+      mdcatSubject("English"),
       { name: "Mathematics", chapters: ["Algebra", "Functions and graphs", "Trigonometry", "Statistics"] },
     ],
   },
