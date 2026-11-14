@@ -26,13 +26,17 @@ export const mdcatSyllabus = {
   Chemistry: [
     "Fundamental concepts",
     "Atomic structure",
+    "Periodic table and periodicity",
     "States of matter",
     "Chemical equilibrium",
     "Reaction kinetics",
     "Thermochemistry",
     "Electrochemistry",
     "Chemical bonding",
+    "p-block elements",
     "Organic chemistry",
+    "Environmental chemistry",
+    "Experimental techniques and lab safety",
   ],
   Physics: [
     "Vectors and equilibrium",
@@ -70,9 +74,12 @@ const fsc1: BankSubject[] = [
   },
   {
     name: "Chemistry",
+    // The PECTAA Chemistry 11 textbook (National Curriculum 2023), in book order.
     chapters: [
-      "Basic concepts", "Experimental techniques in chemistry", "Gases", "Liquids and solids", "Atomic structure",
-      "Chemical bonding", "Thermochemistry", "Chemical equilibrium", "Solutions", "Electrochemistry", "Reaction kinetics",
+      "Periodic table and periodic properties", "Atomic structure", "Chemical bonding", "Stoichiometry",
+      "States and phases of matter", "Chemical energetics", "Reaction kinetics", "Chemical equilibrium",
+      "Acid-base chemistry", "Electrochemistry", "Hydrocarbons", "Nitrogen and sulfur", "Halogens", "Atmosphere",
+      "Basic separation techniques", "Lab safety and practical skills",
     ],
   },
   {
