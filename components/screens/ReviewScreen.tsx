@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import AppShell from "@/components/app/AppShell";
-import Explanation from "@/components/test/Explanation";
+import Explanation, { AnsweredOptions, ResultStrip } from "@/components/test/Explanation";
 import Protected from "@/components/test/Protected";
 import { ReportDialog } from "@/components/test/TestPlayer";
 import { friendlyError } from "@/lib/auth";
@@ -152,19 +152,8 @@ function ReviewItem({ r, n, saved, onSave, onReport }: { r: Scored & { status: S
           <svg className="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
         </summary>
         <div className="rbody">
-          <p className="muted small">{r.q.subject} · {r.q.chapter} · {r.q.topic}</p>
-          <ul className="opts compact" role="list">
-            {r.q.options.map((o, k) => (
-              <li key={k}>
-                <div className={`opt ${k === r.q.answer ? "key" : k === r.chosen ? "miss" : "dim"}`}>
-                  <span className="letter">{letters[k]}</span>
-                  <span className="otext">{o}</span>
-                  {k === r.q.answer && <span className="otag good">Answer</span>}
-                  {k === r.chosen && k !== r.q.answer && <span className="otag bad">Your answer</span>}
-                </div>
-              </li>
-            ))}
-          </ul>
+          <AnsweredOptions q={r.q} chosen={r.chosen} stats={r.stats} />
+          <ResultStrip q={r.q} chosen={r.chosen} stats={r.stats} seconds={r.seconds} />
           <Explanation q={r.q} chosen={r.chosen} onReport={onReport} />
           <button type="button" className={`tool${saved ? " on" : ""}`} aria-pressed={saved} onClick={onSave}>{saved ? "Bookmarked" : "Bookmark"}</button>
         </div>
