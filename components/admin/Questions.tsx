@@ -267,7 +267,8 @@ function Editor({ user, q, spread, onChanged }: {
                 <label className="fld">
                   <span>Chapter</span>
                   <select value={f.chapter} onChange={(e) => set("chapter", e.target.value)}>
-                    {(syllabus[f.subject as Subject] ?? []).map((c) => <option key={c}>{c}</option>)}
+                    {/* Keeps the chapter of a question that is outside the MDCAT syllabus (an FSc-only chapter). */}
+                    {[...new Set([...(syllabus[f.subject as Subject] ?? []), f.chapter])].map((c) => <option key={c}>{c}</option>)}
                   </select>
                 </label>
                 <label className="fld"><span>Topic</span><input value={f.topic} onChange={(e) => set("topic", e.target.value)} /></label>

@@ -27,9 +27,6 @@ export const mdcatSyllabus = {
     "Chromosomes and DNA",
     "Biotechnology",
     "Evolution",
-    "Ecology",
-    "Biostatistics",
-    "Pharmacology",
   ],
   Chemistry: [
     "Fundamental concepts",
@@ -153,7 +150,9 @@ export const banks: Bank[] = [
   {
     id: "aku", name: "AKU Admission Test", short: "AKU", blurb: "Aga Khan University",
     subjects: [
-      ...(["Biology", "Chemistry", "Physics", "English"] as const).map(mdcatSubject),
+      // AKU tests the HSSC curriculum, which also has ecosystems (not on the PMDC MDCAT syllabus).
+      { name: "Biology", chapters: [...mdcatSyllabus.Biology, "Ecology"] },
+      ...(["Chemistry", "Physics", "English"] as const).map(mdcatSubject),
       { name: "Mathematics", chapters: ["Algebra", "Functions and graphs", "Trigonometry", "Statistics"] },
     ],
   },

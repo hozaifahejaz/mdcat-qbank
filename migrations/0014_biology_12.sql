@@ -2,8 +2,23 @@
 -- Original questions in the bank's template (stem, four options, key, why the key is right, why each other option is
 -- wrong) with the source page in the textbook. Approved for the bank by the site owner, so they go straight to live.
 -- Each question's own chapter is its MDCAT chapter (NUMS and AKU reuse it); FSc Part 2 lists them in bank_questions
--- under the textbook chapter. Not in the free set. INSERT OR IGNORE keeps the file safe to run twice; if the site
+-- under the textbook chapter. Not in the free set. INSERT OR IGNORE skips rows already there; if the site
 -- owner's admin account doesn't exist (a fresh local database) nothing is inserted.
+
+-- Not every chapter is on every test. Checked against the PMDC MDCAT 2025 uniform curriculum (26-05-2025), which
+-- has no biostatistics, pharmacology or ecology unit, and AKU's HSSC Biology curriculum, which has ecosystems but
+-- neither of the other two. So chapters 22 and 23 are FSc Part 2 only and chapter 25 is FSc Part 2 and AKU. The new
+-- questions.mdcat flag keeps a question out of the MDCAT bank and the mocks (server/study.ts reads it too).
+
+ALTER TABLE questions ADD COLUMN mdcat INTEGER NOT NULL DEFAULT 1;
+
+DROP VIEW IF EXISTS bank_served;
+CREATE VIEW bank_served AS
+SELECT 'mdcat' AS bank, s.id, s.subject, s.chapter, s.topic, s.free, s.open_reports FROM served s
+WHERE s.id NOT IN (SELECT id FROM questions WHERE mdcat = 0)
+UNION ALL
+SELECT b.bank, s.id, b.subject, b.chapter, s.topic, s.free, s.open_reports
+FROM bank_questions b JOIN served s ON s.id = b.question_id;
 
 -- Inserted in batches of 20 to stay under D1's statement size limit.
 
@@ -959,6 +974,9 @@ JOIN users u ON u.email = 'hozaiphaa@gmail.com';
 
 INSERT INTO question_counters (prefix, n) VALUES ('BIO', 678) ON CONFLICT (prefix) DO UPDATE SET n = max(n, 678);
 
+-- Chapters not on the MDCAT (or NUMS) syllabus.
+UPDATE questions SET mdcat = 0 WHERE id IN (SELECT q.id FROM questions q WHERE q.id LIKE 'BIO-%' AND (q.source LIKE 'Biology 12 (PECTAA, Punjab), Ch. 22 %' OR q.source LIKE 'Biology 12 (PECTAA, Punjab), Ch. 23 %' OR q.source LIKE 'Biology 12 (PECTAA, Punjab), Ch. 25 %'));
+
 -- Chapter 13 in the other banks.
 INSERT OR IGNORE INTO bank_questions (bank, question_id, subject, chapter)
 SELECT b.column1, q.id, 'Biology', b.column2
@@ -1016,13 +1034,13 @@ WHERE q.id BETWEEN 'BIO-0477' AND 'BIO-0530' AND q.source LIKE 'Biology 12 (PECT
 -- Chapter 22 in the other banks.
 INSERT OR IGNORE INTO bank_questions (bank, question_id, subject, chapter)
 SELECT b.column1, q.id, 'Biology', b.column2
-FROM questions q JOIN (VALUES ('fsc2', 'Biostatistics'), ('nums', 'Biostatistics'), ('aku', 'Biostatistics')) AS b
+FROM questions q JOIN (VALUES ('fsc2', 'Biostatistics')) AS b
 WHERE q.id BETWEEN 'BIO-0531' AND 'BIO-0569' AND q.source LIKE 'Biology 12 (PECTAA, Punjab), Ch. 22 %';
 
 -- Chapter 23 in the other banks.
 INSERT OR IGNORE INTO bank_questions (bank, question_id, subject, chapter)
 SELECT b.column1, q.id, 'Biology', b.column2
-FROM questions q JOIN (VALUES ('fsc2', 'Pharmacology'), ('nums', 'Pharmacology'), ('aku', 'Pharmacology')) AS b
+FROM questions q JOIN (VALUES ('fsc2', 'Pharmacology')) AS b
 WHERE q.id BETWEEN 'BIO-0570' AND 'BIO-0593' AND q.source LIKE 'Biology 12 (PECTAA, Punjab), Ch. 23 %';
 
 -- Chapter 24 in the other banks.
@@ -1034,5 +1052,5 @@ WHERE q.id BETWEEN 'BIO-0594' AND 'BIO-0632' AND q.source LIKE 'Biology 12 (PECT
 -- Chapter 25 in the other banks.
 INSERT OR IGNORE INTO bank_questions (bank, question_id, subject, chapter)
 SELECT b.column1, q.id, 'Biology', b.column2
-FROM questions q JOIN (VALUES ('fsc2', 'Ecology'), ('nums', 'Ecology'), ('aku', 'Ecology')) AS b
+FROM questions q JOIN (VALUES ('fsc2', 'Ecology'), ('aku', 'Ecology')) AS b
 WHERE q.id BETWEEN 'BIO-0633' AND 'BIO-0678' AND q.source LIKE 'Biology 12 (PECTAA, Punjab), Ch. 25 %';
