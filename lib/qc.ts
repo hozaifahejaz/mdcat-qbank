@@ -36,6 +36,7 @@ export const subjectCodes: Record<string, string> = {
   Physics: "PHY",
   English: "ENG",
   "Logical Reasoning": "LR",
+  Mathematics: "MAT",
 };
 
 /* Above this word overlap with another question, a new one counts as a duplicate and goes back to its writer. */

@@ -223,6 +223,23 @@ const numsPhysics = [
   "Modern and nuclear physics",
 ];
 
+/* AKU Mathematics. AKU publishes no maths syllabus: its MBBS test has a "Science and Mathematics Reasoning" section,
+   and its only official maths material is the Mathematics Reasoning practice set on aku.edu. These chapters follow the
+   question types in that set (quantity comparisons, data sufficiency, percentages, ratios and rates, data and box plots,
+   probability and counting, sequences, geometry), plus HSSC algebra. Mathematics is only in the AKU bank. */
+export const akuMathematics = [
+  "Arithmetic and number",
+  "Percentages",
+  "Ratio, rates and proportion",
+  "Algebra",
+  "Geometry and measurement",
+  "Data interpretation and statistics",
+  "Probability and counting",
+  "Sequences and patterns",
+  "Quantitative comparison",
+  "Data sufficiency",
+];
+
 export const banks: Bank[] = [
   { id: "fsc1", name: "FSc Part 1", short: "FSc 1", blurb: "First-year textbooks", subjects: fsc1 },
   { id: "fsc2", name: "FSc Part 2", short: "FSc 2", blurb: "Second-year textbooks", subjects: fsc2 },
@@ -257,7 +274,7 @@ export const banks: Bank[] = [
       // AKU's Physics syllabus also has measurements and physics of solids (not on the PMDC MDCAT syllabus).
       { name: "Physics", chapters: ["Measurements", ...mdcatSyllabus.Physics, "Physics of solids", "Physical optics"] },
       mdcatSubject("English"),
-      { name: "Mathematics", chapters: ["Algebra", "Functions and graphs", "Trigonometry", "Statistics"] },
+      { name: "Mathematics", chapters: akuMathematics },
     ],
   },
 ];
