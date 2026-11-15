@@ -1,6 +1,8 @@
-import { DUPLICATE_LIMIT, type QuestionFields, type Role, type StageId, checklist, missingFields, roles, similarity, stageIds, stageLabel, subjectCodes } from "../lib/qc";
+import { DUPLICATE_LIMIT, type QuestionFields, type Role, type StageId, checklist, missingFields, roleNames, roles, similarity, stageIds, stageLabel, subjectCodes } from "../lib/qc";
 import { fail, json, body, str } from "./http";
+import { hashPassword } from "./crypto";
 import { requireSession } from "./session";
+import { createUser, userByEmail } from "./users";
 import { visitSummary } from "./visits";
 
 /* The admin panel's API (/api/admin/*). Every route checks the caller's role here, on the server; the panel hiding
@@ -409,6 +411,7 @@ type UserListRow = {
 
 const presentUser = (u: UserListRow) => ({
   id: u.id, name: u.name, email: u.email, phone: u.phone, plan: u.plan, role: u.role,
+  owner: u.email?.toLowerCase() === OWNER_EMAIL,
   planExpiresAt: u.plan_expires_at ? new Date(u.plan_expires_at).toISOString() : null,
   createdAt: new Date(u.created_at).toISOString(), emailVerified: !!u.email_verified_at,
   devices: u.devices, lastSeen: u.last_seen ? new Date(u.last_seen).toISOString() : null,
@@ -429,7 +432,7 @@ const USER_PAGE = 100;
 
 const userRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
   "GET /api/admin/users": async (c) => {
-    await admin(c);
+    const me = await admin(c);
     const p = new URL(c.request.url).searchParams;
     const q = str(p.get("q"), 100);
     const filter = str(p.get("filter"), 20);
@@ -446,7 +449,7 @@ const userRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
     const offset = Math.max(0, Math.floor(Number(p.get("offset")) || 0));
     const sql = `${USER_SELECT}${where.length ? ` WHERE ${where.join(" AND ")}` : ""} ORDER BY u.created_at DESC, u.id LIMIT ${USER_PAGE + 1} OFFSET ${offset}`;
     const { results } = await c.db.prepare(sql).bind(...args).all<UserListRow>();
-    return json({ users: results.slice(0, USER_PAGE).map(presentUser), hasMore: results.length > USER_PAGE });
+    return json({ users: results.slice(0, USER_PAGE).map(presentUser), hasMore: results.length > USER_PAGE, meOwner: await isOwner(c.db, me.id) });
   },
 
   "GET /api/admin/users/one": async (c) => {
@@ -470,6 +473,30 @@ const userRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
       notes: notes!.results,
       log: logRows!.results,
     });
+  },
+
+  /* An account made by hand, for staff or for a student who paid by bank transfer. Its email counts as confirmed,
+     so it signs in straight away with the password set here. Only the owner can make an admin. */
+  "POST /api/admin/users/create": async (c) => {
+    const me = await admin(c);
+    const b = await body(c.request);
+    const name = str(b.name, 80).replace(/\s+/g, " ");
+    if (name.length < 2) throw fail(400, "bad_name", "Enter the person's name.");
+    const email = str(b.email, 254).toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) throw fail(400, "bad_email", "Enter a valid email address.");
+    const password = typeof b.password === "string" ? b.password : "";
+    if (password.length < 8) throw fail(400, "weak_password", "Use at least 8 characters for the password.");
+    if (password.length > 200) throw fail(400, "weak_password", "That password is too long.");
+    const role = roles.find((r) => r === (b.role ?? "student"));
+    if (!role) throw fail(400, "bad_role", "Pick a role.");
+    if (role === "admin" && !(await isOwner(c.db, me.id))) throw fail(403, "owner", "Only the owner can add an admin.");
+    if (await userByEmail(c.db, email)) throw fail(409, "user_already_exists", "An account with this email already exists. Search for it instead.");
+    const id = await createUser(c.db, { name, email, emailVerified: true, passwordHash: await hashPassword(password) });
+    await c.db.batch([
+      ...(role === "student" ? [] : [c.db.prepare("UPDATE users SET role = ? WHERE id = ?").bind(role, id)]),
+      log(c.db, me, "user.create", id, role === "student" ? "" : roleNames[role]),
+    ]);
+    return json({ user: presentUser(await targetUser(c.db, id)) });
   },
 
   "POST /api/admin/users/role": async (c) => {
