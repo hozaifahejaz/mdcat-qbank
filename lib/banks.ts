@@ -57,11 +57,14 @@ export const mdcatSyllabus = {
     "Force and motion",
     "Work and energy",
     "Circular motion",
+    "Fluid dynamics",
     "Waves",
     "Thermodynamics",
     "Electrostatics",
     "Current electricity",
+    "Electromagnetic induction",
     "Alternating current",
+    "Electronics",
     "Modern and nuclear physics",
   ],
   English: [
@@ -71,6 +74,9 @@ export const mdcatSyllabus = {
   "Logical Reasoning": [
     "Critical thinking",
     "Patterns and sequences",
+    "Logical deductions",
+    "Logical problems",
+    "Course of action",
     "Cause and effect",
   ],
 };
