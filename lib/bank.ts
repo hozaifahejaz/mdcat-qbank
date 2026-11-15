@@ -2,7 +2,7 @@
    API a test at a time (server/study.ts, lib/study.ts), and staff from the admin API. Every question follows the
    writing template in docs/plan.md (stem, four options, key, syllabus tag, difficulty, source chapter, and an
    explanation saying why the key is right and why each other option is wrong). */
-import { mdcatSyllabus } from "@/lib/banks";
+import { akuMathematics, mdcatSyllabus } from "@/lib/banks";
 import type { Subject } from "@/lib/dashboard-data";
 
 export type Difficulty = "easy" | "moderate" | "hard";
@@ -21,8 +21,9 @@ export type Question = {
   wrong: Record<number, string>;
 };
 
-/* Chapters per MDCAT subject, in syllabus order. Every bank's chapters are in lib/banks.ts. */
-export const syllabus: Record<Subject, string[]> = mdcatSyllabus;
+/* Chapters per subject, in syllabus order: the MDCAT subjects, plus Mathematics (AKU only). Every bank's chapters are in
+   lib/banks.ts. */
+export const syllabus: Record<Subject, string[]> = { ...mdcatSyllabus, Mathematics: akuMathematics };
 
 export const subjects = Object.keys(syllabus) as Subject[];
 

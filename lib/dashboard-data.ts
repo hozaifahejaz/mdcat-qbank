@@ -2,7 +2,7 @@
 import { api } from "@/lib/api";
 import type { StudentUser } from "@/lib/user";
 
-export type Subject = "Biology" | "Chemistry" | "Physics" | "English" | "Logical Reasoning";
+export type Subject = "Biology" | "Chemistry" | "Physics" | "English" | "Logical Reasoning" | "Mathematics";
 
 export type ChapterStat = { chapter: string; answered: number; available: number; correct: number };
 export type SubjectStat = { subject: Subject; chapters: ChapterStat[] };
