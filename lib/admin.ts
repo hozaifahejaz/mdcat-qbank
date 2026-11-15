@@ -52,6 +52,8 @@ export const noteNames: Record<string, string> = {
 export type AdminUser = {
   id: string; name: string; email: string | null; phone: string | null; plan: "free" | "season" | "bundle" | "monthly"; role: Role;
   planExpiresAt: string | null; createdAt: string; emailVerified: boolean; devices: number; lastSeen: string | null;
+  /* The site owner's account: only the owner can change it, or add and remove admins. */
+  owner: boolean;
 };
 
 export type UserDetail = {
@@ -110,8 +112,9 @@ export const resolveReports = (questionId: string, status: "fixed" | "dismissed"
 export type WaitlistEntry = { contact: string; kind: "email" | "phone"; created_at: number };
 export const getWaitlist = () => api<{ waitlist: WaitlistEntry[] }>("/api/admin/waitlist").then((r) => r.waitlist);
 
-export const listUsers = (q: string, filter: string, offset = 0) => api<{ users: AdminUser[]; hasMore: boolean }>(`/api/admin/users?q=${encodeURIComponent(q)}&filter=${filter}&offset=${offset}`);
+export const listUsers = (q: string, filter: string, offset = 0) => api<{ users: AdminUser[]; hasMore: boolean; meOwner: boolean }>(`/api/admin/users?q=${encodeURIComponent(q)}&filter=${filter}&offset=${offset}`);
 export const getUser = (id: string) => api<UserDetail>(`/api/admin/users/one?id=${encodeURIComponent(id)}`);
+export const createAccount = (a: { name: string; email: string; password: string; role: Role }) => api<{ user: AdminUser }>("/api/admin/users/create", { body: a });
 export const setRole = (id: string, role: Role) => api<{ user: AdminUser }>("/api/admin/users/role", { body: { id, role } });
 export const setPlan = (id: string, plan: AdminUser["plan"], expiresAt: string | null) => api<{ user: AdminUser }>("/api/admin/users/plan", { body: { id, plan, expiresAt } });
 export const resetDevices = (id: string) => api<{ user: AdminUser }>("/api/admin/users/reset-devices", { body: { id } });
@@ -133,6 +136,7 @@ export const actionNames: Record<string, string> = {
   "question.meta": "Publishing changed",
   "report.fixed": "Reports closed as fixed",
   "report.dismissed": "Reports dismissed",
+  "user.create": "Account created",
   "user.role": "Role changed",
   "user.plan": "Plan changed",
   "user.reset_devices": "Devices reset",
