@@ -87,10 +87,11 @@ const mdcatSubject = (name: keyof typeof mdcatSyllabus): BankSubject => ({ name,
 const fsc1: BankSubject[] = [
   {
     name: "Biology",
+    // The PECTAA Biology 11 textbook (National Curriculum 2023), chapters 1 to 12 in book order.
     chapters: [
-      "Introduction", "Biological molecules", "Enzymes", "The cell", "Variety of life", "Kingdom Prokaryotae",
-      "Kingdom Protoctista", "Kingdom Fungi", "Kingdom Plantae", "Kingdom Animalia", "Bioenergetics", "Nutrition",
-      "Gaseous exchange", "Transport",
+      "Biodiversity and classification", "Bacteria and viruses", "Cells and subcellular organelles", "Biomolecules",
+      "Enzymes", "Bioenergetics", "Structural and computational biology", "Plant physiology", "Human digestive system",
+      "Human respiratory system", "Human circulatory system", "Human skeletal and muscular systems",
     ],
   },
   {
@@ -160,7 +161,11 @@ export const banks: Bank[] = [
     subjects: [
       // AKU tests the HSSC curriculum, which also has ecosystems (not on the PMDC MDCAT syllabus).
       // It also has physical optics (light), which is not on the PMDC MDCAT syllabus either.
-      { name: "Biology", chapters: [...mdcatSyllabus.Biology, "Ecology"] },
+      // Its first-year Biology also covers classification, bacteria and plant physiology (Biology 11 chapters 1, 2 and 8).
+      {
+        name: "Biology",
+        chapters: [...mdcatSyllabus.Biology, "Biodiversity and classification", "Bacteria", "Plant physiology", "Ecology"],
+      },
       mdcatSubject("Chemistry"),
       { name: "Physics", chapters: [...mdcatSyllabus.Physics, "Physical optics"] },
       mdcatSubject("English"),
