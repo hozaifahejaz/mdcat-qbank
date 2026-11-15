@@ -62,6 +62,7 @@ export const mdcatSyllabus = {
     "Thermodynamics",
     "Electrostatics",
     "Current electricity",
+    "Electromagnetism",
     "Electromagnetic induction",
     "Alternating current",
     "Electronics",
@@ -120,9 +121,12 @@ const fsc1: BankSubject[] = [
   },
   {
     name: "Physics",
+    // The PECTAA Physics 11 textbook (National Curriculum 2023), chapters 1 to 12 in book order.
     chapters: [
-      "Measurements", "Vectors and equilibrium", "Motion and force", "Work and energy", "Circular motion",
-      "Fluid dynamics", "Oscillations", "Waves", "Physical optics", "Optical instruments", "Heat and thermodynamics",
+      "Measurements", "Force and motion", "Circular and rotational motion", "Work, energy and power",
+      "Solids and fluid dynamics", "Heat and thermodynamics", "Waves and vibrations",
+      "Physical optics and gravitational waves", "Electrostatics and current electricity", "Electromagnetism",
+      "Special theory of relativity", "Nuclear and particle physics",
     ],
   },
   { name: "English", chapters: ["Grammar", "Vocabulary", "Reading comprehension"] },
@@ -159,6 +163,23 @@ const fsc2: BankSubject[] = [
   { name: "English", chapters: ["Grammar", "Vocabulary", "Reading comprehension"] },
 ];
 
+/* NUMS MDCAT 2026 Physics: its 13 units, named like the MDCAT chapters so a question keeps one name across banks
+   (Dawn of modern physics, Atomic spectra and Nuclear physics share "Modern and nuclear physics"). NUMS has no
+   vectors and equilibrium, fluid dynamics or alternating current unit. */
+const numsPhysics = [
+  "Force and motion",
+  "Work and energy",
+  "Circular motion",
+  "Waves",
+  "Thermodynamics",
+  "Electrostatics",
+  "Current electricity",
+  "Electromagnetism",
+  "Electromagnetic induction",
+  "Electronics",
+  "Modern and nuclear physics",
+];
+
 export const banks: Bank[] = [
   { id: "fsc1", name: "FSc Part 1", short: "FSc 1", blurb: "First-year textbooks", subjects: fsc1 },
   { id: "fsc2", name: "FSc Part 2", short: "FSc 2", blurb: "Second-year textbooks", subjects: fsc2 },
@@ -168,7 +189,9 @@ export const banks: Bank[] = [
   },
   {
     id: "nums", name: "NUMS MDCAT", short: "NUMS", blurb: "NUMS entry test",
-    subjects: (["Biology", "Chemistry", "Physics", "English"] as const).map(mdcatSubject),
+    subjects: (["Biology", "Chemistry", "Physics", "English"] as const).map((s) =>
+      s === "Physics" ? { name: "Physics", chapters: numsPhysics } : mdcatSubject(s),
+    ),
   },
   {
     id: "aku", name: "AKU Admission Test", short: "AKU", blurb: "Aga Khan University",
@@ -181,7 +204,8 @@ export const banks: Bank[] = [
         chapters: [...mdcatSyllabus.Biology, "Biodiversity and classification", "Bacteria", "Plant physiology", "Ecology"],
       },
       mdcatSubject("Chemistry"),
-      { name: "Physics", chapters: [...mdcatSyllabus.Physics, "Physical optics"] },
+      // AKU's Physics syllabus also has measurements and physics of solids (not on the PMDC MDCAT syllabus).
+      { name: "Physics", chapters: ["Measurements", ...mdcatSyllabus.Physics, "Physics of solids", "Physical optics"] },
       mdcatSubject("English"),
       { name: "Mathematics", chapters: ["Algebra", "Functions and graphs", "Trigonometry", "Statistics"] },
     ],
