@@ -160,6 +160,25 @@ const fsc2: BankSubject[] = [
   { name: "English", chapters: ["Grammar", "Vocabulary", "Reading comprehension"] },
 ];
 
+/* NUMS MDCAT 2026 Biology: its own 13 units, in the syllabus order. It has no excretion or homeostasis, chromosomes and
+   DNA, biotechnology, biostatistics, pharmacology or ecology unit; the immune and lymphatic systems sit in "Life
+   processes in animals and plants", and "Inheritance" is its variation and genetics unit. */
+const numsBiology = [
+  "Acellular life",
+  "Bioenergetics",
+  "Biological molecules",
+  "Cell structure and function",
+  "Coordination and control",
+  "Diversity among animals",
+  "Enzymes",
+  "Evolution",
+  "Life processes in animals and plants",
+  "Prokaryotes",
+  "Reproduction",
+  "Support and movement",
+  "Inheritance",
+];
+
 /* NUMS MDCAT 2026 Chemistry: its 19 units in syllabus order. Units that match an MDCAT chapter keep the MDCAT name;
    NUMS splits states of matter into gases, liquids and solids, aldehydes and ketones from carboxylic acids, and joins
    the s- and p-block. NUMS has no periodic table, spectroscopy, environmental, industrial or lab-techniques unit, and
@@ -216,6 +235,7 @@ export const banks: Bank[] = [
     subjects: (["Biology", "Chemistry", "Physics", "English"] as const).map((s) =>
       s === "Physics" ? { name: "Physics", chapters: numsPhysics }
         : s === "Chemistry" ? { name: "Chemistry", chapters: numsChemistry }
+        : s === "Biology" ? { name: "Biology", chapters: numsBiology }
         : mdcatSubject(s),
     ),
   },
