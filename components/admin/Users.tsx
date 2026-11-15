@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { PageHead } from "@/components/app/AppShell";
 import Empty from "@/components/app/Empty";
 import { friendlyError } from "@/lib/auth";
-import { type AdminUser, type UserDetail, actionNames, noteNames, getUser, listUsers, resetDevices, setPlan, setRole, signOutUser } from "@/lib/admin";
+import { type AdminUser, type UserDetail, actionNames, noteNames, createAccount, getUser, listUsers, resetDevices, setPlan, setRole, signOutUser } from "@/lib/admin";
 import { day, fullDay, planNames } from "@/lib/format";
 import { formatPhone } from "@/lib/phone";
 import { type Role, roleNames, roles } from "@/lib/qc";
@@ -32,8 +32,9 @@ export default function Users({ user: me }: { user: AccountUser }) {
   const [err, setErr] = useState("");
   const [sel, setSel] = useState<string | null>(null);
   const [toast, setToast] = useState("");
+  const [meOwner, setMeOwner] = useState(false);
 
-  const load = useCallback(() => listUsers(q, filter).then((r) => { setUsers(r.users); setMore(r.hasMore); }, (e) => setErr(friendlyError(e))), [q, filter]);
+  const load = useCallback(() => listUsers(q, filter).then((r) => { setUsers(r.users); setMore(r.hasMore); setMeOwner(r.meOwner); }, (e) => setErr(friendlyError(e))), [q, filter]);
   const loadMore = async () => {
     if (!users) return;
     setLoadingMore(true);
@@ -55,7 +56,9 @@ export default function Users({ user: me }: { user: AccountUser }) {
 
   return (
     <div className="dgrid">
-      <PageHead title="Users and plans" sub="Find an account to change its plan or role, or clear its devices." />
+      <PageHead title="Users and plans" sub="Find an account to change its plan or role, or clear its devices.">
+        <button type="button" className="dpill dark small" onClick={() => setSel("new")}>Add account</button>
+      </PageHead>
       <div className="q-head">
         <nav className="stage-tabs" aria-label="Filter">
           {filters.map((f) => <button key={f.id} type="button" className="stab" aria-pressed={filter === f.id} onClick={() => setFilter(f.id)}>{f.label}</button>)}
@@ -81,7 +84,7 @@ export default function Users({ user: me }: { user: AccountUser }) {
                         </button>
                       </td>
                       <td>{planActive(u) ? <span className="badge good">{planNames[u.plan]}</span> : <span className="muted">Free</span>}</td>
-                      <td>{u.role === "student" ? <span className="muted">Student</span> : <span className="badge">{roleNames[u.role]}</span>}</td>
+                      <td>{u.owner ? <span className="badge">Owner</span> : u.role === "student" ? <span className="muted">Student</span> : <span className="badge">{roleNames[u.role]}</span>}</td>
                       <td className="hide-sm">{u.devices}/2</td>
                       <td className="hide-sm muted">{day(u.createdAt)}</td>
                     </tr>
@@ -92,7 +95,8 @@ export default function Users({ user: me }: { user: AccountUser }) {
           {users && more && <div><button type="button" className="dpill light small" disabled={loadingMore} onClick={loadMore}>{loadingMore ? "Loading…" : "Show more accounts"}</button></div>}
         </section>
 
-        {sel && <Detail key={sel} id={sel} me={me} onClose={() => setSel(null)} onChanged={(m) => { setToast(m); load(); }} />}
+        {sel === "new" && <AddAccount meOwner={meOwner} onClose={() => setSel(null)} onCreated={(u) => { setToast(`Account created for ${u.name}. Send them the password yourself.`); setSel(u.id); load(); }} />}
+        {sel && sel !== "new" && <Detail key={sel} id={sel} me={me} onClose={() => setSel(null)} onChanged={(m) => { setToast(m); load(); }} />}
       </div>
       {toast && <div className="toast" role="status">{toast}</div>}
     </div>
@@ -124,12 +128,14 @@ function Detail({ id, me, onClose, onChanged }: { id: string; me: AccountUser; o
   if (!d) return <aside className="dcard panel udetail">{err ? <p className="note-bad">{err}</p> : <div className="sk" style={{ height: 300 }} />}</aside>;
   const u = d.user;
   const self = u.id === me.id;
+  // Nobody but the owner can change the owner's account (the server checks this too).
+  const locked = u.owner && !self;
   const planChanged = plan !== (planActive(u) ? u.plan : "free") || (plan !== "free" && until !== (u.planExpiresAt ? isoDay(new Date(u.planExpiresAt)) : ""));
 
   return (
     <aside className="dcard panel udetail" aria-label={`Account ${u.name}`}>
       <div className="panel-h">
-        <h2>{u.name || "No name"}</h2>
+        <h2>{u.name || "No name"}{u.owner && <> <span className="badge">Owner</span></>}</h2>
         <button type="button" className="link" onClick={onClose}>Close</button>
       </div>
       <dl className="sum">
@@ -141,7 +147,9 @@ function Detail({ id, me, onClose, onChanged }: { id: string; me: AccountUser; o
         <div><dt>Account ID</dt><dd><code className="small">{u.id}</code></dd></div>
       </dl>
       {err && <p className="note-bad" role="alert">{err}</p>}
+      {locked && <p className="note-warn">This is the owner&apos;s account. Only the owner can change it.</p>}
 
+      {!locked && <>
       <div className="usec">
         <h3 className="panel-title">Plan</h3>
         <p className="muted small">{planActive(u) ? `${planNames[u.plan]}${u.planExpiresAt ? ` until ${fullDay(u.planExpiresAt)}` : ""}.` : "Free plan."} Use this for bank transfers, refunds or support until online payments open.</p>
@@ -166,7 +174,7 @@ function Detail({ id, me, onClose, onChanged }: { id: string; me: AccountUser; o
           </select>
           <button type="button" className="dpill dark small" disabled={busy || role === u.role} onClick={() => act(() => setRole(u.id, role), `${u.name || "Account"} is now ${roleNames[role].toLowerCase()}.`, role === "admin" ? `Make ${u.name || "this account"} an admin? Admins can change plans, roles and every question.` : undefined)}>Save role</button>
         </div>
-        {self && <p className="muted small">You can&apos;t change your own role.</p>}
+        {self && <p className="muted small">{u.owner ? "You're the owner: you always have admin access, and only you can add or remove admins." : "You can't change your own role."}</p>}
       </div>
 
       <div className="usec">
@@ -188,6 +196,7 @@ function Detail({ id, me, onClose, onChanged }: { id: string; me: AccountUser; o
           {!self && <button type="button" className="dpill light small" disabled={busy} onClick={() => act(() => signOutUser(u.id), "Signed out everywhere.", "Sign this account out on every device?")}>Sign out everywhere</button>}
         </div>
       </div>
+      </>}
 
       {d.log.length > 0 && (
         <div className="usec">
@@ -197,6 +206,60 @@ function Detail({ id, me, onClose, onChanged }: { id: string; me: AccountUser; o
           </ul>
         </div>
       )}
+    </aside>
+  );
+}
+
+/* A random starting password: 12 letters and digits, without look-alikes such as 0/O and 1/l. */
+function makePassword() {
+  const chars = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const bytes = crypto.getRandomValues(new Uint8Array(12));
+  return Array.from(bytes, (b) => chars[b % chars.length]).join("");
+}
+
+/* Make an account by hand. It can sign in straight away with the email and password set here. */
+function AddAccount({ meOwner, onClose, onCreated }: { meOwner: boolean; onClose: () => void; onCreated: (u: AdminUser) => void }) {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState(makePassword);
+  const [role, setR] = useState<Role>("student");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (role === "admin" && !confirm(`Make ${name || "this account"} an admin? Admins can change plans, roles and every question.`)) return;
+    setBusy(true); setErr("");
+    try { onCreated((await createAccount({ name, email, password, role })).user); } catch (x) { setErr(friendlyError(x)); setBusy(false); }
+  };
+
+  return (
+    <aside className="dcard panel udetail" aria-label="Add account">
+      <div className="panel-h">
+        <h2>Add account</h2>
+        <button type="button" className="link" onClick={onClose}>Close</button>
+      </div>
+      <p className="muted small">The account works straight away, with no confirmation email. Send the person their password yourself, and they can change it later from Forgot password.</p>
+      <form className="usec" onSubmit={submit}>
+        <label className="fld"><span>Name</span><input value={name} onChange={(e) => setName(e.target.value)} required minLength={2} maxLength={80} autoComplete="off" disabled={busy} /></label>
+        <label className="fld"><span>Email</span><input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required maxLength={254} autoComplete="off" disabled={busy} /></label>
+        <label className="fld">
+          <span>Password</span>
+          <div className="role-row">
+            <input value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} maxLength={200} autoComplete="new-password" spellCheck={false} disabled={busy} style={{ flex: 1, minWidth: 0 }} />
+            <button type="button" className="dpill light small" disabled={busy} onClick={() => setPassword(makePassword())}>New one</button>
+          </div>
+        </label>
+        <label className="fld">
+          <span>Role</span>
+          <select value={role} onChange={(e) => setR(e.target.value as Role)} disabled={busy}>
+            {roles.filter((r) => r !== "admin" || meOwner).map((r) => <option key={r} value={r}>{roleNames[r]}</option>)}
+          </select>
+        </label>
+        {!meOwner && <p className="muted small">Only the owner can add an admin.</p>}
+        {err && <p className="note-bad" role="alert">{err}</p>}
+        <div><button type="submit" className="dpill dark small" disabled={busy}>{busy ? "Adding…" : "Add account"}</button></div>
+      </form>
     </aside>
   );
 }
