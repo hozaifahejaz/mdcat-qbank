@@ -4,9 +4,9 @@ import { paper } from "../lib/site";
 import { uuid } from "./crypto";
 import { requireActiveSession } from "./devices";
 import { body, fail, json, str } from "./http";
-import { rateLimit, spend, used } from "./ratelimit";
+import { hit, overLimit, rateLimit, spend, usedOf, usedStmt } from "./ratelimit";
 import { note, requireSession } from "./session";
-import { effectivePlan, userById } from "./users";
+import { effectivePlan } from "./users";
 
 /* The student side of the bank (/api/study/*): which questions a student can practise, their tests, answers,
    bookmarks and reports, and the dashboard numbers. Questions only ever reach the browser from here, a test's worth
@@ -52,11 +52,10 @@ const full = (r: Served) => ({ ...ask(r), difficulty: r.difficulty, source: r.so
 
 /* Who's asking, and which questions their plan opens: everything for a pass, the free set otherwise. */
 async function student(c: Ctx, active: boolean) {
+  // The session query already carries the account's role and plan, so this is one trip to the database.
   const s = active ? await requireActiveSession(c.db, c.request) : await requireSession(c.db, c.request);
-  const u = await userById(c.db, s.user_id);
-  if (!u) throw fail(401, "signed_out", "Please sign in.");
-  const paid = effectivePlan(u) !== "free";
-  return { id: u.id, paid, staff: u.role !== "student", pool: paid ? "" : " AND free = 1" };
+  const paid = effectivePlan(s) !== "free";
+  return { id: s.user_id, paid, staff: s.role !== "student", pool: paid ? "" : " AND free = 1" };
 }
 
 async function servedByIds(db: D1Database, ids: string[]): Promise<Map<string, Served>> {
@@ -102,12 +101,13 @@ const STALE_PRACTICE = 7 * DAY;
 /* Marks a test done: every unanswered timed question counts as skipped, and the score is read against the keys. */
 async function finish(db: D1Database, a: AttemptRow, at: number) {
   const end = a.deadline_at ? Math.min(at, a.deadline_at) : at;
-  if (a.mode !== "tutor") await db.prepare("UPDATE answers SET counted_at = ? WHERE attempt_id = ? AND counted_at IS NULL").bind(end, a.id).run();
-  const r = await db
+  const marks = db
     .prepare(`SELECT count(*) AS asked, sum(CASE WHEN a.answer = s.answer THEN 1 ELSE 0 END) AS right
       FROM answers a JOIN served s ON s.id = a.question_id WHERE a.attempt_id = ? ${a.mode === "tutor" ? "AND a.checked = 1" : ""}`)
-    .bind(a.id)
-    .first<{ asked: number; right: number | null }>();
+    .bind(a.id);
+  type Marks = { asked: number; right: number | null };
+  const r = a.mode === "tutor" ? await marks.first<Marks>()
+    : (await db.batch<Marks>([db.prepare("UPDATE answers SET counted_at = ? WHERE attempt_id = ? AND counted_at IS NULL").bind(end, a.id), marks]))[1]!.results[0];
   const total = a.mode === "tutor" ? r?.asked ?? 0 : a.total;
   // A practice set closed with nothing checked isn't a result: it goes, instead of showing as 0/0.
   if (a.mode === "tutor" && total === 0) {
@@ -124,16 +124,32 @@ async function finish(db: D1Database, a: AttemptRow, at: number) {
 
 /* Timed tests left open past their clock are submitted as they stood, the next time the student loads anything.
    Practice sets nobody came back to for a week are closed the same way, at their last checked answer. */
-async function finishExpired(db: D1Database, userId: string) {
-  const now = Date.now();
-  const { results } = await db.prepare("SELECT * FROM attempts WHERE user_id = ? AND finished_at IS NULL AND deadline_at < ?").bind(userId, now - GRACE).all<AttemptRow>();
-  for (const a of results) await finish(db, a, a.deadline_at!);
-  const stale = await db
-    .prepare(`SELECT a.*, (SELECT max(x.counted_at) FROM answers x WHERE x.attempt_id = a.id) AS last_at
-      FROM attempts a WHERE a.user_id = ? AND a.finished_at IS NULL AND a.mode = 'tutor' AND a.started_at < ?`)
-    .bind(userId, now - STALE_PRACTICE)
-    .all<AttemptRow & { last_at: number | null }>();
-  for (const a of stale.results) if ((a.last_at ?? a.started_at) < now - STALE_PRACTICE) await finish(db, a, a.last_at ?? a.started_at);
+type Stale = AttemptRow & { last_at: number | null };
+/* The two lookups, as statements a caller puts at the front of its own batch (so the check costs no extra trip),
+   and the closing itself, which says whether anything was closed. Almost always nothing is. */
+const overdue = (db: D1Database, userId: string, now: number) => [
+  db.prepare("SELECT * FROM attempts WHERE user_id = ? AND finished_at IS NULL AND deadline_at < ?").bind(userId, now - GRACE),
+  db.prepare(`SELECT a.*, (SELECT max(x.counted_at) FROM answers x WHERE x.attempt_id = a.id) AS last_at
+      FROM attempts a WHERE a.user_id = ? AND a.finished_at IS NULL AND a.mode = 'tutor' AND a.started_at < ?`).bind(userId, now - STALE_PRACTICE),
+];
+async function closeOverdue(db: D1Database, expired: AttemptRow[], stale: Stale[], now: number) {
+  let closed = false;
+  for (const a of expired) { await finish(db, a, a.deadline_at!); closed = true; }
+  for (const a of stale) {
+    if (expired.some((e) => e.id === a.id) || (a.last_at ?? a.started_at) >= now - STALE_PRACTICE) continue;
+    await finish(db, a, a.last_at ?? a.started_at);
+    closed = true;
+  }
+  return closed;
+}
+/* Runs a batch that starts with the overdue lookups. If any test had to be closed, the batch is read again so
+   the caller's numbers include it. Returns the caller's own results. */
+async function afterClosing(db: D1Database, userId: string, own: (now: number) => D1PreparedStatement[]) {
+  for (let pass = 0; ; pass++) {
+    const now = Date.now();
+    const res = await db.batch([...overdue(db, userId, now), ...own(now)]);
+    if (pass || !(await closeOverdue(db, res[0]!.results as AttemptRow[], res[1]!.results as Stale[], now))) return res.slice(2);
+  }
 }
 
 async function ownAttempt(db: D1Database, userId: string, id: unknown): Promise<AttemptRow> {
@@ -143,11 +159,11 @@ async function ownAttempt(db: D1Database, userId: string, id: unknown): Promise<
 }
 
 /* An open test that can still take answers. Past its clock, it's submitted and the student is told. */
-async function openAttempt(db: D1Database, userId: string, id: unknown): Promise<AttemptRow> {
-  const a = await ownAttempt(db, userId, id);
+async function stillOpen(db: D1Database, a: AttemptRow | undefined): Promise<AttemptRow> {
+  if (!a) throw fail(404, "not_found", "We couldn't find that test.");
   if (a.finished_at) throw fail(409, "finished", "This test is already submitted.", { attempt: a.id });
-  if (a.deadline_at && Date.now() > a.deadline_at + GRACE) {
-    await finish(db, a, a.deadline_at);
+  if (pastClock(a)) {
+    await finish(db, a, a.deadline_at!);
     throw fail(409, "time_up", "Time's up. Your test was submitted.", { attempt: a.id });
   }
   return a;
@@ -194,13 +210,12 @@ function scope(b: Record<string, unknown>, pool: string) {
 /* How everyone answered these questions: picks per option, once enough students have answered to mean something. */
 const MIN_STATS = 20;
 type Stats = { n: number; picks: number[] };
-async function statsFor(db: D1Database, ids: string[]): Promise<Map<string, Stats>> {
+/* `which` is a subquery giving the question ids. */
+const statsSql = (which: string) => `SELECT question_id, answer, count(*) AS n FROM answers
+    WHERE question_id IN (${which}) AND counted_at IS NOT NULL AND answer IS NOT NULL GROUP BY question_id, answer`;
+function readStats(results: unknown[]): Map<string, Stats> {
   const out = new Map<string, Stats>();
-  if (!ids.length) return out;
-  const { results } = await db.prepare(`SELECT question_id, answer, count(*) AS n FROM answers
-    WHERE question_id IN (SELECT value FROM json_each(?)) AND counted_at IS NOT NULL AND answer IS NOT NULL GROUP BY question_id, answer`)
-    .bind(JSON.stringify(ids)).all<{ question_id: string; answer: number; n: number }>();
-  for (const r of results) {
+  for (const r of results as { question_id: string; answer: number; n: number }[]) {
     const s = out.get(r.question_id) ?? { n: 0, picks: [0, 0, 0, 0] };
     if (r.answer >= 0 && r.answer <= 3) { s.picks[r.answer]! += r.n; s.n += r.n; }
     out.set(r.question_id, s);
@@ -208,6 +223,22 @@ async function statsFor(db: D1Database, ids: string[]): Promise<Map<string, Stat
   for (const [id, s] of out) if (s.n < MIN_STATS) out.delete(id);
   return out;
 }
+/* An open test as the player gets it: questions without keys, answers so far, and the server's clock. */
+function sitting(a: AttemptRow, rows: AnswerRow[], qs: Map<string, Served>, saved: Set<string>, stats: Map<string, Stats>) {
+  return {
+    id: a.id, kind: a.kind, mode: a.mode, title: a.title, startedAt: a.started_at, deadlineAt: a.deadline_at, now: Date.now(),
+    items: rows.filter((r) => qs.has(r.question_id)).map((r) => {
+      const q = qs.get(r.question_id)!;
+      return { idx: r.idx, q: ask(q), answer: r.answer, flagged: !!r.flagged, checked: !!r.checked, bookmarked: saved.has(q.id), seconds: r.seconds, reveal: a.mode === "tutor" && r.checked ? full(q) : null, stats: (a.mode === "tutor" && r.checked && stats.get(q.id)) || null };
+    }),
+  };
+}
+const byId = (results: unknown[]) => new Map((results as Served[]).map((r) => [r.id, r]));
+const idSet = (results: unknown[]) => new Set((results as { question_id: string }[]).map((m) => m.question_id));
+/* Only this student's own test: every statement about a test's answers is tied to it. ?1 is the test, ?2 the student. */
+const OWN = "(SELECT id FROM attempts WHERE id = ?1 AND user_id = ?2)";
+const pastClock = (a: AttemptRow) => !!a.deadline_at && Date.now() > a.deadline_at + GRACE;
+
 const secs = (v: unknown) => (Number.isFinite(Number(v)) && Number(v) > 0 ? Math.min(3600, Math.round(Number(v))) : null);
 
 const pkDate = (ms: number) => new Date(ms + PKT).toISOString().slice(0, 10);
@@ -285,9 +316,18 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
   /* Start a test. The server picks the questions, so the browser never holds more than the test it's sitting. */
   "POST /api/study/start": async (c) => {
     const me = await student(c, true);
-    if (!me.staff) await rateLimit(c.db, `start:${me.id}`, STARTS_PER_HOUR, HOUR);
-    await finishExpired(c.db, me.id);
     const b = await body(c.request);
+    // One trip: tests past their clock, a timed test still running, today's question count, and this start counted.
+    const t0 = Date.now();
+    const pre = await c.db.batch([
+      ...overdue(c.db, me.id, t0),
+      c.db.prepare("SELECT id, title FROM attempts WHERE user_id = ? AND finished_at IS NULL AND mode != 'tutor' ORDER BY started_at DESC").bind(me.id),
+      usedStmt(c.db, `given:${me.id}`),
+      ...(me.staff ? [] : [hit(c.db, `start:${me.id}`, HOUR)]),
+    ]);
+    if (!me.staff) overLimit(pre[4]!.results[0] as { count: number; window_start: number }, STARTS_PER_HOUR, HOUR);
+    const expired = pre[0]!.results as AttemptRow[];
+    await closeOverdue(c.db, expired, pre[1]!.results as Stale[], t0);
     let kind: Kind = (["practice", "timed", "mock", "mini-mock", "past-paper"] as const).find((k) => k === b.kind) ?? "practice";
     // A practice set has two switches: tutor (the explanation after each answer) and timed (a minute a question).
     // Older links only say practice (tutor, no clock) or timed (answers at the end, on the clock).
@@ -298,7 +338,7 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
     const mode = modeOf[kind];
     // One timed test or mock at a time: a second one could share questions with the first and open their answers early.
     if (mode !== "tutor") {
-      const running = await c.db.prepare("SELECT id, title FROM attempts WHERE user_id = ? AND finished_at IS NULL AND mode != 'tutor' ORDER BY started_at DESC LIMIT 1").bind(me.id).first<{ id: string; title: string }>();
+      const running = (pre[2]!.results as { id: string; title: string }[]).find((r) => !expired.some((e) => e.id === r.id));
       if (running) throw fail(409, "open_test", `You still have ${running.title} running. Finish or submit it before starting another timed test.`, { attempt: running.id });
     }
     let ids: string[] = [];
@@ -372,59 +412,67 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
     const now = Date.now();
     if (!me.staff) {
       // Counted when the questions are handed out, so a set that is opened and thrown away still counts.
-      const left = DAILY_QUESTIONS - (await used(c.db, `given:${me.id}`, DAY));
+      const left = DAILY_QUESTIONS - usedOf(pre[3]!.results[0] as { count: number; window_start: number } | undefined, DAY);
       if (ids.length > left) {
         const noted = await c.db.prepare("SELECT 1 FROM security_events WHERE user_id = ? AND kind = 'daily_limit' AND created_at > ?").bind(me.id, now - DAY).first();
         if (!noted) await note(c.db, me.id, "daily_limit", `Reached ${DAILY_QUESTIONS} new questions in a day`).run();
         throw fail(429, "daily_limit", left > 0 ? `You can start ${left} more question${left === 1 ? "" : "s"} today. Pick a shorter set, or carry on with a test you already have open.` : "That's the most new questions for one day. Review what you've done today, and start new sets tomorrow.");
       }
-      await spend(c.db, `given:${me.id}`, ids.length, DAY);
     }
     // Timed tests get a minute a question; the mock is the real paper's 3 hours for 180.
     const deadline = clock ? now + ids.length * 60 * 1000 : null;
-    await c.db.batch([
+    // The same trip that saves the test also reads its questions, so the player opens without asking again.
+    const made = await c.db.batch([
       c.db.prepare(`INSERT INTO attempts (id, user_id, kind, mode, title, question_ids, mock_no, paper, started_at, deadline_at, total)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).bind(id, me.id, kind, mode, title, JSON.stringify(ids), mockNo, year, now, deadline, ids.length),
       c.db.prepare("INSERT INTO answers (attempt_id, idx, user_id, question_id) SELECT ?1, key, ?2, value FROM json_each(?3)").bind(id, me.id, JSON.stringify(ids)),
+      c.db.prepare("SELECT * FROM served WHERE id IN (SELECT value FROM json_each(?))").bind(JSON.stringify(ids)),
+      c.db.prepare("SELECT question_id FROM bookmarks WHERE user_id = ?").bind(me.id),
+      ...(me.staff ? [] : [spend(c.db, `given:${me.id}`, ids.length, DAY)]),
     ]);
     const asked = Number(b.count) || 0;
-    return json({ id, count: ids.length, short: kind !== "mock" && kind !== "past-paper" && kind !== "mini-mock" && !b.ids && asked > ids.length });
+    const a: AttemptRow = { id, user_id: me.id, kind, mode, title, question_ids: "", mock_no: mockNo, paper: year, started_at: now, deadline_at: deadline, finished_at: null, seconds: null, score: null, total: ids.length };
+    const rows: AnswerRow[] = ids.map((q, idx) => ({ idx, question_id: q, answer: null, flagged: 0, checked: 0, seconds: null }));
+    return json({
+      id, count: ids.length, short: kind !== "mock" && kind !== "past-paper" && kind !== "mini-mock" && !b.ids && asked > ids.length,
+      attempt: sitting(a, rows, byId(made[2]!.results), idSet(made[3]!.results), new Map()),
+    });
   },
 
   /* An open test to sit or resume: questions without keys, answers so far, and the server's clock. */
   "GET /api/study/attempt": async (c) => {
     const me = await student(c, true);
-    const a = await ownAttempt(c.db, me.id, new URL(c.request.url).searchParams.get("id"));
-    if (!a.finished_at && a.deadline_at && Date.now() > a.deadline_at + GRACE) await finish(c.db, a, a.deadline_at);
-    const fresh = await ownAttempt(c.db, me.id, a.id);
-    if (fresh.finished_at) return json({ finished: true, id: a.id });
-    const [rowsRes, marks] = await c.db.batch([
-      c.db.prepare("SELECT idx, question_id, answer, flagged, checked, seconds FROM answers WHERE attempt_id = ? ORDER BY idx").bind(a.id),
+    const id = str(new URL(c.request.url).searchParams.get("id"), 64);
+    const [own, rowsRes, marks, served, picks] = await c.db.batch([
+      c.db.prepare("SELECT * FROM attempts WHERE id = ?1 AND user_id = ?2").bind(id, me.id),
+      c.db.prepare(`SELECT idx, question_id, answer, flagged, checked, seconds FROM answers WHERE attempt_id = ${OWN} ORDER BY idx`).bind(id, me.id),
       c.db.prepare("SELECT question_id FROM bookmarks WHERE user_id = ?").bind(me.id),
+      c.db.prepare(`SELECT * FROM served WHERE id IN (SELECT question_id FROM answers WHERE attempt_id = ${OWN})`).bind(id, me.id),
+      c.db.prepare(statsSql(`SELECT question_id FROM answers WHERE attempt_id = ${OWN} AND checked = 1`)).bind(id, me.id),
     ]);
-    const rows = rowsRes!.results as AnswerRow[];
-    const qs = await servedByIds(c.db, rows.map((r) => r.question_id));
-    const saved = new Set((marks!.results as { question_id: string }[]).map((m) => m.question_id));
-    const stats = a.mode === "tutor" ? await statsFor(c.db, rows.filter((r) => r.checked).map((r) => r.question_id)) : new Map<string, Stats>();
-    return json({
-      id: a.id, kind: a.kind, mode: a.mode, title: a.title, startedAt: a.started_at, deadlineAt: a.deadline_at, now: Date.now(),
-      items: rows.filter((r) => qs.has(r.question_id)).map((r) => {
-        const q = qs.get(r.question_id)!;
-        return { idx: r.idx, q: ask(q), answer: r.answer, flagged: !!r.flagged, checked: !!r.checked, bookmarked: saved.has(q.id), seconds: r.seconds, reveal: a.mode === "tutor" && r.checked ? full(q) : null, stats: (r.checked && stats.get(q.id)) || null };
-      }),
-    });
+    const a = own!.results[0] as AttemptRow | undefined;
+    if (!a) throw fail(404, "not_found", "We couldn't find that test.");
+    if (!a.finished_at && pastClock(a) && !(await finish(c.db, a, a.deadline_at!))) throw fail(404, "not_found", "We couldn't find that test.");
+    if (a.finished_at || pastClock(a)) return json({ finished: true, id: a.id });
+    return json(sitting(a, rowsRes!.results as AnswerRow[], byId(served!.results), idSet(marks!.results), readStats(picks!.results)));
   },
 
   "POST /api/study/answer": async (c) => {
     const me = await student(c, true);
     const b = await body(c.request);
-    const a = await openAttempt(c.db, me.id, b.id);
+    const id = str(b.id, 64);
     const idx = Number(b.idx);
     const answer = b.answer === null ? null : Number.isInteger(b.answer) && (b.answer as number) >= 0 && (b.answer as number) <= 3 ? (b.answer as number) : undefined;
+    // The save only lands on this student's own open test that is still inside its clock; the same trip reads the test.
+    const [own, saved] = await c.db.batch([
+      c.db.prepare("SELECT * FROM attempts WHERE id = ?1 AND user_id = ?2").bind(id, me.id),
+      c.db.prepare(`UPDATE answers SET answer = ?3, flagged = ?4, seconds = coalesce(?5, seconds) WHERE idx = ?6 AND checked = 0 AND ?7 = 1
+          AND attempt_id = (SELECT id FROM attempts WHERE id = ?1 AND user_id = ?2 AND finished_at IS NULL AND (deadline_at IS NULL OR deadline_at + ${GRACE} >= ?8))`)
+        .bind(id, me.id, answer ?? null, b.flagged ? 1 : 0, secs(b.seconds), Number.isInteger(idx) ? idx : -1, Number.isInteger(idx) && answer !== undefined ? 1 : 0, Date.now()),
+    ]);
+    await stillOpen(c.db, own!.results[0] as AttemptRow | undefined);
     if (!Number.isInteger(idx) || answer === undefined) throw fail(400, "bad_answer", "That answer didn't save. Please try again.");
-    const res = await c.db.prepare(`UPDATE answers SET answer = ?, flagged = ?, seconds = coalesce(?, seconds) WHERE attempt_id = ? AND idx = ? AND checked = 0`)
-      .bind(answer, b.flagged ? 1 : 0, secs(b.seconds), a.id, idx).run();
-    if (!res.meta.changes) throw fail(409, "locked", "This answer is already checked.");
+    if (!saved!.meta.changes) throw fail(409, "locked", "This answer is already checked.");
     return json({ ok: true });
   },
 
@@ -432,19 +480,29 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
   "POST /api/study/check": async (c) => {
     const me = await student(c, true);
     const b = await body(c.request);
-    const a = await openAttempt(c.db, me.id, b.id);
-    if (a.mode !== "tutor") throw fail(400, "timed", "Answers in a timed test open when you submit it.");
+    const id = str(b.id, 64);
     const idx = Number(b.idx);
     const answer = Number(b.answer);
-    if (!Number.isInteger(idx) || !Number.isInteger(answer) || answer < 0 || answer > 3) throw fail(400, "bad_answer", "Pick an answer first.");
-    const row = await c.db.prepare("SELECT question_id, checked, answer FROM answers WHERE attempt_id = ? AND idx = ?").bind(a.id, idx).first<{ question_id: string; checked: number; answer: number | null }>();
+    const ok = Number.isInteger(idx) && Number.isInteger(answer) && answer >= 0 && answer <= 3;
+    // One trip: the answer is locked in only on this student's own open practice set, then the question is read back.
+    const [own, , rowRes, served, picks] = await c.db.batch([
+      c.db.prepare("SELECT * FROM attempts WHERE id = ?1 AND user_id = ?2").bind(id, me.id),
+      c.db.prepare(`UPDATE answers SET answer = ?3, checked = 1, counted_at = ?4, seconds = coalesce(?5, seconds) WHERE idx = ?6 AND checked = 0 AND ?7 = 1
+          AND attempt_id = (SELECT id FROM attempts WHERE id = ?1 AND user_id = ?2 AND finished_at IS NULL AND mode = 'tutor' AND (deadline_at IS NULL OR deadline_at + ${GRACE} >= ?4))`)
+        .bind(id, me.id, ok ? answer : null, Date.now(), secs(b.seconds), ok ? idx : -1, ok ? 1 : 0),
+      c.db.prepare(`SELECT question_id, checked, answer FROM answers WHERE attempt_id = ${OWN} AND idx = ?3`).bind(id, me.id, ok ? idx : -1),
+      c.db.prepare(`SELECT * FROM served WHERE id = (SELECT question_id FROM answers WHERE attempt_id = ${OWN} AND idx = ?3)`).bind(id, me.id, ok ? idx : -1),
+      c.db.prepare(statsSql(`SELECT question_id FROM answers WHERE attempt_id = ${OWN} AND idx = ?3`)).bind(id, me.id, ok ? idx : -1),
+    ]);
+    const a = await stillOpen(c.db, own!.results[0] as AttemptRow | undefined);
+    if (a.mode !== "tutor") throw fail(400, "timed", "Answers in a timed test open when you submit it.");
+    if (!ok) throw fail(400, "bad_answer", "Pick an answer first.");
+    const row = rowRes!.results[0] as { question_id: string; checked: number; answer: number | null } | undefined;
     if (!row) throw fail(404, "not_found", "That question isn't in this test.");
-    if (!row.checked) {
-      await c.db.prepare("UPDATE answers SET answer = ?, checked = 1, counted_at = ?, seconds = coalesce(?, seconds) WHERE attempt_id = ? AND idx = ? AND checked = 0").bind(answer, Date.now(), secs(b.seconds), a.id, idx).run();
-    }
-    const q = (await servedByIds(c.db, [row.question_id])).get(row.question_id);
-    if (!q) throw fail(404, "not_found", "This question was taken down for a fix.");
-    return json({ answer: row.checked ? row.answer : answer, reveal: full(q), stats: (await statsFor(c.db, [q.id])).get(q.id) ?? null });
+    const q = served!.results[0] as Served | undefined;
+    // The key only ever goes out for an answer that is locked in.
+    if (!q || !row.checked) throw fail(404, "not_found", "This question was taken down for a fix.");
+    return json({ answer: row.answer, reveal: full(q), stats: readStats(picks!.results).get(q.id) ?? null });
   },
 
   "POST /api/study/finish": async (c) => {
@@ -459,16 +517,24 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
   /* A submitted test with every question's key and explanation. */
   "GET /api/study/review": async (c) => {
     const me = await student(c, true);
-    const a = await ownAttempt(c.db, me.id, new URL(c.request.url).searchParams.get("id"));
-    if (!a.finished_at) throw fail(409, "open", "Finish this test to see the answers.", { attempt: a.id });
-    const [rowsRes, marks] = await c.db.batch([
-      c.db.prepare(`SELECT idx, question_id, answer, flagged, checked, seconds FROM answers WHERE attempt_id = ? ${a.mode === "tutor" ? "AND checked = 1" : ""} ORDER BY idx`).bind(a.id),
+    const id = str(new URL(c.request.url).searchParams.get("id"), 64);
+    // The key and explanations are read only for a test that is already submitted.
+    const DONE = "(SELECT id FROM attempts WHERE id = ?1 AND user_id = ?2 AND finished_at IS NOT NULL)";
+    const shown = `SELECT question_id FROM answers x WHERE x.attempt_id = ${DONE} AND (x.checked = 1 OR (SELECT mode FROM attempts WHERE id = ?1) != 'tutor')`;
+    const [own, rowsRes, marks, served, picks] = await c.db.batch([
+      c.db.prepare("SELECT * FROM attempts WHERE id = ?1 AND user_id = ?2").bind(id, me.id),
+      c.db.prepare(`SELECT idx, question_id, answer, flagged, checked, seconds FROM answers WHERE question_id IN (${shown}) AND attempt_id = ?1 ORDER BY idx`).bind(id, me.id),
       c.db.prepare("SELECT question_id FROM bookmarks WHERE user_id = ?").bind(me.id),
+      c.db.prepare(`SELECT * FROM served WHERE id IN (${shown})`).bind(id, me.id),
+      c.db.prepare(statsSql(shown)).bind(id, me.id),
     ]);
+    const a = own!.results[0] as AttemptRow | undefined;
+    if (!a) throw fail(404, "not_found", "We couldn't find that test.");
+    if (!a.finished_at) throw fail(409, "open", "Finish this test to see the answers.", { attempt: a.id });
     const rows = rowsRes!.results as AnswerRow[];
-    const qs = await servedByIds(c.db, rows.map((r) => r.question_id));
-    const saved = new Set((marks!.results as { question_id: string }[]).map((m) => m.question_id));
-    const stats = await statsFor(c.db, rows.map((r) => r.question_id));
+    const qs = byId(served!.results);
+    const saved = idSet(marks!.results);
+    const stats = readStats(picks!.results);
     return json({
       attempt: { ...result(a), mode: a.mode, seconds: a.seconds ?? 0 },
       // Questions taken down since the test was sat. They still count in the saved score but can't be shown.
@@ -479,19 +545,19 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
 
   "GET /api/study/history": async (c) => {
     const me = await student(c, false);
-    await finishExpired(c.db, me.id);
-    const { results } = await c.db.prepare("SELECT * FROM attempts WHERE user_id = ? AND finished_at IS NOT NULL AND total > 0 ORDER BY finished_at DESC LIMIT 300").bind(me.id).all<AttemptRow>();
-    return json({ tests: results.map(result) });
+    const [tests] = await afterClosing(c.db, me.id, () => [
+      c.db.prepare("SELECT * FROM attempts WHERE user_id = ? AND finished_at IS NOT NULL AND total > 0 ORDER BY finished_at DESC LIMIT 300").bind(me.id),
+    ]);
+    return json({ tests: (tests!.results as AttemptRow[]).map(result) });
   },
 
   /* Everything on the dashboard (lib/dashboard-data.ts), from the student's own answers. */
   "GET /api/study/dashboard": async (c) => {
     const me = await student(c, false);
-    await finishExpired(c.db, me.id);
     const now = Date.now();
     const days = 84;
     const since = Date.parse(`${pkDate(now - (days - 1) * DAY)}T00:00:00+05:00`);
-    const [daily, latest, chapters, recent, open, marks, bySubject, miniUsed] = await c.db.batch([
+    const [daily, latest, chapters, recent, open, marks, bySubject, miniUsed] = await afterClosing(c.db, me.id, () => [
       c.db.prepare(`SELECT date((a.counted_at + ${PKT}) / 1000, 'unixepoch') AS d, count(*) AS n, sum(CASE WHEN a.answer = s.answer THEN 1 ELSE 0 END) AS c
         FROM answers a JOIN served s ON s.id = a.question_id WHERE a.user_id = ? AND a.counted_at >= ? AND a.answer IS NOT NULL GROUP BY d`).bind(me.id, since),
       c.db.prepare(LATEST).bind(me.id),

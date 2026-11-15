@@ -7,7 +7,7 @@ import Explanation, { AnsweredOptions } from "@/components/test/Explanation";
 import Protected from "@/components/test/Protected";
 import { friendlyError } from "@/lib/auth";
 import { type Question, subjects } from "@/lib/bank";
-import { type Mistake, getBookmarks, getMistakes, setBookmark, testHref } from "@/lib/study";
+import { type Mistake, setBookmark, watchBookmarks, watchMistakes, testHref } from "@/lib/study";
 import type { Subject } from "@/lib/dashboard-data";
 import { day, letters } from "@/lib/format";
 import type { AccountUser } from "@/lib/user";
@@ -30,8 +30,8 @@ function Mistakes({ user }: { user: AccountUser }) {
   const [limit, setLimit] = useState(PAGE);
 
   useEffect(() => {
-    getMistakes().then(setMistakes, (e) => setError(friendlyError(e)));
-    getBookmarks().then(setSaved, (e) => setError(friendlyError(e)));
+    watchMistakes(setMistakes).catch((e) => setError(friendlyError(e)));
+    watchBookmarks(setSaved).catch((e) => setError(friendlyError(e)));
     if (new URLSearchParams(window.location.search).get("tab") === "saved") setTab("saved");
   }, []);
 

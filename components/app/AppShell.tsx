@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import DeviceGate from "@/components/auth/DeviceGate";
 import Icon from "@/components/app/Icon";
 import Logo from "@/components/Logo";
@@ -9,7 +9,7 @@ import { signOut } from "@/lib/auth";
 import { planNames } from "@/lib/format";
 import { isStaff, roleNames } from "@/lib/qc";
 import { site, supportHref } from "@/lib/site";
-import { type AccountUser, getCurrentUser } from "@/lib/user";
+import { type AccountUser, getCurrentUser, lastUser } from "@/lib/user";
 
 /* The sidebar, grouped like the study loop: practise, then review what went wrong. */
 /* short is the label under a phone tab, when the full one is too long. */
@@ -196,7 +196,8 @@ export default function AppShell({ active, title, bare, children }: { active?: s
 
 function Shell({ active, title, bare, children }: { active?: string; title?: string; bare?: boolean; children: (user: AccountUser) => React.ReactNode }) {
   const [user, setUser] = useState<AccountUser | null>(null);
-  useEffect(() => { getCurrentUser().then(setUser); }, []);
+  useLayoutEffect(() => { setUser((u) => u ?? lastUser()); }, []);
+  useEffect(() => { getCurrentUser().then((u) => { if (u) setUser(u); }); }, []);
 
   // The test player brings its own focused top bar.
   if (bare) return <div className="dash">{user ? children(user) : <div className="sk" style={{ height: "100dvh", borderRadius: 0 }} />}</div>;

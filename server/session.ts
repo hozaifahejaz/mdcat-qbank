@@ -15,6 +15,8 @@ const IP_CHANGES_NOTED = 8;
 export type Session = {
   id: string; user_id: string; device_id: string | null; expires_at: number; last_seen_at: number; created_at: number;
   user_agent: string | null; ip: string | null; ip_changes: number; ip_window: number; role: string;
+  /* From the account's row, read in the same query so most requests need no second look at it. */
+  active_session_id: string | null; plan: string; plan_expires_at: number | null;
 };
 
 const lifetime = (role: string) => (role === "student" ? LIFETIME_MS : STAFF_LIFETIME_MS);
@@ -44,7 +46,8 @@ export async function getSession(db: D1Database, request: Request): Promise<Sess
   if (!token) return null;
   const id = await sha256(token);
   const s = await db
-    .prepare(`SELECT s.id, s.user_id, s.device_id, s.expires_at, s.last_seen_at, s.created_at, s.user_agent, s.ip, s.ip_changes, s.ip_window, u.role
+    .prepare(`SELECT s.id, s.user_id, s.device_id, s.expires_at, s.last_seen_at, s.created_at, s.user_agent, s.ip, s.ip_changes, s.ip_window,
+        u.role, u.active_session_id, u.plan, u.plan_expires_at
       FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.id = ?`)
     .bind(id)
     .first<Session>();

@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useState } from "react";
 import { ApiError } from "@/lib/api";
 import { type Device, checkDevice, claimDevice, friendlyError, signOut } from "@/lib/auth";
 import DeviceLimit from "@/components/auth/DeviceLimit";
-import { getCurrentUser } from "@/lib/user";
+import { forgetAll, keep, seen } from "@/lib/cache";
+import { getCurrentUser, lastUser } from "@/lib/user";
 
 type State =
   | { kind: "loading" }
@@ -15,29 +16,34 @@ type State =
   | { kind: "error"; message: string };
 
 const CHECK_EVERY_MS = 30_000;
+/* Set once this tab has been let in, so the next page shows at once while the check runs behind it. */
+const LET_IN = "let-in";
 
 /* Wrap any signed-in page in this. It sends signed-out visitors to /signin, and enforces "one active device":
    it checks in every 30 seconds and whenever the tab comes back into view, and if another device has taken
-   over it swaps the page for a lock screen with "Use it here". The server enforces the same rule on data
+   over it swaps the page for a lock screen with "Use it here". A tab that was let in a moment ago shows the next
+   page straight away and checks behind it, so moving around never waits. The server enforces the same rule on data
    (requireActiveSession in server/routes.ts), so this screen is the friendly half, not the only guard. */
 export default function DeviceGate({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<State>({ kind: "loading" });
 
   const claim = useCallback(async () => {
     const res = await claimDevice();
+    keep(LET_IN, res.status === "active", true);
     setState(res.status === "active" ? { kind: "active" } : res.status === "takeover_limit" ? { kind: "switches", until: res.next_allowed_at } : { kind: "limit", devices: res.devices });
   }, []);
 
   const toSignIn = useCallback(() => {
     const here = window.location.pathname + window.location.search;
+    forgetAll();
     window.location.replace(`/signin?next=${encodeURIComponent(here)}`);
   }, []);
 
   const check = useCallback(async () => {
     try {
       const res = await checkDevice();
-      if (res.status === "active") setState({ kind: "active" });
-      else if (res.status === "locked") setState({ kind: "locked", label: res.active_label });
+      if (res.status === "active") { keep(LET_IN, true, true); setState({ kind: "active" }); }
+      else if (res.status === "locked") { keep(LET_IN, false, true); setState({ kind: "locked", label: res.active_label }); }
       else await claim();
     } catch (e) {
       // Signed out elsewhere (or this device was removed): back to sign-in.
@@ -47,13 +53,16 @@ export default function DeviceGate({ children }: { children: React.ReactNode }) 
     }
   }, [claim, toSignIn]);
 
+  // Before the first paint, so a tab that is already let in never flashes the spinner.
+  useLayoutEffect(() => {
+    if (seen<boolean>(LET_IN, true) && lastUser()) setState((s) => (s.kind === "loading" ? { kind: "active" } : s));
+  }, []);
+
   useEffect(() => {
-    let timer: ReturnType<typeof setInterval> | undefined;
-    getCurrentUser().then((user) => {
-      if (!user) return toSignIn();
-      check();
-      timer = setInterval(() => { if (document.visibilityState === "visible") check(); }, CHECK_EVERY_MS);
-    });
+    // Who is signed in and whether this device may use the account are asked together, not one after the other.
+    getCurrentUser().then((user) => { if (!user && !navigator.onLine) return; if (!user) toSignIn(); });
+    check();
+    const timer = setInterval(() => { if (document.visibilityState === "visible") check(); }, CHECK_EVERY_MS);
     const onVisible = () => { if (document.visibilityState === "visible") check(); };
     document.addEventListener("visibilitychange", onVisible);
     return () => {

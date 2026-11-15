@@ -5,7 +5,7 @@ import AppShell, { PageHead } from "@/components/app/AppShell";
 import Icon from "@/components/app/Icon";
 import { type Bank, bankById, banks, toneOf } from "@/lib/banks";
 import { band, pct } from "@/lib/format";
-import { type Catalog, type Filter, type Pool, doneCount, filters, getCatalog, getPool, openCount, poolMatch, testHref, totalCount } from "@/lib/study";
+import { type Catalog, type Filter, type Pool, doneCount, filters, getPool, openCount, poolMatch, testHref, totalCount, watchCatalog } from "@/lib/study";
 
 const counts = [10, 25, 50, 100];
 const filterNames: Record<Filter, string> = { unused: "Unused", incorrect: "Incorrect", marked: "Marked", omitted: "Omitted", correct: "Correct" };
@@ -69,7 +69,7 @@ function BankPractice({ bank }: { bank: Bank }) {
   const noun = isBook ? "book" : "subject";
 
   useEffect(() => {
-    getCatalog(bank.id).then(setCatalog, () => {});
+    watchCatalog(bank.id, setCatalog);
     const p = new URLSearchParams(window.location.search);
     const s = p.get("subject");
     const c = p.get("chapter");

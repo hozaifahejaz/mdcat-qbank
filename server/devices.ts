@@ -11,10 +11,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const MAX_TAKEOVERS = 6;
 
 /* Admin accounts are exempt: any number of devices, all usable at the same time. */
-async function unlimited(db: D1Database, userId: string): Promise<boolean> {
-  const u = await db.prepare("SELECT role FROM users WHERE id = ?").bind(userId).first<{ role: string }>();
-  return u?.role === "admin";
-}
+const unlimited = (s: Session) => s.role === "admin";
 
 export type DeviceRow = { id: string; label: string; created_at: number; last_seen_at: number; active: boolean };
 
@@ -43,7 +40,7 @@ export async function claimDevice(db: D1Database, session: Session, rawKey: stri
   const label = cleanLabel(rawLabel);
   const uid = session.user_id;
   const now = Date.now();
-  const exempt = await unlimited(db, uid);
+  const exempt = unlimited(session);
 
   let device = await db
     .prepare("SELECT id FROM devices WHERE user_id = ? AND device_key = ? AND removed_at IS NULL")
@@ -100,12 +97,13 @@ export async function claimDevice(db: D1Database, session: Session, rawKey: stri
 /* The 30-second check-in. */
 export async function checkDevice(db: D1Database, session: Session, rawKey: string) {
   const key = cleanKey(rawKey);
-  await db.prepare("UPDATE devices SET last_seen_at = ? WHERE user_id = ? AND device_key = ? AND removed_at IS NULL").bind(Date.now(), session.user_id, key).run();
-  if (await unlimited(db, session.user_id)) return { status: "active" as const };
-  const u = await db
-    .prepare("SELECT u.active_session_id, u.active_device_id, d.label FROM users u LEFT JOIN devices d ON d.id = u.active_device_id WHERE u.id = ?")
-    .bind(session.user_id)
-    .first<{ active_session_id: string | null; active_device_id: string | null; label: string | null }>();
+  // One trip to the database for both the "seen now" stamp and who holds the account.
+  const [, who] = await db.batch<{ active_session_id: string | null; active_device_id: string | null; label: string | null }>([
+    db.prepare("UPDATE devices SET last_seen_at = ? WHERE user_id = ? AND device_key = ? AND removed_at IS NULL").bind(Date.now(), session.user_id, key),
+    db.prepare("SELECT u.active_session_id, u.active_device_id, d.label FROM users u LEFT JOIN devices d ON d.id = u.active_device_id WHERE u.id = ?").bind(session.user_id),
+  ]);
+  if (unlimited(session)) return { status: "active" as const };
+  const u = who!.results[0];
   if (u?.active_session_id === session.id) return { status: "active" as const };
   if (!u?.active_device_id) return { status: "idle" as const };
   return { status: "locked" as const, active_label: u.label };
@@ -114,17 +112,13 @@ export async function checkDevice(db: D1Database, session: Session, rawKey: stri
 /* Question content calls this: signed in, and on the account's active device. */
 export async function requireActiveSession(db: D1Database, request: Request): Promise<Session> {
   const s = await requireSession(db, request);
-  if (!(await isActiveSession(db, s))) throw fail(423, "device_locked", "Your account is active on another device.");
+  if (!isActiveSession(s)) throw fail(423, "device_locked", "Your account is active on another device.");
   if (s.role !== "admin") await watchSession(db, s, request);
   return s;
 }
 
 /* True only for the account's active session. Every paid-content endpoint should require it. */
-export async function isActiveSession(db: D1Database, session: Session): Promise<boolean> {
-  if (await unlimited(db, session.user_id)) return true;
-  const u = await db.prepare("SELECT active_session_id FROM users WHERE id = ?").bind(session.user_id).first<{ active_session_id: string | null }>();
-  return u?.active_session_id === session.id;
-}
+export const isActiveSession = (session: Session) => unlimited(session) || session.active_session_id === session.id;
 
 export async function removeDevice(db: D1Database, session: Session, deviceId: string) {
   const uid = session.user_id;

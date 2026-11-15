@@ -1,4 +1,5 @@
 import { ApiError, api } from "@/lib/api";
+import { forgetAll } from "@/lib/cache";
 import { deviceLabel, getDeviceKey } from "@/lib/device";
 export { formatPhone, normalisePhone } from "@/lib/phone";
 
@@ -53,5 +54,6 @@ export const myDevices = () => api<Device[]>("/api/device/list");
 
 /* Frees the active slot and ends this browser's session; the other device stays signed in. */
 export async function signOut(): Promise<void> {
+  forgetAll();
   try { await api("/api/auth/signout", { body: {} }); } catch {}
 }

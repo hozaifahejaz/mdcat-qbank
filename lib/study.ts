@@ -1,6 +1,7 @@
 /* The browser side of the study API (server/study.ts): starting and sitting tests, results, mistakes, bookmarks and
    reports. Everything is saved on the server, so a test started on the phone can be finished on the laptop. */
 import { api } from "@/lib/api";
+import { fresh } from "@/lib/cache";
 import type { Asked, Question } from "@/lib/bank";
 import type { TestResult } from "@/lib/dashboard-data";
 
@@ -66,7 +67,17 @@ export const getCatalog = (bank = "mdcat") => {
   return p;
 };
 
-export const startTest = (o: StartOptions) => api<{ id: string; count: number; short: boolean }>("/api/study/start", { body: o });
+/* The catalog as last seen, at once, then the fresh one. For screens that draw from it as soon as they open. */
+const asked = new Map<string, number>();
+export const watchCatalog = (bank: string, show: (c: Catalog) => void) =>
+  fresh(`catalog:${bank}`, () => {
+    // Several parts of a page ask together and share one request; a later page asks again.
+    if (Date.now() - (asked.get(bank) ?? 0) > 5000) { catalogs.delete(bank); asked.set(bank, Date.now()); }
+    return getCatalog(bank);
+  }, show, true).catch(() => {});
+
+/* Starting a test answers with the test itself, ready to sit. */
+export const startTest = (o: StartOptions) => api<{ id: string; count: number; short: boolean; attempt: OpenAttempt }>("/api/study/start", { body: o });
 export const getOpenAttempt = (id: string) => api<OpenAttempt | { finished: true; id: string }>(`/api/study/attempt?id=${encodeURIComponent(id)}`);
 export const saveAnswer = (id: string, idx: number, answer: number | null, flagged: boolean, seconds?: number) => api("/api/study/answer", { body: { id, idx, answer, flagged, seconds } });
 export const checkAnswer = (id: string, idx: number, answer: number, seconds?: number) => api<{ answer: number; reveal: Question; stats: Stats | null }>("/api/study/check", { body: { id, idx, answer, seconds } });
@@ -83,6 +94,10 @@ export const getPool = (o: Pick<StartOptions, "bank" | "subject" | "subjects" | 
 export const finishTest = (id: string) => api<{ id: string; empty?: boolean }>("/api/study/finish", { body: { id } });
 export const getReview = (id: string) => api<Review>(`/api/study/review?id=${encodeURIComponent(id)}`);
 export const getHistory = () => api<{ tests: TestResult[] }>("/api/study/history").then((r) => r.tests);
+export const watchHistory = (show: (t: TestResult[]) => void) => fresh("history", getHistory, show, true);
+/* These two carry answers and explanations, so they are remembered only while the tab stays open on the site. */
+export const watchMistakes = (show: (m: Mistake[]) => void) => fresh("mistakes", getMistakes, show);
+export const watchBookmarks = (show: (q: Question[]) => void) => fresh("bookmarks", getBookmarks, show);
 export const getMistakes = () => api<{ mistakes: Mistake[] }>("/api/study/mistakes").then((r) => r.mistakes);
 export const getBookmarks = () => api<{ bookmarks: Question[] }>("/api/study/bookmarks").then((r) => r.bookmarks);
 export const setBookmark = (questionId: string, on: boolean) => api("/api/study/bookmark", { body: { questionId, on } });

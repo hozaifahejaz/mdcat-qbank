@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { go as leave } from "@/components/Nav";
 import Explanation, { AnsweredOptions, ResultStrip } from "@/components/test/Explanation";
 import Protected from "@/components/test/Protected";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -76,7 +77,7 @@ export default function TestPlayer({ user, attempt, note }: Props) {
     try {
       const done = await finishTest(attempt.id);
       // Nothing was checked, so there's no result to show.
-      window.location.href = done.empty ? "/practice" : `/review?id=${encodeURIComponent(attempt.id)}`;
+      leave(done.empty ? "/practice" : `/review?id=${encodeURIComponent(attempt.id)}`);
     } catch (e) {
       leaving.current = false;
       setBusy(false);
@@ -104,7 +105,7 @@ export default function TestPlayer({ user, attempt, note }: Props) {
       .catch((e) => {
         if (e instanceof ApiError && (e.code === "time_up" || e.code === "finished")) {
           leaving.current = true;
-          window.location.href = `/review?id=${encodeURIComponent(attempt.id)}`;
+          leave(`/review?id=${encodeURIComponent(attempt.id)}`);
         } else if (!(e instanceof ApiError && e.code === "locked")) setProblem(`Your last answer didn't save. ${friendlyError(e)}`);
       })
       .finally(() => { pending.current--; });
@@ -229,7 +230,7 @@ export default function TestPlayer({ user, attempt, note }: Props) {
     <div className={`player ${tutor ? "is-tutor" : "is-timed"} qsize-${size}`}>
       <header className="ptop-wrap">
         <div className="ptop dwrap">
-          <button type="button" className="pbtn" onClick={() => (answered ? setDialog("exit") : (window.location.href = "/dashboard"))}>
+          <button type="button" className="pbtn" onClick={() => (answered ? setDialog("exit") : leave("/dashboard"))}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
             <span>Exit</span>
           </button>
