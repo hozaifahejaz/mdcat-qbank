@@ -47,10 +47,7 @@ export const mdcatSyllabus = {
     "Alcohols and phenols",
     "Aldehydes, ketones and carboxylic acids",
     "Macromolecules",
-    "Spectroscopy",
     "Industrial chemistry",
-    "Environmental chemistry",
-    "Experimental techniques and lab safety",
   ],
   Physics: [
     "Vectors and equilibrium",
@@ -159,6 +156,33 @@ const fsc2: BankSubject[] = [
   { name: "English", chapters: ["Grammar", "Vocabulary", "Reading comprehension"] },
 ];
 
+/* NUMS MDCAT 2026 Chemistry: its 19 units in syllabus order. Units that match an MDCAT chapter keep the MDCAT name;
+   NUMS splits states of matter into gases, liquids and solids, aldehydes and ketones from carboxylic acids, and joins
+   the s- and p-block. NUMS has no periodic table, spectroscopy, environmental, industrial or lab-techniques unit, and
+   its macromolecules unit is proteins and enzymes only, so those questions are not in the NUMS bank
+   (migrations/0023_chemistry_gaps.sql). */
+const numsChemistry = [
+  "Fundamental concepts",
+  "Atomic structure",
+  "Gases",
+  "Liquids",
+  "Solids",
+  "Chemical equilibrium",
+  "Reaction kinetics",
+  "Thermochemistry",
+  "Electrochemistry",
+  "Chemical bonding",
+  "s- and p-block elements",
+  "Transition elements",
+  "Fundamental principles of organic chemistry",
+  "Hydrocarbons",
+  "Alkyl halides",
+  "Alcohols and phenols",
+  "Aldehydes and ketones",
+  "Carboxylic acids",
+  "Macromolecules",
+];
+
 export const banks: Bank[] = [
   { id: "fsc1", name: "FSc Part 1", short: "FSc 1", blurb: "First-year textbooks", subjects: fsc1 },
   { id: "fsc2", name: "FSc Part 2", short: "FSc 2", blurb: "Second-year textbooks", subjects: fsc2 },
@@ -168,7 +192,9 @@ export const banks: Bank[] = [
   },
   {
     id: "nums", name: "NUMS MDCAT", short: "NUMS", blurb: "NUMS entry test",
-    subjects: (["Biology", "Chemistry", "Physics", "English"] as const).map(mdcatSubject),
+    subjects: (["Biology", "Chemistry", "Physics", "English"] as const).map((s) =>
+      s === "Chemistry" ? { name: "Chemistry", chapters: numsChemistry } : mdcatSubject(s),
+    ),
   },
   {
     id: "aku", name: "AKU Admission Test", short: "AKU", blurb: "Aga Khan University",
@@ -180,7 +206,11 @@ export const banks: Bank[] = [
         name: "Biology",
         chapters: [...mdcatSyllabus.Biology, "Biodiversity and classification", "Bacteria", "Plant physiology", "Ecology"],
       },
-      mdcatSubject("Chemistry"),
+      // Spectroscopy, environmental chemistry and lab techniques are off the PMDC syllabus but stay in AKU for now.
+      {
+        name: "Chemistry",
+        chapters: [...mdcatSyllabus.Chemistry, "Spectroscopy", "Environmental chemistry", "Experimental techniques and lab safety"],
+      },
       { name: "Physics", chapters: [...mdcatSyllabus.Physics, "Physical optics"] },
       mdcatSubject("English"),
       { name: "Mathematics", chapters: ["Algebra", "Functions and graphs", "Trigonometry", "Statistics"] },
