@@ -10,3 +10,8 @@ binding = "DB"
 database_name = "mdcat-qbank"
 database_id = "f909e867-fab8-4834-a715-e9dc75b3a4af"
 migrations_dir = "migrations"
+
+# Run the API next to the database rather than next to the visitor: each request makes a few database calls,
+# and those are slow from far away.
+[placement]
+mode = "smart"

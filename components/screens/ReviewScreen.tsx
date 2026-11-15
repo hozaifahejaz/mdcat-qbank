@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import AppShell from "@/components/app/AppShell";
+import { go } from "@/components/Nav";
 import Explanation, { AnsweredOptions, ResultStrip } from "@/components/test/Explanation";
 import Protected from "@/components/test/Protected";
 import { ReportDialog } from "@/components/test/TestPlayer";
@@ -29,7 +30,7 @@ function Review({ user }: { user: AccountUser }) {
     const id = new URLSearchParams(window.location.search).get("id") ?? "";
     getReview(id).then(setData, (e) => {
       // Still open: back to the test to finish it.
-      if ((e as { code?: string }).code === "open") return window.location.replace(`/test?id=${encodeURIComponent(id)}`);
+      if ((e as { code?: string }).code === "open") return go(`/test?id=${encodeURIComponent(id)}`, true);
       setError(friendlyError(e));
       setData(null);
     });

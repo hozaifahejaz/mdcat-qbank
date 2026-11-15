@@ -2,9 +2,15 @@ import { fail } from "./http";
 
 /* Fixed-window counter in D1. Throws a 429 once `key` has been hit more than `limit` times in `windowMs`. */
 export async function rateLimit(db: D1Database, key: string, limit: number, windowMs: number): Promise<void> {
+  overLimit(await hit(db, key, windowMs).first<Counter>(), limit, windowMs);
+}
+
+type Counter = { count: number; window_start: number };
+
+/* The two halves of rateLimit, for callers that send the count along with other statements in one batch. */
+export function hit(db: D1Database, key: string, windowMs: number) {
   const now = Date.now();
-  const cutoff = now - windowMs;
-  const row = await db
+  return db
     .prepare(
       `INSERT INTO rate_limits (key, count, window_start) VALUES (?1, 1, ?2)
        ON CONFLICT (key) DO UPDATE SET
@@ -12,10 +18,11 @@ export async function rateLimit(db: D1Database, key: string, limit: number, wind
          window_start = CASE WHEN window_start < ?3 THEN ?2 ELSE window_start END
        RETURNING count, window_start`,
     )
-    .bind(key, now, cutoff)
-    .first<{ count: number; window_start: number }>();
+    .bind(key, now, now - windowMs);
+}
+export function overLimit(row: Counter | null | undefined, limit: number, windowMs: number): void {
   if (row && row.count > limit) {
-    const wait = Math.max(1, Math.ceil((row.window_start + windowMs - now) / 1000));
+    const wait = Math.max(1, Math.ceil((row.window_start + windowMs - Date.now()) / 1000));
     throw fail(429, "rate_limited", "Too many tries. Please wait a little and try again.", { retry_after: wait });
   }
 }
@@ -31,21 +38,18 @@ export async function rateLimitPeek(db: D1Database, key: string, limit: number, 
 }
 
 /* How much of a counted allowance `key` has used in the current window. */
-export async function used(db: D1Database, key: string, windowMs: number): Promise<number> {
-  const row = await db.prepare("SELECT count, window_start FROM rate_limits WHERE key = ?").bind(key).first<{ count: number; window_start: number }>();
-  return row && row.window_start >= Date.now() - windowMs ? row.count : 0;
-}
+export const usedStmt = (db: D1Database, key: string) => db.prepare("SELECT count, window_start FROM rate_limits WHERE key = ?").bind(key);
+export const usedOf = (row: Counter | null | undefined, windowMs: number) => (row && row.window_start >= Date.now() - windowMs ? row.count : 0);
 
 /* Adds `n` to a counted allowance, starting a new window if the old one has run out. */
-export async function spend(db: D1Database, key: string, n: number, windowMs: number): Promise<void> {
+export function spend(db: D1Database, key: string, n: number, windowMs: number) {
   const now = Date.now();
-  await db
+  return db
     .prepare(
       `INSERT INTO rate_limits (key, count, window_start) VALUES (?1, ?4, ?2)
        ON CONFLICT (key) DO UPDATE SET
          count = CASE WHEN window_start < ?3 THEN ?4 ELSE count + ?4 END,
          window_start = CASE WHEN window_start < ?3 THEN ?2 ELSE window_start END`,
     )
-    .bind(key, now, now - windowMs, n)
-    .run();
+    .bind(key, now, now - windowMs, n);
 }

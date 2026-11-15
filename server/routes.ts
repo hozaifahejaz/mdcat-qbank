@@ -11,7 +11,7 @@ import { visitRoutes } from "./visits";
 import { studyRoutes } from "./study";
 import { checkCode, sendCode, smsConfigured } from "./sms";
 import { checkCaptcha } from "./turnstile";
-import { createUser, publicUser, userByEmail, userById, userByPhone, userForOAuth } from "./users";
+import { createUser, publicUser, publicUserById, userByEmail, userById, userByPhone, userForOAuth } from "./users";
 import { normalisePhone } from "../lib/phone";
 
 const HOUR = 60 * 60 * 1000;
@@ -83,8 +83,7 @@ const routes: Record<string, (c: Ctx) => Promise<Response>> = {
 
   "GET /api/auth/me": async ({ db, request }) => {
     const s = await getSession(db, request);
-    const u = s && (await userById(db, s.user_id));
-    return json({ user: u ? await publicUser(db, u) : null });
+    return json({ user: s ? await publicUserById(db, s.user_id) : null });
   },
 
   "PATCH /api/auth/me": async ({ db, request }) => {

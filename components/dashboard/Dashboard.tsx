@@ -12,8 +12,9 @@ import { getDashboard, type Dashboard as Data, type SubjectStat } from "@/lib/da
 import { band, day, fullDay, kindNames, pct, tz } from "@/lib/format";
 import { paper, site } from "@/lib/site";
 import { useNarrow } from "@/lib/narrow";
-import { getCatalog } from "@/lib/study";
-import { type AccountUser, getCurrentUser } from "@/lib/user";
+import { watchCatalog } from "@/lib/study";
+import { fresh } from "@/lib/cache";
+import { type AccountUser, getCurrentUser, lastUser } from "@/lib/user";
 
 function greeting() {
   const h = Number(new Date().toLocaleString("en-GB", { hour: "numeric", hour12: false, timeZone: tz }));
@@ -31,7 +32,7 @@ function sumChapters(s: SubjectStat) {
 /* Full mocks open once every subject has enough questions. Until then nothing on the dashboard points at them. */
 function useMockReady() {
   const [ready, setReady] = useState(false);
-  useEffect(() => { getCatalog().then((c) => setReady(c.mockReady), () => {}); }, []);
+  useEffect(() => { watchCatalog("mdcat", (c) => setReady(c.mockReady)); }, []);
   return ready;
 }
 
@@ -50,15 +51,11 @@ export default function Dashboard() {
   useEffect(() => {
     try { setCoach(localStorage.getItem(COACH_KEY) !== "1"); } catch {}
     let live = true;
-    (async () => {
-      const u = await getCurrentUser();
-      if (!u) {
-        window.location.replace("/signin?next=/dashboard");
-        return;
-      }
-      const d = await getDashboard(u).catch(() => null);
-      if (live && d) { setUser(u); setData(d); }
-    })();
+    // Last time's numbers show at once; the account and the fresh numbers load side by side behind them.
+    const known = lastUser();
+    if (known) setUser(known);
+    getCurrentUser().then((u) => { if (live && u) setUser(u); });
+    fresh("dashboard", () => getDashboard(), (d) => { if (live) setData(d); }, true).catch(() => {});
     return () => { live = false; };
   }, []);
 

@@ -6,19 +6,19 @@ import Empty from "@/components/app/Empty";
 import type { TestResult } from "@/lib/dashboard-data";
 import { band, day, kindNames, pct } from "@/lib/format";
 import { paper } from "@/lib/site";
-import { type Catalog, getCatalog, getHistory, testHref } from "@/lib/study";
+import { type Catalog, testHref, watchCatalog, watchHistory } from "@/lib/study";
 import type { AccountUser } from "@/lib/user";
 
 /* Every finished test, newest first. */
 function useRecent() {
   const [recent, setRecent] = useState<TestResult[] | null>(null);
-  useEffect(() => { getHistory().then(setRecent, () => setRecent([])); }, []);
+  useEffect(() => { watchHistory(setRecent).catch(() => setRecent([])); }, []);
   return recent;
 }
 
 function useCatalog() {
   const [catalog, setCatalog] = useState<Catalog | null>(null);
-  useEffect(() => { getCatalog().then(setCatalog, () => {}); }, []);
+  useEffect(() => { watchCatalog("mdcat", setCatalog); }, []);
   return catalog;
 }
 

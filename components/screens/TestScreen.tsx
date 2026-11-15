@@ -6,6 +6,7 @@ import Empty from "@/components/app/Empty";
 import TestPlayer from "@/components/test/TestPlayer";
 import { ApiError } from "@/lib/api";
 import { friendlyError } from "@/lib/auth";
+import { go } from "@/components/Nav";
 import { type OpenAttempt, getOpenAttempt, readTestHref, startTest } from "@/lib/study";
 
 type State =
@@ -34,9 +35,10 @@ export default function TestScreen() {
           id = started.id;
           if (started.short) note = `Only ${started.count} question${started.count === 1 ? "" : "s"} match what you picked, so this set has ${started.count}.`;
           window.history.replaceState(null, "", `/test?id=${encodeURIComponent(id)}`);
+          if (started.attempt.items.length) return setState({ kind: "ready", attempt: started.attempt, note });
         }
         const a = await getOpenAttempt(id);
-        if ("finished" in a) return window.location.replace(`/review?id=${encodeURIComponent(a.id)}`);
+        if ("finished" in a) return go(`/review?id=${encodeURIComponent(a.id)}`, true);
         if (!a.items.length) return setState({ kind: "problem", title: "These questions were taken down", text: "They're being fixed after a report. Start a new set from Practice.", pass: false });
         setState({ kind: "ready", attempt: a, note });
       } catch (e) {

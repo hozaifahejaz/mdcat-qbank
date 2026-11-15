@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import AppShell from "@/components/app/AppShell";
 import { Body, Skeleton } from "@/components/dashboard/Dashboard";
+import { fresh } from "@/lib/cache";
 import { type Dashboard, getDashboard } from "@/lib/dashboard-data";
 import type { AccountUser } from "@/lib/user";
 
@@ -14,6 +15,6 @@ export default function ProgressScreen() {
 
 function Progress({ user }: { user: AccountUser }) {
   const [data, setData] = useState<Dashboard | null>(null);
-  useEffect(() => { getDashboard(user).then(setData, () => {}); }, [user]);
+  useEffect(() => { fresh("dashboard", () => getDashboard(user), setData, true).catch(() => {}); }, [user]);
   return data ? <Body data={data} progress /> : <Skeleton />;
 }
