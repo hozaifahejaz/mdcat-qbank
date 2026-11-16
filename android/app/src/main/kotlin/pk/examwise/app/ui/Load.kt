@@ -2,6 +2,7 @@ package pk.examwise.app.ui
 
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -35,6 +36,13 @@ class LoadViewModel<T>(private val cached: suspend () -> T?, private val fresh: 
     fun set(value: T) { _state.value = _state.value.copy(data = value) }
 }
 
+@Suppress("UNCHECKED_CAST")
 @Composable
 fun <T> rememberLoad(key: String, cached: suspend () -> T? = { null }, fresh: suspend () -> T): LoadViewModel<T> =
-    viewModel(key = key) { LoadViewModel(cached, fresh) }
+    viewModel(
+        modelClass = LoadViewModel::class,
+        key = key,
+        factory = object : ViewModelProvider.Factory {
+            override fun <V : ViewModel> create(modelClass: Class<V>): V = LoadViewModel(cached, fresh) as V
+        },
+    ) as LoadViewModel<T>

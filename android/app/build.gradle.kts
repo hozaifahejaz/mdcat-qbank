@@ -20,7 +20,7 @@ val keystorePath: String? = System.getenv("EXAMWISE_KEYSTORE")
 
 android {
     namespace = "pk.examwise.app"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "pk.examwise.app"
