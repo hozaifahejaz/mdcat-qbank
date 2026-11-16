@@ -3,7 +3,7 @@ import { body, json } from "./http";
 import { requireSession } from "./session";
 
 /* What a student picked on the welcome screen (and can change later): which test they're preparing for, the year
-   they sit it and how many questions a day they aim for. Kept in user_prefs (migrations/0041). */
+   they sit it and how many questions a day they aim for. Kept in user_prefs (migrations/0042). */
 
 export const DEFAULT_GOAL = 40;
 export const GOALS = { min: 5, max: 300 };

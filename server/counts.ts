@@ -1,6 +1,6 @@
 /* How many questions each bank, subject and chapter holds, and which past papers exist. These are the same for every
    student and only change when the bank does, so they're counted once and kept in site_cache; bank_version (bumped
-   by triggers, migrations/0041) says when the kept copy is out of date. Counting them live reads every question,
+   by triggers, migrations/0042) says when the kept copy is out of date. Counting them live reads every question,
    which is what every practice and dashboard load used to do. */
 
 /* Open reports that hide a question from new tests until a reviewer looks. */
