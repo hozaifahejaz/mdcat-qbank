@@ -273,7 +273,7 @@ export const banks: Bank[] = [
       },
       // AKU's Physics syllabus also has measurements and physics of solids (not on the PMDC MDCAT syllabus).
       { name: "Physics", chapters: ["Measurements", ...mdcatSyllabus.Physics, "Physics of solids", "Physical optics"] },
-      mdcatSubject("English"),
+      // No English: the AKU MBBS test (2026-27) has only Science Achievement and Science & Mathematics Reasoning.
       { name: "Mathematics", chapters: akuMathematics },
     ],
   },
