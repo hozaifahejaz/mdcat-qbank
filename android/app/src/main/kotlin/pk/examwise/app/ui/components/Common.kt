@@ -35,6 +35,9 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.autofill.ContentType
+import androidx.compose.ui.semantics.contentType
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -83,6 +86,7 @@ fun Field(
     password: Boolean = false,
     keyboard: KeyboardType = KeyboardType.Text,
     enabled: Boolean = true,
+    autofill: ContentType? = null,
 ) {
     val c = Ex.c
     Column(modifier) {
@@ -99,7 +103,7 @@ fun Field(
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = c.blue, unfocusedBorderColor = c.line, focusedContainerColor = c.card, unfocusedContainerColor = c.card,
             ),
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().then(if (autofill != null) Modifier.semantics { contentType = autofill } else Modifier),
         )
     }
 }

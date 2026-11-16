@@ -24,6 +24,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.autofill.ContentType
+import androidx.compose.ui.platform.LocalAutofillManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -91,10 +93,11 @@ fun SignInScreen(container: AppContainer, nav: NavHostController) {
     var error by remember { mutableStateOf<String?>(null) }
     var unconfirmed by remember { mutableStateOf(false) }
     var info by remember { mutableStateOf<String?>(null) }
+    val autofill = LocalAutofillManager.current
 
     AuthPage("Sign in", "Welcome back. Pick up where you left off.") {
-        Field(email, { email = it }, "Email", keyboard = KeyboardType.Email)
-        Field(password, { password = it }, "Password", password = true)
+        Field(email, { email = it }, "Email", keyboard = KeyboardType.Email, autofill = ContentType.Username + ContentType.EmailAddress)
+        Field(password, { password = it }, "Password", password = true, autofill = ContentType.Password)
         error?.let { Note(it, "bad") }
         info?.let { Note(it, "good") }
         if (unconfirmed) LinkButton("Send the link again", {
@@ -109,8 +112,11 @@ fun SignInScreen(container: AppContainer, nav: NavHostController) {
             scope.launch {
                 try {
                     container.account.signIn(email, password)
+                    // Offer to save the password only once it has worked.
+                    autofill?.commit()
                     afterSignIn(container, nav)
                 } catch (e: ApiError) {
+                    autofill?.cancel()
                     error = e.message
                     unconfirmed = e.code == "email_not_confirmed"
                 } finally { busy = false }
@@ -148,6 +154,7 @@ fun SignUpScreen(container: AppContainer, nav: NavHostController) {
     var error by remember { mutableStateOf<String?>(null) }
     var checkEmail by remember { mutableStateOf(false) }
     var info by remember { mutableStateOf<String?>(null) }
+    val autofill = LocalAutofillManager.current
 
     if (checkEmail) {
         AuthPage("Check your email", "We sent a link to $email. Open it, then sign in here.") {
@@ -169,16 +176,17 @@ fun SignUpScreen(container: AppContainer, nav: NavHostController) {
 
     AuthPage("Create your account", "Free to start. No card needed.", onBack = { nav.popBackStack() }) {
         Field(name, { name = it }, "Your name")
-        Field(email, { email = it }, "Email", keyboard = KeyboardType.Email)
-        Field(password, { password = it }, "Password (8 or more characters)", password = true)
+        Field(email, { email = it }, "Email", keyboard = KeyboardType.Email, autofill = ContentType.Username + ContentType.EmailAddress)
+        Field(password, { password = it }, "Password (8 or more characters)", password = true, autofill = ContentType.NewPassword)
         error?.let { Note(it, "bad") }
         PillButton("Create account", busy = busy, enabled = name.isNotBlank() && email.isNotBlank() && password.length >= 8, modifier = Modifier.fillMaxWidth(), onClick = {
             busy = true; error = null
             scope.launch {
                 try {
                     val r: SignInResult = container.account.signUp(name, email, password)
+                    autofill?.commit()
                     if (r.status == "check_email") checkEmail = true else afterSignIn(container, nav)
-                } catch (e: ApiError) { error = e.message } finally { busy = false }
+                } catch (e: ApiError) { autofill?.cancel(); error = e.message } finally { busy = false }
             }
         })
         LinkButton("I already have an account", { nav.popBackStack() })
