@@ -1,0 +1,38 @@
+name: Android app
+
+# Builds and tests the Android app in android/ whenever it changes. The debug APK is kept as a download on the run's
+# page for trying on a phone.
+on:
+  push:
+    paths:
+      - "android/**"
+      - ".github/workflows/android.yml"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: android
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - name: Latest library versions (for keeping the version catalog current)
+        working-directory: .
+        run: |
+          for a in com/android/tools/build/gradle androidx/compose/compose-bom androidx/activity/activity-compose \
+                   androidx/navigation/navigation-compose androidx/lifecycle/lifecycle-runtime-compose androidx/room/room-runtime \
+                   androidx/datastore/datastore-preferences androidx/work/work-runtime-ktx androidx/credentials/credentials \
+                   com/google/android/libraries/identity/googleid/googleid com/google/android/play/integrity androidx/core/core-ktx \
+                   androidx/sqlite/sqlite androidx/compose/material3/material3 androidx/compose/material/material-icons-extended \
+                   androidx/test/ext/junit androidx/compose/ui/ui-test-junit4; do
+            v=$(curl -s "https://dl.google.com/dl/android/maven2/$a/maven-metadata.xml" | grep -o '<version>[^<]*</version>' | sed 's/<[^>]*>//g' | grep -viE 'alpha|beta|rc|dev' | tail -1)
+            echo "$a $v"
+          done
+          ls "$ANDROID_HOME/platforms" "$ANDROID_HOME/build-tools" || true
