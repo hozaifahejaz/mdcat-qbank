@@ -87,8 +87,8 @@ fun MoreScreen(container: AppContainer, nav: NavHostController) {
                 if (offlineOn) { Divider(); RowItem("Downloads", onClick = { nav.navigate(R.DOWNLOADS) }) }
             }
             Panel(padding = 0.dp) {
-                support?.whatsapp?.let { w -> RowItem("Help on WhatsApp", onClick = { open("https://wa.me/${w.filter(Char::isDigit)}") }) ; Divider() }
-                support?.email?.let { e -> RowItem("Email us", e, onClick = { open("mailto:$e") }); Divider() }
+                support?.whatsapp?.takeIf { w -> w.any(Char::isDigit) }?.let { w -> RowItem("Help on WhatsApp", onClick = { open("https://wa.me/${w.filter(Char::isDigit)}") }) ; Divider() }
+                support?.email?.takeIf { it.isNotBlank() }?.let { e -> RowItem("Email us", e, onClick = { open("mailto:$e") }); Divider() }
                 RowItem("Privacy policy", onClick = { open("$site/privacy") })
                 Divider(); RowItem("Terms", onClick = { open("$site/terms") })
             }

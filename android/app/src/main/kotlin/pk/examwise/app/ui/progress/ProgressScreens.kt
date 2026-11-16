@@ -3,6 +3,7 @@ package pk.examwise.app.ui.progress
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -81,7 +82,8 @@ fun ProgressContent(d: Dashboard, onOpen: (String) -> Unit) {
     val correct = month.sumOf { it.correct }
     var openSubject by remember { mutableStateOf<String?>(null) }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        // Same height for all three, even when one label wraps.
+        Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Stat("Day streak", "${d.streakDays}", Modifier.weight(1f))
             Stat("Answered, 30 days", "$answered", Modifier.weight(1f))
             Stat("Right, 30 days", if (answered > 0) "${pct(correct, answered)}%" else "–", Modifier.weight(1f))
@@ -140,7 +142,7 @@ fun ProgressContent(d: Dashboard, onOpen: (String) -> Unit) {
 @Composable
 private fun Stat(label: String, value: String, modifier: Modifier) {
     val c = Ex.c
-    Column(modifier.clip(RoundedCornerShape(18.dp)).background(c.card).padding(14.dp)) {
+    Column(modifier.fillMaxHeight().clip(RoundedCornerShape(18.dp)).background(c.card).padding(14.dp)) {
         Text(value, style = MaterialTheme.typography.headlineSmall, color = c.ink)
         Text(label, style = MaterialTheme.typography.bodySmall, color = c.muted)
     }

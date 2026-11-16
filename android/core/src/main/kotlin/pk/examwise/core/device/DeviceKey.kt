@@ -12,11 +12,16 @@ object DeviceKey {
         return "${hex.substring(0, 8)}-${hex.substring(8, 12)}-${hex.substring(12, 16)}-${hex.substring(16, 20)}-${hex.substring(20, 32)}"
     }
 
-    /* "Samsung SM-A155F": maker and model, limited to what the server's cleanLabel keeps. */
-    fun label(manufacturer: String, model: String): String {
+    /* "Android app on Samsung SM-A155F", like the website's "Chrome on Mac". The phone's own name (Settings, About
+       phone) wins when it has one. Build codes such as "sdk_gphone64_arm64" mean nothing to a student, so those
+       give plain "Android app". Limited to what the server's cleanLabel keeps. */
+    fun label(manufacturer: String, model: String, deviceName: String? = null): String {
         val maker = manufacturer.trim().replaceFirstChar { it.uppercase() }
-        val name = if (model.startsWith(manufacturer, ignoreCase = true)) model else "$maker $model"
-        return name.replace(Regex("[^A-Za-z0-9 ._-]"), "").replace(Regex("\\s+"), " ").trim().take(60).ifEmpty { "Android phone" }
+        val name = deviceName?.trim()?.takeIf { it.isNotEmpty() && !it.contains('_') }
+            ?: if (model.startsWith(manufacturer, ignoreCase = true)) model else "$maker $model"
+        val clean = name.replace(Regex("[^A-Za-z0-9 ._-]"), "").replace(Regex("\\s+"), " ").trim()
+        if (clean.isEmpty() || name.contains('_')) return "Android app"
+        return "Android app on $clean".take(60)
     }
 
     /* The request hash for Play Integrity: base64url SHA-256 of "action|deviceKey", without padding. */

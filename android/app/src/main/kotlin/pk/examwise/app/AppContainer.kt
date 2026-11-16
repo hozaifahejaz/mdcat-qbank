@@ -31,7 +31,7 @@ class AppContainer(val app: Application) {
     val deviceKey: String by lazy {
         DeviceKey.fromAndroidId(Settings.Secure.getString(app.contentResolver, Settings.Secure.ANDROID_ID) ?: "unknown")
     }
-    val deviceLabel: String = DeviceKey.label(Build.MANUFACTURER ?: "", Build.MODEL ?: "")
+    val deviceLabel: String = DeviceKey.label(Build.MANUFACTURER ?: "", Build.MODEL ?: "", runCatching { Settings.Global.getString(app.contentResolver, Settings.Global.DEVICE_NAME) }.getOrNull())
 
     private val dbLock = Mutex()
     @Volatile private var database: AppDatabase? = null
