@@ -12,6 +12,7 @@ import { studyRoutes } from "./study";
 import { prefRoutes } from "./prefs";
 import { insightRoutes } from "./insights";
 import { appRoutes } from "./app";
+import { offlineRoutes, revokeDevicePacks, revokeUserPacks } from "./offline";
 import { checkCode, sendCode, smsConfigured } from "./sms";
 import { checkCaptcha } from "./turnstile";
 import { checkIntegrity } from "./integrity";
@@ -209,6 +210,7 @@ const routes: Record<string, (c: Ctx) => Promise<Response>> = {
     await c.db.batch([
       c.db.prepare("UPDATE users SET password_hash = ?, email_verified_at = coalesce(email_verified_at, ?), active_session_id = NULL, active_device_id = NULL WHERE id = ?").bind(await hashPassword(pw), Date.now(), userId),
       c.db.prepare("DELETE FROM sessions WHERE user_id = ?").bind(userId),
+      revokeUserPacks(c.db, userId),
     ]);
     return signedIn(c.request, await createSession(c.db, userId, c.request));
   },
@@ -278,6 +280,7 @@ const routes: Record<string, (c: Ctx) => Promise<Response>> = {
     const s = await getSession(db, request);
     if (s) {
       await releaseDevice(db, s);
+      if (s.device_id) await revokeDevicePacks(db, s.device_id).run();
       await db.prepare("DELETE FROM sessions WHERE id = ?").bind(s.id).run();
     }
     return json({ ok: true }, { headers: { "set-cookie": clearSessionCookie() } });
@@ -354,7 +357,7 @@ export async function handle(request: Request, env: Env): Promise<Response> {
       throw fail(426, "update_required", "Please update Examwise to keep going.");
     }
     const key = `${request.method} ${url.pathname}`;
-    const route = routes[key] ?? adminRoutes[key] ?? visitRoutes[key] ?? studyRoutes[key] ?? prefRoutes[key] ?? insightRoutes[key] ?? appRoutes[key];
+    const route = routes[key] ?? adminRoutes[key] ?? visitRoutes[key] ?? studyRoutes[key] ?? prefRoutes[key] ?? insightRoutes[key] ?? appRoutes[key] ?? offlineRoutes[key];
     if (!route) throw fail(404, "not_found", "Not found.");
     // Cookies are sent by the browser on their own, so a cookie request must come from our own pages. The app sends no
     // cookies, and marks its requests with headers (X-Client, Authorization) that another site's page can't add without

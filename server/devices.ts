@@ -141,6 +141,8 @@ export async function removeDevice(db: D1Database, session: Session, deviceId: s
     db.prepare("UPDATE users SET active_session_id = NULL, active_device_id = NULL WHERE id = ? AND active_device_id = ?").bind(uid, deviceId),
     // A removed device is signed out everywhere it was signed in.
     db.prepare("DELETE FROM sessions WHERE user_id = ? AND device_id = ?").bind(uid, deviceId),
+    // Offline packs on a removed phone stop working at its next check-in, and free their room.
+    db.prepare("UPDATE packs SET revoked_at = ? WHERE device_id = ? AND revoked_at IS NULL").bind(now, deviceId),
     db.prepare("INSERT INTO device_events (user_id, device_id, kind, created_at) VALUES (?, ?, 'remove', ?)").bind(uid, deviceId, now),
   ]);
   return { status: "removed" as const, devices: await listDevices(db, uid) };
