@@ -16,6 +16,7 @@ function adminNav(user: AccountUser): Nav {
     { label: "Content", links: [
       { href: "/admin/questions", label: "Questions", icon: "practice" },
       ...(reviewer ? [{ href: "/admin/reports", label: "Reports", icon: "flag" }] : []),
+      { href: "/admin/bank", label: "Bank health", icon: "trend", short: "Health" },
     ] },
     ...(admin ? [{
       label: "Accounts",

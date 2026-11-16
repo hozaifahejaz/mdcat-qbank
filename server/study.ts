@@ -1,9 +1,11 @@
 import { normalisePhone } from "../lib/phone";
 import { bankById } from "../lib/banks";
 import { paper } from "../lib/site";
+import { REPORT_HIDE, bankCounts, chaptersOf, subjectTotals } from "./counts";
 import { uuid } from "./crypto";
 import { requireActiveSession } from "./devices";
 import { body, fail, json, str } from "./http";
+import { prefsStmt, readPrefs } from "./prefs";
 import { hit, overLimit, rateLimit, spend, usedOf, usedStmt } from "./ratelimit";
 import { note, requireSession } from "./session";
 import { effectivePlan } from "./users";
@@ -20,8 +22,6 @@ const HOUR = 60 * 60 * 1000;
 const PKT = 5 * HOUR;
 /* Answers sent a little after the clock runs out still count: the request was on its way. */
 const GRACE = 30 * 1000;
-/* Open reports that hide a question from new tests until a reviewer looks. */
-const REPORT_HIDE = 3;
 export const MOCKS = 12;
 /* New questions an account can be given in 24 hours: a full mock and a long day's practice, with room to spare. */
 const DAILY_QUESTIONS = 500;
@@ -185,6 +185,14 @@ const LATEST = `SELECT l.question_id, l.answer, l.at, s.answer AS key, s.subject
 /* The same, counting a question left blank in a submitted test: its answer is NULL. */
 const LATEST_ANY = `SELECT question_id, answer, max(counted_at) AS at FROM answers WHERE user_id = ? AND counted_at IS NOT NULL GROUP BY question_id`;
 
+/* The student's latest answers placed in a bank's own subjects and chapters. ?1 is the student. Bank ids come from
+   lib/banks.ts, never from the request, so they are safe to write into the statement. */
+const latestIn = (bank: string) => bank === "mdcat"
+  ? `SELECT l.question_id, l.answer, l.key, l.subject, l.chapter, l.topic FROM (${LATEST}) l
+      WHERE NOT EXISTS (SELECT 1 FROM questions m WHERE m.id = l.question_id AND m.mdcat = 0)`
+  : `SELECT l.question_id, l.answer, l.key, b.subject, b.chapter, l.topic FROM (${LATEST}) l
+      JOIN bank_questions b ON b.question_id = l.question_id AND b.bank = '${bank}'`;
+
 /* Where a question stands for a student, which the practice screen filters by (any mix of them). */
 const FILTERS = ["unused", "incorrect", "marked", "omitted", "correct"] as const;
 type Filter = (typeof FILTERS)[number];
@@ -205,6 +213,23 @@ function scope(b: Record<string, unknown>, pool: string) {
   const topic = str(b.topic, 120);
   if (topic) { where.push("topic = ?"); args.push(topic); }
   return { bank, where, args, subject, several, chapters, topic };
+}
+
+/* The same selection, as a test on one question a student already has (an answer or a bookmark), so their own
+   numbers can be counted from their own rows instead of by reading the whole bank. `col` is the question id. */
+function membership(sc: ReturnType<typeof scope>, pool: string) {
+  const mdcat = sc.bank.id === "mdcat";
+  const t = mdcat ? "s" : "b";
+  const where = [`s.open_reports < ${REPORT_HIDE}`];
+  const args: unknown[] = [];
+  if (pool) where.push("s.free = 1");
+  if (mdcat) where.push("NOT EXISTS (SELECT 1 FROM questions m WHERE m.id = s.id AND m.mdcat = 0)");
+  if (sc.subject) { where.push(`${t}.subject = ?`); args.push(sc.subject); }
+  else if (sc.several.length) { where.push(`${t}.subject IN (SELECT value FROM json_each(?))`); args.push(JSON.stringify(sc.several)); }
+  if (sc.chapters.length) { where.push(`${t}.chapter IN (SELECT value FROM json_each(?))`); args.push(JSON.stringify(sc.chapters)); }
+  if (sc.topic) { where.push("s.topic = ?"); args.push(sc.topic); }
+  const join = (col: string) => `JOIN served s ON s.id = ${col}${mdcat ? "" : ` JOIN bank_questions b ON b.question_id = ${col} AND b.bank = '${sc.bank.id}'`}`;
+  return { join, where: where.join(" AND "), args };
 }
 
 /* How everyone answered these questions: picks per option, once enough students have answered to mean something. */
@@ -251,32 +276,32 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
     const me = await student(c, false);
     // ?bank= picks whose chapters to count (lib/banks.ts); mocks and past papers are always MDCAT.
     const bank = bankById(new URL(c.request.url).searchParams.get("bank"))?.id ?? "mdcat";
-    const [chapters, papers, mini, mdcat, mine] = await c.db.batch([
-      c.db.prepare(`SELECT subject, chapter, count(*) AS total, sum(free) AS free FROM bank_served WHERE bank = ? AND open_reports < ${REPORT_HIDE} GROUP BY subject, chapter`).bind(bank),
-      c.db.prepare(`SELECT paper AS year, count(*) AS n FROM served WHERE paper IS NOT NULL AND open_reports < ${REPORT_HIDE} GROUP BY paper ORDER BY paper DESC`),
-      c.db.prepare("SELECT id, finished_at FROM attempts WHERE user_id = ? AND kind = 'mini-mock' ORDER BY started_at DESC LIMIT 1").bind(me.id),
-      c.db.prepare(`SELECT subject, count(*) AS total, sum(free) AS free FROM served WHERE open_reports < ${REPORT_HIDE}${ON_MDCAT} GROUP BY subject`),
-      // This student's latest answer to each question in the bank, by the bank's subject and chapter.
-      c.db.prepare(`SELECT b.subject, b.chapter, count(*) AS answered, sum(CASE WHEN l.answer = l.key THEN 1 ELSE 0 END) AS correct
-        FROM (${LATEST}) l JOIN bank_served b ON b.id = l.question_id AND b.bank = ?2 GROUP BY b.subject, b.chapter`).bind(me.id, bank),
+    // The bank's own numbers come from the kept counts; only this student's rows are read here.
+    const [counts, [mini, mine]] = await Promise.all([
+      bankCounts(c.db),
+      c.db.batch([
+        c.db.prepare("SELECT id, finished_at FROM attempts WHERE user_id = ? AND kind = 'mini-mock' ORDER BY started_at DESC LIMIT 1").bind(me.id),
+        // This student's latest answer to each question in the bank, by the bank's subject and chapter.
+        c.db.prepare(`SELECT x.subject, x.chapter, count(*) AS answered, sum(CASE WHEN x.answer = x.key THEN 1 ELSE 0 END) AS correct
+          FROM (${latestIn(bank)}) x GROUP BY x.subject, x.chapter`).bind(me.id),
+      ]),
     ]);
     const lastMini = mini!.results[0] as { id: string; finished_at: number | null } | undefined;
     const done = mine!.results as { subject: string; chapter: string; answered: number; correct: number }[];
-    const rows = (chapters!.results as { subject: string; chapter: string; total: number; free: number }[])
-      .map((r) => {
-        const d = done.find((x) => x.subject === r.subject && x.chapter === r.chapter);
-        return { subject: r.subject, chapter: r.chapter, total: r.total, open: me.paid ? r.total : r.free ?? 0, answered: d?.answered ?? 0, correct: d?.correct ?? 0 };
-      });
-    const totals = mdcat!.results as { subject: string; total: number; free: number }[];
+    const rows = chaptersOf(counts, bank).map((r) => {
+      const d = done.find((x) => x.subject === r.subject && x.chapter === r.chapter);
+      return { subject: r.subject, chapter: r.chapter, total: r.total, open: me.paid ? r.total : r.free, answered: d?.answered ?? 0, correct: d?.correct ?? 0 };
+    });
+    const totals = subjectTotals(counts);
     const bySubject = (s: string, k: "total" | "open") => {
-      const t = totals.find((x) => x.subject === s);
-      return !t ? 0 : k === "total" || me.paid ? t.total : t.free ?? 0;
+      const t = totals.get(s);
+      return !t ? 0 : k === "total" || me.paid ? t.total : t.free;
     };
     return json({
       paid: me.paid,
       bank,
       chapters: rows,
-      papers: (papers!.results as { year: number; n: number }[]).map((p) => ({ year: p.year, count: p.n })),
+      papers: counts.papers.map((p) => ({ year: p.year, count: p.n })),
       mocks: MOCKS,
       mockReady: paper.every((p) => bySubject(p.subject, "total") >= p.count),
       miniReady: subjects.reduce((n, s) => n + bySubject(s, "open"), 0) >= 10,
@@ -290,26 +315,33 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
   "GET /api/study/pool": async (c) => {
     const me = await student(c, false);
     const p = new URL(c.request.url).searchParams;
-    const { where, args } = scope(Object.fromEntries(p), me.pool);
-    const r = await c.db.prepare(`SELECT count(*) AS total,
-        sum(CASE WHEN l.question_id IS NULL THEN 1 ELSE 0 END) AS unused,
-        sum(CASE WHEN l.question_id IS NOT NULL AND l.answer IS NULL THEN 1 ELSE 0 END) AS omitted,
+    const sc = scope(Object.fromEntries(p), me.pool);
+    const m = membership(sc, me.pool);
+    const state = `sum(CASE WHEN l.question_id IS NOT NULL AND l.answer IS NULL THEN 1 ELSE 0 END) AS omitted,
         sum(CASE WHEN l.answer = s.answer THEN 1 ELSE 0 END) AS correct,
-        sum(CASE WHEN l.answer IS NOT NULL AND l.answer != s.answer THEN 1 ELSE 0 END) AS incorrect,
-        sum(CASE WHEN m.question_id IS NOT NULL THEN 1 ELSE 0 END) AS marked,
-        sum(CASE WHEN m.question_id IS NOT NULL AND l.question_id IS NULL THEN 1 ELSE 0 END) AS m_unused,
-        sum(CASE WHEN m.question_id IS NOT NULL AND l.question_id IS NOT NULL AND l.answer IS NULL THEN 1 ELSE 0 END) AS m_omitted,
-        sum(CASE WHEN m.question_id IS NOT NULL AND l.answer = s.answer THEN 1 ELSE 0 END) AS m_correct,
-        sum(CASE WHEN m.question_id IS NOT NULL AND l.answer IS NOT NULL AND l.answer != s.answer THEN 1 ELSE 0 END) AS m_incorrect
-      FROM (SELECT DISTINCT id FROM bank_served WHERE ${where.join(" AND ")}) q
-      JOIN served s ON s.id = q.id
-      LEFT JOIN (${LATEST_ANY}) l ON l.question_id = q.id
-      LEFT JOIN bookmarks m ON m.user_id = ? AND m.question_id = q.id`)
-      .bind(...args, me.id, me.id).first<Record<string, number | null>>();
+        sum(CASE WHEN l.answer IS NOT NULL AND l.answer != s.answer THEN 1 ELSE 0 END) AS incorrect`;
+    type Row = Record<string, number | null>;
+    // What the student has answered or bookmarked in the selection, from their own rows. How many questions the
+    // selection holds comes from the kept counts (a topic isn't in those, so that one is counted).
+    const [counts, [seenRes, markedRes, topicRes]] = await Promise.all([
+      bankCounts(c.db),
+      c.db.batch<Row>([
+        c.db.prepare(`SELECT count(*) AS seen, ${state} FROM (${LATEST_ANY}) l ${m.join("l.question_id")} WHERE ${m.where}`).bind(me.id, ...m.args),
+        c.db.prepare(`SELECT count(*) AS marked, sum(CASE WHEN l.question_id IS NULL THEN 1 ELSE 0 END) AS unused, ${state}
+          FROM bookmarks k ${m.join("k.question_id")} LEFT JOIN (${LATEST_ANY}) l ON l.question_id = k.question_id
+          WHERE k.user_id = ? AND ${m.where}`).bind(me.id, me.id, ...m.args),
+        ...(sc.topic ? [c.db.prepare(`SELECT count(DISTINCT id) AS n FROM bank_served WHERE ${sc.where.join(" AND ")}`).bind(...sc.args)] : []),
+      ]),
+    ]);
+    const total = sc.topic ? (topicRes!.results[0]?.n ?? 0) : chaptersOf(counts, sc.bank.id)
+      .filter((r) => (sc.subject ? r.subject === sc.subject : !sc.several.length || sc.several.includes(r.subject)) && (!sc.chapters.length || sc.chapters.includes(r.chapter)))
+      .reduce((n, r) => n + (me.paid ? r.total : r.free), 0);
+    const r = seenRes!.results[0] ?? {};
+    const k = markedRes!.results[0] ?? {};
     // markedIn: the marked ones by where they stand, so the screen can count a mix of filters without counting any twice.
     return json({
-      total: r?.total ?? 0, unused: r?.unused ?? 0, incorrect: r?.incorrect ?? 0, marked: r?.marked ?? 0, omitted: r?.omitted ?? 0, correct: r?.correct ?? 0,
-      markedIn: { unused: r?.m_unused ?? 0, incorrect: r?.m_incorrect ?? 0, omitted: r?.m_omitted ?? 0, correct: r?.m_correct ?? 0 },
+      total, unused: Math.max(0, total - (r.seen ?? 0)), incorrect: r.incorrect ?? 0, marked: k.marked ?? 0, omitted: r.omitted ?? 0, correct: r.correct ?? 0,
+      markedIn: { unused: k.unused ?? 0, incorrect: k.incorrect ?? 0, omitted: k.omitted ?? 0, correct: k.correct ?? 0 },
     });
   },
 
@@ -557,22 +589,41 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
     const now = Date.now();
     const days = 84;
     const since = Date.parse(`${pkDate(now - (days - 1) * DAY)}T00:00:00+05:00`);
-    const [daily, latest, chapters, recent, open, marks, bySubject, miniUsed] = await afterClosing(c.db, me.id, () => [
+    // ?bank= picks whose subjects and chapters the numbers are laid out in; without it, the one the student chose.
+    const asked = bankById(new URL(c.request.url).searchParams.get("bank"))?.id;
+    const own = (bank: string | null, withPrefs: boolean) => afterClosing(c.db, me.id, () => [
       c.db.prepare(`SELECT date((a.counted_at + ${PKT}) / 1000, 'unixepoch') AS d, count(*) AS n, sum(CASE WHEN a.answer = s.answer THEN 1 ELSE 0 END) AS c
         FROM answers a JOIN served s ON s.id = a.question_id WHERE a.user_id = ? AND a.counted_at >= ? AND a.answer IS NOT NULL GROUP BY d`).bind(me.id, since),
-      c.db.prepare(LATEST).bind(me.id),
-      c.db.prepare(`SELECT subject, chapter, count(*) AS n FROM served WHERE open_reports < ${REPORT_HIDE}${me.pool}${ON_MDCAT} GROUP BY subject, chapter`),
       c.db.prepare("SELECT * FROM attempts WHERE user_id = ? AND finished_at IS NOT NULL AND total > 0 ORDER BY finished_at DESC LIMIT 10").bind(me.id),
       c.db.prepare(`SELECT a.*, (SELECT count(*) FROM answers x WHERE x.attempt_id = a.id AND x.answer IS NOT NULL) AS done
         FROM attempts a WHERE a.user_id = ? AND a.finished_at IS NULL ORDER BY a.started_at DESC LIMIT 1`).bind(me.id),
       c.db.prepare("SELECT count(*) AS n FROM bookmarks WHERE user_id = ?").bind(me.id),
-      c.db.prepare(`SELECT subject, count(*) AS n, sum(free) AS free FROM served WHERE open_reports < ${REPORT_HIDE} GROUP BY subject`),
       c.db.prepare("SELECT 1 FROM attempts WHERE user_id = ? AND kind = 'mini-mock' LIMIT 1").bind(me.id),
+      // Everything the student has ever answered, and how long a question takes them lately.
+      c.db.prepare(`SELECT count(DISTINCT question_id) AS n, sum(CASE WHEN counted_at >= ?2 AND seconds IS NOT NULL THEN seconds ELSE 0 END) AS secs,
+          sum(CASE WHEN counted_at >= ?2 AND seconds IS NOT NULL THEN 1 ELSE 0 END) AS timed
+        FROM answers WHERE user_id = ?1 AND counted_at IS NOT NULL AND answer IS NOT NULL`).bind(me.id, now - 30 * DAY),
+      // Mistakes are counted across every bank, as the My mistakes page lists them.
+      c.db.prepare(`SELECT count(*) AS n FROM (${LATEST}) l WHERE l.answer != l.key`).bind(me.id),
+      ...(bank ? [c.db.prepare(latestIn(bank)).bind(me.id)] : []),
+      ...(withPrefs ? [prefsStmt(c.db, me.id)] : []),
     ]);
+    // With a bank in the address everything is one trip. Without one, the student's choice has to be read first;
+    // their saved choice rides along with the first trip so the second only fetches their answers in that bank.
+    let hasPrefs = true;
+    const first = (bank: string | null) => own(bank, true).catch(() => { hasPrefs = false; return own(bank, false); });
+    const [counts, res] = await Promise.all([bankCounts(c.db), first(asked ?? null)]);
+    const [daily, recent, open, marks, miniUsed, ever, wrong] = res;
+    const prefs = readPrefs(hasPrefs ? (res[asked ? 8 : 7]!.results[0] as Parameters<typeof readPrefs>[0]) : null);
+    if (!hasPrefs) prefs.welcomed = true;
+    const bankId = asked ?? prefs.bank;
+    const bank = bankById(bankId)!;
+    const latest = asked ? res[7]! : await c.db.prepare(latestIn(bankId)).bind(me.id).all();
+
     // Which mock the dashboard should offer: a full one once the bank can fill it, else the mini mock if it's open to them.
-    const bank = bySubject!.results as { subject: string; n: number; free: number | null }[];
-    const fullReady = me.paid && paper.every((p) => (bank.find((x) => x.subject === p.subject)?.n ?? 0) >= p.count);
-    const miniPool = bank.reduce((n, x) => n + (me.paid ? x.n : x.free ?? 0), 0);
+    const mdcat = subjectTotals(counts);
+    const fullReady = me.paid && paper.every((p) => (mdcat.get(p.subject)?.total ?? 0) >= p.count);
+    const miniPool = [...mdcat.values()].reduce((n, x) => n + (me.paid ? x.total : x.free), 0);
     const nextMock = fullReady ? "full" : miniPool >= 10 && (me.paid || !miniUsed!.results.length) ? "mini" : null;
     const byDay = new Map((daily!.results as { d: string; n: number; c: number }[]).map((r) => [r.d, r]));
     const series = Array.from({ length: days }, (_, i) => {
@@ -586,9 +637,9 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
       else if (i < series.length - 1) break;
     }
     type Latest = { question_id: string; answer: number; key: number; subject: string; chapter: string; topic: string };
-    const answered = latest!.results as Latest[];
+    const answered = latest.results as Latest[];
     const sub = (s: string) => answered.filter((r) => r.subject === s);
-    const avail = chapters!.results as { subject: string; chapter: string; n: number }[];
+    const avail = chaptersOf(counts, bankId).map((x) => ({ subject: x.subject, chapter: x.chapter, n: me.paid ? x.total : x.free })).filter((x) => x.n > 0);
     const topics = new Map<string, { subject: string; chapter: string; topic: string; answered: number; correct: number }>();
     for (const r of answered) {
       if (!r.topic) continue;
@@ -598,16 +649,23 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
       topics.set(k, t);
     }
     const o = open!.results[0] as (AttemptRow & { done: number }) | undefined;
+    const e = ever!.results[0] as { n: number; secs: number | null; timed: number | null } | undefined;
     return json({
+      bank: bankId,
+      welcomed: prefs.welcomed,
+      examYear: prefs.examYear,
+      answeredEver: e?.n ?? 0,
+      secondsPerQuestion: e?.timed && e.timed >= 20 ? Math.round((e.secs ?? 0) / e.timed) : null,
       streakDays: streak,
       nextMock,
-      dailyGoal: 40,
+      dailyGoal: prefs.dailyGoal,
       daily: series,
       bookmarks: (marks!.results[0] as { n: number }).n,
-      mistakesToRetry: answered.filter((r) => r.answer !== r.key).length,
+      mistakesToRetry: (wrong!.results[0] as { n: number } | undefined)?.n ?? 0,
       resume: o ? { title: o.title, done: o.done, total: o.total, href: `/test?id=${o.id}` } : undefined,
-      subjects: subjects.map((s) => {
-        const names = [...new Set([...avail.filter((x) => x.subject === s).map((x) => x.chapter), ...sub(s).map((x) => x.chapter)])];
+      subjects: bank.subjects.map(({ name: s, chapters: order }) => {
+        const names = [...new Set([...avail.filter((x) => x.subject === s).map((x) => x.chapter), ...sub(s).map((x) => x.chapter)])]
+          .sort((x, y) => (order.indexOf(x) + 1 || 999) - (order.indexOf(y) + 1 || 999));
         return {
           subject: s,
           chapters: names.map((ch) => {
@@ -675,6 +733,15 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
       await c.db.prepare("INSERT INTO reports (question_id, user_id, reason, details, created_at) VALUES (?, ?, ?, ?, ?)").bind(id, me.id, reason, str(b.details, 2000), Date.now()).run();
     }
     return json({ ok: true });
+  },
+
+  /* How big the bank is, for the landing page. Open to everyone and the same for everyone, so browsers and
+     Cloudflare may keep it for an hour. */
+  "GET /api/stats": async (c) => {
+    const counts = await bankCounts(c.db);
+    return new Response(JSON.stringify({ questions: counts.questions, papers: counts.papers.map((p) => p.year) }), {
+      headers: { "content-type": "application/json; charset=utf-8", "cache-control": "public, max-age=3600", "x-content-type-options": "nosniff" },
+    });
   },
 
   /* The launch waitlist from the landing page. Signed out, so it's rate limited by address. */

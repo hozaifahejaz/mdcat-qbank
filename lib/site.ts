@@ -7,9 +7,11 @@ export const site = {
   supportEmail: "support@examwise.pk",
   /* WhatsApp support in international form without the +, e.g. "923001234567". Empty hides the WhatsApp links. */
   whatsapp: "",
-  /* False until the first questions go live: the public pages then say the bank is opening soon instead of
-     promising free questions, and the landing page offers the launch waitlist. */
-  launched: false,
+  /* The bank is open: anyone can make a free account and practise the free set. */
+  open: true,
+  /* False until a payment provider is connected. The public pages then say payments open soon, and checkout shows
+     how paying will work without taking any money. */
+  payments: false,
   season: "2027",
   examMonth: "August 2027",
   /* Expected date for the dashboard countdown. PMDC announces the real one; 2026 was 16 August. Update when it does. */

@@ -39,6 +39,8 @@ export type Overview = {
   visits: { today: number; week: number; now: number } | null;
   activity: LogEntry[];
   watch: { id: string; name: string; email: string | null; phone: string | null; kind: string; detail: string; at: number }[];
+  /* The last thirty days, oldest first (admins only). */
+  growth?: GrowthDay[] | null;
 };
 
 /* Notes the site makes on an account by itself (server/session.ts, devices.ts, study.ts). */
@@ -62,6 +64,7 @@ export type UserDetail = {
   methods: string[];
   takeoversToday: number;
   questionsToday: number;
+  study?: { answered: number; correct: number; tests: number; lastAnswer: string | null };
   notes: { kind: string; detail: string; created_at: number }[];
   log: LogEntry[];
 };
@@ -90,8 +93,21 @@ export type QuestionPage = {
   /* Share of keys on A to D across the questions whose key you can see. */
   spread: { known: number; pct: number[] };
 };
-export const listQuestions = (p: { view: string; subject: string; q: string; offset: number }) =>
-  api<QuestionPage>(`/api/admin/questions?${new URLSearchParams({ view: p.view, subject: p.subject, q: p.q, offset: String(p.offset) })}`);
+export const listQuestions = (p: { view: string; subject: string; q: string; offset: number; chapter?: string; free?: string; paper?: string }) =>
+  api<QuestionPage>(`/api/admin/questions?${new URLSearchParams({ view: p.view, subject: p.subject, q: p.q, offset: String(p.offset), chapter: p.chapter ?? "", free: p.free ?? "", paper: p.paper ?? "" })}`);
+/* The publishing switches for many questions at once. Only what's given is changed. */
+export const bulkQuestions = (ids: string[], change: { free?: boolean; mdcat?: boolean; paper?: number | null }) =>
+  api<{ changed: number }>("/api/admin/questions/bulk", { body: { ids, ...change } });
+
+/* How students are answering: the questions worth a second look (server/insights.ts). */
+export type QualityRow = { id: string; subject: string; chapter: string; stem: string; key: number; n: number; pct: number; picks: number[]; reports: number; why: "wrong_pick" | "low" };
+export type Quality = { at: number; minAnswers: number; measured: number; average: number | null; look: QualityRow[] };
+export const getQuality = (fresh = false) => api<Quality>(`/api/admin/quality${fresh ? "?fresh=1" : ""}`);
+
+/* Questions students can be served, per bank, subject and chapter. listed: the chapter is on that bank's syllabus. */
+export type Coverage = { questions: number; banks: { id: string; name: string; subjects: { subject: string; chapters: { chapter: string; total: number; free: number; listed: boolean }[] }[] }[] };
+export const getCoverage = () => api<Coverage>("/api/admin/coverage");
+export type GrowthDay = { date: string; signups: number; answers: number; active: number };
 export const getQuestion = (id: string) => api<{ question: AdminQuestion }>(`/api/admin/questions/one?id=${encodeURIComponent(id)}`).then((r) => r.question);
 export const discardEdit = (id: string) => api<{ question: AdminQuestion }>("/api/admin/questions/discard", { body: { id } }).then((r) => r.question);
 export const setQuestionMeta = (id: string, free: boolean, paper: number | null) => api<{ question: AdminQuestion }>("/api/admin/questions/meta", { body: { id, free, paper } }).then((r) => r.question);
@@ -134,6 +150,7 @@ export const actionNames: Record<string, string> = {
   "question.delete": "Deleted",
   "question.discard": "Edit discarded",
   "question.meta": "Publishing changed",
+  "question.bulk": "Publishing changed for several",
   "report.fixed": "Reports closed as fixed",
   "report.dismissed": "Reports dismissed",
   "user.create": "Account created",

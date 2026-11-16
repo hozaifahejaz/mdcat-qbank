@@ -9,6 +9,8 @@ import { clearSessionCookie, createSession, getSession, requireSession, rotateSe
 import { adminRoutes } from "./admin";
 import { visitRoutes } from "./visits";
 import { studyRoutes } from "./study";
+import { prefRoutes } from "./prefs";
+import { insightRoutes } from "./insights";
 import { checkCode, sendCode, smsConfigured } from "./sms";
 import { checkCaptcha } from "./turnstile";
 import { createUser, publicUser, publicUserById, userByEmail, userById, userByPhone, userForOAuth } from "./users";
@@ -289,7 +291,7 @@ export async function handle(request: Request, env: Env): Promise<Response> {
       return await oauth(c, o[1] as Provider, step);
     }
     const key = `${request.method} ${url.pathname}`;
-    const route = routes[key] ?? adminRoutes[key] ?? visitRoutes[key] ?? studyRoutes[key];
+    const route = routes[key] ?? adminRoutes[key] ?? visitRoutes[key] ?? studyRoutes[key] ?? prefRoutes[key] ?? insightRoutes[key];
     if (!route) throw fail(404, "not_found", "Not found.");
     if (request.method !== "GET") assertSameOrigin(request);
     return await route(c);

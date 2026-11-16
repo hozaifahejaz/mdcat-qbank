@@ -4,13 +4,29 @@ import { useEffect, useState } from "react";
 import { PageHead } from "@/components/app/AppShell";
 import Empty from "@/components/app/Empty";
 import { friendlyError } from "@/lib/auth";
-import { type Overview as Data, actionNames, getOverview, noteNames } from "@/lib/admin";
+import { type GrowthDay, type Overview as Data, actionNames, getOverview, noteNames } from "@/lib/admin";
 import { planNames } from "@/lib/format";
 import { stages } from "@/lib/qc";
 import { paper } from "@/lib/site";
 import type { AccountUser } from "@/lib/user";
 
 const when = (ms: number) => new Date(ms).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Karachi" });
+
+/* Thirty days of one number as bars, with the total and the latest day beside the name. */
+function Growth({ days, pick, label, latest }: { days: GrowthDay[]; pick: (d: GrowthDay) => number; label: string; latest?: boolean }) {
+  const max = Math.max(1, ...days.map(pick));
+  const total = days.reduce((n, d) => n + pick(d), 0);
+  const short = (iso: string) => new Date(`${iso}T12:00:00+05:00`).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+  return (
+    <div className="gr">
+      <div className="gr-h"><span>{label}</span><b>{latest ? `${pick(days.at(-1)!)} today` : total.toLocaleString("en-GB")}</b></div>
+      <div className="gr-bars" role="img" aria-label={`${label}, last 30 days: ${days.map((d) => `${short(d.date)} ${pick(d)}`).join(", ")}`}>
+        {days.map((d) => <i key={d.date} title={`${short(d.date)}: ${pick(d)}`} style={{ height: `${Math.max(pick(d) ? 6 : 2, (pick(d) / max) * 100)}%` }} className={pick(d) ? undefined : "zero"} />)}
+      </div>
+      <div className="gr-x muted small"><span>{short(days[0]!.date)}</span><span>{short(days.at(-1)!.date)}</span></div>
+    </div>
+  );
+}
 
 /* /admin — what needs doing now, where the bank stands, and (for admins) accounts, plans and recent activity. */
 export default function Overview({ user }: { user: AccountUser }) {
@@ -84,6 +100,17 @@ export default function Overview({ user }: { user: AccountUser }) {
               <p className="muted small">{Object.entries(d.users.paid).map(([p, n]) => `${planNames[p as keyof typeof planNames] ?? p}: ${n}`).join(" · ")}</p>
             )}
           </section>
+
+          {d.growth && d.growth.length > 0 && (
+            <section className="dcard panel">
+              <div className="panel-h"><h2>Last 30 days</h2></div>
+              <div className="gr-grid">
+                <Growth days={d.growth} pick={(x) => x.signups} label="New accounts" />
+                <Growth days={d.growth} pick={(x) => x.active} label="Active students" latest />
+                <Growth days={d.growth} pick={(x) => x.answers} label="Answers" />
+              </div>
+            </section>
+          )}
 
           {d.visits && (
             <section className="dcard panel">

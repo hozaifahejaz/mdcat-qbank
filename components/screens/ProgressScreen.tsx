@@ -15,6 +15,11 @@ export default function ProgressScreen() {
 
 function Progress({ user }: { user: AccountUser }) {
   const [data, setData] = useState<Dashboard | null>(null);
-  useEffect(() => { fresh("dashboard", () => getDashboard(user), setData, true).catch(() => {}); }, [user]);
-  return data ? <Body data={data} progress /> : <Skeleton />;
+  const [bank, setBank] = useState<string | null>(null);
+  useEffect(() => {
+    let live = true;
+    fresh(bank ? `dashboard:${bank}` : "dashboard", () => getDashboard(user, bank), (d) => { if (live) setData(d); }, true).catch(() => {});
+    return () => { live = false; };
+  }, [user, bank]);
+  return data ? <Body data={data} progress onBank={setBank} onGoal={(n) => setData((d) => (d ? { ...d, dailyGoal: n } : d))} /> : <Skeleton />;
 }

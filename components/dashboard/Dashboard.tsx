@@ -7,22 +7,21 @@ import Icon from "@/components/app/Icon";
 import BarChart from "@/components/dashboard/BarChart";
 import MobileHome from "@/components/dashboard/MobileHome";
 import NextCard from "@/components/dashboard/NextCard";
+import { FIRST_DAY_UNTIL, FirstDay, GoalStrip, Stand, Subjects, daysUntil } from "@/components/dashboard/Insights";
+import { go } from "@/components/Nav";
 import { BankButtons } from "@/components/screens/PracticeScreen";
 import { getDashboard, type Dashboard as Data, type SubjectStat } from "@/lib/dashboard-data";
 import { band, day, fullDay, kindNames, pct, tz } from "@/lib/format";
 import { paper, site } from "@/lib/site";
 import { useNarrow } from "@/lib/narrow";
 import { watchCatalog } from "@/lib/study";
-import { fresh } from "@/lib/cache";
+import { fresh, keep } from "@/lib/cache";
+import { examDateFor } from "@/lib/prefs";
 import { type AccountUser, getCurrentUser, lastUser } from "@/lib/user";
 
 function greeting() {
   const h = Number(new Date().toLocaleString("en-GB", { hour: "numeric", hour12: false, timeZone: tz }));
   return h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
-}
-
-function daysUntil(iso: string) {
-  return Math.max(0, Math.ceil((new Date(iso + "T09:00:00+05:00").getTime() - Date.now()) / 86_400_000));
 }
 
 function sumChapters(s: SubjectStat) {
@@ -45,6 +44,8 @@ export default function Dashboard() {
   const [user, setUser] = useState<AccountUser | null>(null);
   const [data, setData] = useState<Data | null>(null);
   const [coach, setCoach] = useState(true);
+  // Whose subjects and chapters to show: the student's own choice until they pick another tab.
+  const [bank, setBank] = useState<string | null>(null);
   // Phones get their own home: the bank buttons and one progress card (MobileHome). Laptops get the full dashboard.
   const narrow = useNarrow();
 
@@ -55,9 +56,27 @@ export default function Dashboard() {
     const known = lastUser();
     if (known) setUser(known);
     getCurrentUser().then((u) => { if (live && u) setUser(u); });
-    fresh("dashboard", () => getDashboard(), (d) => { if (live) setData(d); }, true).catch(() => {});
     return () => { live = false; };
   }, []);
+
+  useEffect(() => {
+    let live = true;
+    fresh(bank ? `dashboard:${bank}` : "dashboard", () => getDashboard(undefined, bank), (d) => { if (live) setData(d); }, true).catch(() => {});
+    return () => { live = false; };
+  }, [bank]);
+
+  // A brand-new student picks their test, year and daily goal first (/welcome), once.
+  const fresher = data?.welcomed === false && (data.answeredEver ?? 1) === 0 && !data.resume;
+  useEffect(() => { if (fresher) go("/welcome", true); }, [fresher]);
+
+  function setGoal(n: number) {
+    setData((d) => {
+      if (!d) return d;
+      const next = { ...d, dailyGoal: n };
+      keep(bank ? `dashboard:${bank}` : "dashboard", next, true);
+      return next;
+    });
+  }
 
   function toggleCoach(show: boolean) {
     setCoach(show);
@@ -67,7 +86,7 @@ export default function Dashboard() {
   const aside = narrow === false && user && data && coach ? <Coach data={data} onHide={() => toggleCoach(false)} /> : null;
   return (
     <AppFrame active="/dashboard" user={user} aside={aside}>
-      {user && data && narrow !== null ? narrow ? <MobileHome data={data} /> : <Body data={data} name={user.name} coachHidden={!coach} onShowCoach={() => toggleCoach(true)} /> : <Skeleton />}
+      {user && data && narrow !== null && !fresher ? narrow ? <MobileHome data={data} /> : <Body data={data} name={user.name} coachHidden={!coach} onShowCoach={() => toggleCoach(true)} onBank={setBank} onGoal={setGoal} /> : <Skeleton />}
     </AppFrame>
   );
 }
@@ -84,7 +103,7 @@ export function Skeleton() {
 
 /* The full dashboard on laptops. progress: the phone's Progress tab, which shows the same numbers under its own
    heading, without the exam header and the Up next strip. */
-export function Body({ data, name, coachHidden, onShowCoach, progress }: { data: Data; name?: string; coachHidden?: boolean; onShowCoach?: () => void; progress?: boolean }) {
+export function Body({ data, name, coachHidden, onShowCoach, progress, onBank, onGoal }: { data: Data; name?: string; coachHidden?: boolean; onShowCoach?: () => void; progress?: boolean; onBank?: (bank: string) => void; onGoal?: (n: number) => void }) {
   const totals = data.subjects.map(sumChapters).reduce((t, s) => ({ answered: t.answered + s.answered, available: t.available + s.available, correct: t.correct + s.correct }), { answered: 0, available: 0, correct: 0 });
   const month = data.daily.slice(-30).reduce((t, d) => ({ answered: t.answered + d.answered, correct: t.correct + d.correct }), { answered: 0, correct: 0 });
   const mocks = data.recent.filter((t) => t.kind === "mock").sort((a, b) => a.date.localeCompare(b.date));
@@ -93,6 +112,9 @@ export function Body({ data, name, coachHidden, onShowCoach, progress }: { data:
   const change = lastMock && prevMock ? lastMock.score - prevMock.score : null;
   const mockReady = useMockReady();
   const showMock = mockReady || !!lastMock;
+  // Until a student has answered a handful of questions the charts are empty: they get a short checklist instead.
+  const early = !progress && hasQuestions(data) && (data.answeredEver ?? FIRST_DAY_UNTIL) < FIRST_DAY_UNTIL;
+  const examDate = examDateFor(data.examYear);
 
   return (
     <div className="dgrid home">
@@ -100,13 +122,15 @@ export function Body({ data, name, coachHidden, onShowCoach, progress }: { data:
       <section className="home-head" aria-labelledby="home-h">
         <div>
           <h1 id="home-h">{greeting()}{name ? `, ${name.split(/\s+/)[0]}` : ""}</h1>
-          <p className="muted"><b>{daysUntil(site.examDate)} days</b> to MDCAT {site.season}, expected {fullDay(site.examDate)}</p>
+          <p className="muted"><b>{daysUntil(examDate)} days</b> to MDCAT {examDate.slice(0, 4)}, expected {fullDay(examDate)}</p>
         </div>
         {coachHidden && <div className="hello-ctas"><button type="button" className="dpill light small hide-m" onClick={onShowCoach}><Icon name="spark" size={16} />Suggestions</button></div>}
       </section>
       )}
 
-      {!progress && hasQuestions(data) && <NextCard data={data} />}
+      {!progress && hasQuestions(data) && data.resume && <NextCard data={data} />}
+      {hasQuestions(data) && <GoalStrip data={data} onGoal={onGoal} cta={!progress && !data.resume && !early} />}
+      {early && <FirstDay data={data} />}
 
       {!progress && (
         <section aria-labelledby="banks-h" className="home-banks">
@@ -117,6 +141,7 @@ export function Body({ data, name, coachHidden, onShowCoach, progress }: { data:
 
       {!hasQuestions(data) && <p className="demo"><i />Questions coming soon. Your stats fill in as you practise.</p>}
 
+      {!early && <>
       <section className="kpis" aria-label="Your numbers">
         <div className="kpi">
           <h2><span className="kpi-ic" style={{ color: "var(--blue)" }}><Icon name="practice" /></span>Answered</h2>
@@ -145,74 +170,16 @@ export function Body({ data, name, coachHidden, onShowCoach, progress }: { data:
         )}
       </section>
 
+      <Stand data={data} />
+
       {!progress && <CoachStrip data={data} />}
 
       <section className="box" aria-labelledby="prog-h">
         <BarChart daily={data.daily} />
       </section>
 
-      <section className="box" aria-labelledby="subj-h">
-        <div className="panel-h">
-          <h2 id="subj-h">Subjects</h2>
-        </div>
-        <ul className="m-list show-m">
-          {data.subjects.map((s) => {
-            const t = sumChapters(s);
-            const acc = pct(t.correct, t.answered);
-            const p = paper.find((x) => x.subject === s.subject)!;
-            const b = t.answered ? band(acc) : { cls: "", word: t.available ? "Not started" : "Coming soon" };
-            return (
-              <li key={s.subject}>
-                <a href={`/practice?subject=${encodeURIComponent(s.subject)}`}>
-                  <span className="row-ic" style={{ background: p.tone, color: p.solid }}>{s.subject[0]}</span>
-                  <span className="m-main">
-                    <b>{s.subject}</b>
-                    <span className="meter" style={{ ["--c" as string]: p.solid }} role="img" aria-label={`${pct(t.answered, t.available)}% answered`}><i style={{ width: `${pct(t.answered, t.available)}%` }} /></span>
-                    <span className="muted">{t.answered} answered · {p.count} on the paper</span>
-                  </span>
-                  <span className="m-side">
-                    <b>{t.answered ? `${acc}%` : "–"}</b>
-                    <span className={`status-chip ${b.cls}`}><i />{b.word}</span>
-                  </span>
-                </a>
-              </li>
-            );
-          })}
-        </ul>
-        <div className="table-scroll hide-m">
-          <table className="dtable">
-            <thead>
-              <tr><th scope="col">Subject</th><th scope="col" className="num">On paper</th><th scope="col" className="num">Answered</th><th scope="col" className="num">Accuracy</th><th scope="col" className="cover-h">Coverage</th></tr>
-            </thead>
-            <tbody>
-              {data.subjects.map((s) => {
-                const t = sumChapters(s);
-                const acc = pct(t.correct, t.answered);
-                const p = paper.find((x) => x.subject === s.subject)!;
-                const b = t.answered ? band(acc) : { cls: "", word: t.available ? "Not started" : "Coming soon" };
-                return (
-                  <tr key={s.subject}>
-                    <th scope="row">
-                      <a className="row-link" href={`/practice?subject=${encodeURIComponent(s.subject)}`}>
-                        <span className="row-ic" style={{ background: p.tone, color: p.solid }}>{s.subject[0]}</span>
-                        {s.subject}
-                        <span className={`status-chip ${b.cls}`}><i />{b.word}</span>
-                      </a>
-                    </th>
-                    <td className="num">{p.count}</td>
-                    <td className="num">{t.answered.toLocaleString("en-GB")}</td>
-                    <td className="num"><b>{t.answered ? `${acc}%` : "–"}</b></td>
-                    <td className="cover"><div>
-                      <span className="meter" style={{ ["--c" as string]: p.solid }} role="img" aria-label={`${pct(t.answered, t.available)}% of ${s.subject} answered`}><i style={{ width: `${pct(t.answered, t.available)}%` }} /></span>
-                      <span className="muted">{pct(t.answered, t.available)}%</span>
-                    </div></td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </section>
+
+      <Subjects data={data} onBank={onBank} />
 
       <section className="box" aria-labelledby="recent-h">
         <div className="panel-h">
@@ -263,6 +230,7 @@ export function Body({ data, name, coachHidden, onShowCoach, progress }: { data:
         </div>
         </>}
       </section>
+      </>}
     </div>
   );
 }
@@ -283,7 +251,6 @@ function coachTips(data: Data, mockReady: boolean) {
 }
 
 function Coach({ data, onHide }: { data: Data; onHide: () => void }) {
-  const today = data.daily.at(-1)?.answered ?? 0;
   const tips = coachTips(data, useMockReady());
 
   return (
@@ -299,22 +266,8 @@ function Coach({ data, onHide }: { data: Data; onHide: () => void }) {
             <li key={t.label}><a href={t.href}><span style={{ color: t.tone }}><Icon name={t.icon} size={16} /></span><b>{t.label}</b><Icon name="chevron" size={16} /></a></li>
           ))}
         </ul>
-        <Goal today={today} goal={data.dailyGoal} />
       </div>
     </aside>
-  );
-}
-
-function Goal({ today, goal }: { today: number; goal: number }) {
-  return (
-    <div className="goal">
-      <div className="goal-h">
-        <span><Icon name="flame" size={16} />Today</span>
-        <b>{today} / {goal}</b>
-      </div>
-      <span className="meter" role="img" aria-label={`${today} of ${goal} questions today`}><i style={{ width: `${Math.min(100, pct(today, goal))}%` }} /></span>
-      <p className="muted small">{today >= goal ? "Daily goal done. Anything more is a bonus." : `${goal - today} more questions to hit your daily goal.`}</p>
-    </div>
   );
 }
 
@@ -332,7 +285,6 @@ function CoachStrip({ data }: { data: Data }) {
           <li key={t.label}><a href={t.href}><span style={{ color: t.tone }}><Icon name={t.icon} size={18} /></span>{t.label}</a></li>
         ))}
       </ul>
-      <Goal today={data.daily.at(-1)?.answered ?? 0} goal={data.dailyGoal} />
     </section>
   );
 }
