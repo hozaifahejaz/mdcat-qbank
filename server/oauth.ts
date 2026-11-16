@@ -118,3 +118,64 @@ export async function finishOAuth(env: Env, request: Request, provider: Provider
     next: saved.n,
   };
 }
+
+/* ---------- Google sign-in from the Android app ----------
+   The app gets an ID token straight from Google on the phone and sends it here. Unlike the browser flow above, the
+   token reaches us from the phone, not from Google, so its signature is checked against Google's published keys. */
+
+const GOOGLE_CERTS = "https://www.googleapis.com/oauth2/v3/certs";
+type Jwk = JsonWebKey & { kid?: string };
+let googleKeys: { at: number; keys: Jwk[] } | null = null;
+
+async function googleKey(kid: string, fetchKeys: () => Promise<Jwk[]>): Promise<Jwk | undefined> {
+  // Kept for an hour; fetched again early when Google has rotated to a key we haven't seen.
+  if (!googleKeys || Date.now() - googleKeys.at > 60 * 60 * 1000 || !googleKeys.keys.some((k) => k.kid === kid)) {
+    googleKeys = { at: Date.now(), keys: await fetchKeys() };
+  }
+  return googleKeys.keys.find((k) => k.kid === kid);
+}
+
+const defaultFetchKeys = async (): Promise<Jwk[]> => {
+  const res = await fetch(GOOGLE_CERTS);
+  if (!res.ok) throw fail(502, "oauth_keys", "Sign-in didn't complete. Please try again.");
+  return ((await res.json()) as { keys?: Jwk[] }).keys ?? [];
+};
+
+function b64urlBytes(part: string): Uint8Array {
+  const b64 = part.replace(/-/g, "+").replace(/_/g, "/").padEnd(Math.ceil(part.length / 4) * 4, "=");
+  return Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+}
+
+/* Checks an ID token from the app and returns who it is. `fetchKeys` is only replaced in tests. */
+export async function verifyGoogleIdToken(env: Env, idToken: string, fetchKeys: () => Promise<Jwk[]> = defaultFetchKeys): Promise<OAuthProfile> {
+  const bad = () => fail(400, "oauth_token", "Google sign-in didn't complete. Please try again.");
+  const parts = idToken.split(".");
+  if (parts.length !== 3) throw bad();
+  let header: { alg?: string; kid?: string };
+  let claims: Record<string, unknown>;
+  try {
+    header = JSON.parse(new TextDecoder().decode(b64urlBytes(parts[0]!)));
+    claims = decodeJwtPayload(idToken);
+  } catch {
+    throw bad();
+  }
+  if (header.alg !== "RS256" || !header.kid) throw bad();
+  const jwk = await googleKey(header.kid, fetchKeys);
+  if (!jwk) throw bad();
+  const key = await crypto.subtle.importKey("jwk", { kty: jwk.kty, n: jwk.n, e: jwk.e, alg: "RS256", ext: true }, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["verify"]);
+  const ok = await crypto.subtle.verify("RSASSA-PKCS1-v1_5", key, b64urlBytes(parts[2]!), enc.encode(`${parts[0]}.${parts[1]}`));
+  if (!ok) throw bad();
+  const iss = String(claims.iss);
+  if (claims.aud !== env.GOOGLE_CLIENT_ID || (iss !== "https://accounts.google.com" && iss !== "accounts.google.com")) throw bad();
+  if (typeof claims.sub !== "string" || !(Number(claims.exp) * 1000 > Date.now())) throw bad();
+  const verified = claims.email_verified === true || claims.email_verified === "true";
+  return {
+    subject: claims.sub,
+    email: typeof claims.email === "string" ? claims.email.toLowerCase() : null,
+    emailVerified: verified,
+    name: String(claims.name ?? "").slice(0, 80),
+  };
+}
+
+/* Only for tests: forget the cached keys. */
+export const resetGoogleKeys = () => { googleKeys = null; };

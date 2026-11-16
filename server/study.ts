@@ -24,7 +24,7 @@ const PKT = 5 * HOUR;
 const GRACE = 30 * 1000;
 export const MOCKS = 12;
 /* New questions an account can be given in 24 hours: a full mock and a long day's practice, with room to spare. */
-const DAILY_QUESTIONS = 500;
+export const DAILY_QUESTIONS = 500;
 const STARTS_PER_HOUR = 15;
 const MINI_SPLIT = [13, 8, 6, 2, 1]; // 30 questions in the paper's proportions
 const subjects = paper.map((p) => p.subject);
@@ -33,11 +33,11 @@ type Kind = "practice" | "timed" | "mock" | "mini-mock" | "past-paper";
 type Mode = "tutor" | "timed" | "mock";
 const modeOf: Record<Kind, Mode> = { practice: "tutor", timed: "timed", mock: "mock", "mini-mock": "mock", "past-paper": "mock" };
 
-type Served = {
+export type Served = {
   id: string; subject: string; chapter: string; topic: string; difficulty: string; source: string; stem: string;
   options: string; answer: number; why: string; wrong: string; free: number; paper: number | null; open_reports: number;
 };
-type AttemptRow = {
+export type AttemptRow = {
   id: string; user_id: string; kind: Kind; mode: Mode; title: string; question_ids: string; mock_no: number | null;
   paper: number | null; started_at: number; deadline_at: number | null; finished_at: number | null; seconds: number | null;
   score: number | null; total: number;
@@ -48,7 +48,7 @@ const parse = <T>(s: string, fallback: T): T => { try { return JSON.parse(s) as 
 
 /* What a student sees while answering, and what they see once the answer is out. */
 const ask = (r: Served) => ({ id: r.id, subject: r.subject, chapter: r.chapter, topic: r.topic, stem: r.stem, options: parse<string[]>(r.options, []) });
-const full = (r: Served) => ({ ...ask(r), difficulty: r.difficulty, source: r.source, answer: r.answer, why: r.why, wrong: parse<Record<number, string>>(r.wrong, {}) });
+export const full = (r: Served) => ({ ...ask(r), difficulty: r.difficulty, source: r.source, answer: r.answer, why: r.why, wrong: parse<Record<number, string>>(r.wrong, {}) });
 
 /* Who's asking, and which questions their plan opens: everything for a pass, the free set otherwise. */
 async function student(c: Ctx, active: boolean) {
@@ -91,7 +91,7 @@ async function idsBySubject(db: D1Database, pool: string) {
 
 /* Questions sitting in one of the student's open timed tests or mocks. Their keys stay shut everywhere else
    (practice, bookmarks, mistakes) until that test is submitted. Binds the user id once. */
-const IN_OPEN_TEST = `SELECT x.question_id FROM answers x JOIN attempts t ON t.id = x.attempt_id
+export const IN_OPEN_TEST = `SELECT x.question_id FROM answers x JOIN attempts t ON t.id = x.attempt_id
   WHERE t.user_id = ? AND t.finished_at IS NULL AND t.mode != 'tutor'`;
 /* Practice sets left open this long are closed as they stand. */
 const STALE_PRACTICE = 7 * DAY;
@@ -99,7 +99,7 @@ const STALE_PRACTICE = 7 * DAY;
 /* ---------- Finishing a test ---------- */
 
 /* Marks a test done: every unanswered timed question counts as skipped, and the score is read against the keys. */
-async function finish(db: D1Database, a: AttemptRow, at: number) {
+export async function finish(db: D1Database, a: AttemptRow, at: number) {
   const end = a.deadline_at ? Math.min(at, a.deadline_at) : at;
   const marks = db
     .prepare(`SELECT count(*) AS asked, sum(CASE WHEN a.answer = s.answer THEN 1 ELSE 0 END) AS right
@@ -198,7 +198,7 @@ const FILTERS = ["unused", "incorrect", "marked", "omitted", "correct"] as const
 type Filter = (typeof FILTERS)[number];
 
 /* Which questions a practice set draws from: a bank, then subjects, chapters or a topic of it. */
-function scope(b: Record<string, unknown>, pool: string) {
+export function scope(b: Record<string, unknown>, pool: string) {
   const bank = bankById(str(b.bank, 10)) ?? bankById("mdcat")!;
   const where: string[] = ["bank = ?", `open_reports < ${REPORT_HIDE}${pool}`];
   const args: unknown[] = [bank.id];

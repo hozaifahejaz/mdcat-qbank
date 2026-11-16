@@ -27,7 +27,22 @@ const family = (ua: string | null) => (ua ?? "").replace(/[\d._]+/g, "").replace
 export const note = (db: D1Database, userId: string, kind: string, detail = "") =>
   db.prepare("INSERT INTO security_events (user_id, kind, detail, created_at) VALUES (?, ?, ?, ?)").bind(userId, kind, detail.slice(0, 300), Date.now());
 
-export async function createSession(db: D1Database, userId: string, request: Request): Promise<string> {
+/* A new or replaced session: the secret itself (the app keeps it and sends it as a Bearer token), the cookie that carries
+   it for the website, and when it ends. */
+export type NewSession = { token: string; cookie: string; expiresAt: number };
+
+/* Requests from the Android app say so in a header. They carry the session as "Authorization: Bearer", not a cookie. */
+export const isApp = (request: Request) => request.headers.get("x-client") === "android";
+export const appVersion = (request: Request) => {
+  const v = Number(request.headers.get("x-app-version"));
+  return Number.isInteger(v) && v > 0 ? v : null;
+};
+export function bearer(request: Request): string | null {
+  const m = /^Bearer\s+([A-Za-z0-9_-]{16,200})$/.exec(request.headers.get("authorization") ?? "");
+  return m ? m[1]! : null;
+}
+
+export async function createSession(db: D1Database, userId: string, request: Request): Promise<NewSession> {
   const token = randomToken();
   const now = Date.now();
   const u = await db.prepare("SELECT role FROM users WHERE id = ?").bind(userId).first<{ role: string }>();
@@ -36,13 +51,14 @@ export async function createSession(db: D1Database, userId: string, request: Req
     .prepare("INSERT INTO sessions (id, user_id, created_at, last_seen_at, expires_at, user_agent, ip, ip_window) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
     .bind(await sha256(token), userId, now, now, now + life, agent(request), clientIp(request), now)
     .run();
-  return cookie(SESSION_COOKIE, token, { maxAge: life / 1000 });
+  return { token, cookie: cookie(SESSION_COOKIE, token, { maxAge: life / 1000 }), expiresAt: now + life };
 }
 
 export const clearSessionCookie = () => cookie(SESSION_COOKIE, "", { maxAge: 0 });
 
 export async function getSession(db: D1Database, request: Request): Promise<Session | null> {
-  const token = readCookie(request, SESSION_COOKIE);
+  // The app sends its secret as a Bearer token; the website's is in the cookie. Both are stored the same way.
+  const token = bearer(request) ?? readCookie(request, SESSION_COOKIE);
   if (!token) return null;
   const id = await sha256(token);
   const s = await db
@@ -93,12 +109,12 @@ export async function watchSession(db: D1Database, s: Session, request: Request)
 }
 
 /* Swap the session's secret for a new one. Any copy of the old cookie stops working. */
-export async function rotateSession(db: D1Database, s: Session): Promise<string> {
+export async function rotateSession(db: D1Database, s: Session): Promise<NewSession> {
   const token = randomToken();
   const id = await sha256(token);
   await db.batch([
     db.prepare("UPDATE sessions SET id = ? WHERE id = ?").bind(id, s.id),
     db.prepare("UPDATE users SET active_session_id = ? WHERE id = ? AND active_session_id = ?").bind(id, s.user_id, s.id),
   ]);
-  return cookie(SESSION_COOKIE, token, { maxAge: Math.max(60, Math.round((s.expires_at - Date.now()) / 1000)) });
+  return { token, cookie: cookie(SESSION_COOKIE, token, { maxAge: Math.max(60, Math.round((s.expires_at - Date.now()) / 1000)) }), expiresAt: s.expires_at };
 }

@@ -102,6 +102,10 @@ function AccountBody({ me }: { me: AccountUser }) {
         <p className="muted">Signing out here frees this device&apos;s slot for your other one.</p>
         <button type="button" className="dpill light small" onClick={async () => { await signOut(); window.location.replace("/"); }}>Sign out</button>
       </section>
+
+      {user.role === "student" && (
+        <p className="muted small">Want to leave for good? <a href="/account/delete">Delete your account</a></p>
+      )}
     </div>
   );
 }

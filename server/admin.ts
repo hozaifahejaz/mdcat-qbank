@@ -576,6 +576,8 @@ const userRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
     }
     await c.db.batch([
       c.db.prepare("UPDATE users SET plan = ?, plan_expires_at = ? WHERE id = ?").bind(plan, expires, u.id),
+      // Taking a pass away also ends the account's offline downloads.
+      ...(plan === "free" ? [c.db.prepare("UPDATE packs SET revoked_at = ? WHERE user_id = ? AND revoked_at IS NULL").bind(Date.now(), u.id)] : []),
       log(c.db, me, "user.plan", u.id, `${u.plan} → ${plan}${expires ? ` until ${new Date(expires).toISOString().slice(0, 10)}` : ""}`),
     ]);
     return json({ user: presentUser(await targetUser(c.db, u.id)) });
@@ -590,6 +592,7 @@ const userRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
     await guardOwner(c.db, me, u.id);
     await c.db.batch([
       c.db.prepare("UPDATE devices SET removed_at = ? WHERE user_id = ? AND removed_at IS NULL").bind(Date.now(), u.id),
+      c.db.prepare("UPDATE packs SET revoked_at = ? WHERE user_id = ? AND revoked_at IS NULL").bind(Date.now(), u.id),
       c.db.prepare("UPDATE users SET active_session_id = NULL, active_device_id = NULL WHERE id = ?").bind(u.id),
       c.db.prepare("DELETE FROM sessions WHERE user_id = ?").bind(u.id),
       log(c.db, me, "user.reset_devices", u.id, `${u.devices} device${u.devices === 1 ? "" : "s"} cleared`),

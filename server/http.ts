@@ -38,6 +38,11 @@ export const str = (v: unknown, max = 500): string => (typeof v === "string" ? v
    and it must be ours. The session cookie is also SameSite=Lax, so this is the second lock, not the only one. */
 export function assertSameOrigin(request: Request): void {
   if (request.headers.get("origin") !== new URL(request.url).origin) throw fail(403, "bad_origin", "Request blocked.");
+  assertJson(request);
+}
+
+/* Requests that change something must be JSON. */
+export function assertJson(request: Request): void {
   const type = (request.headers.get("content-type") ?? "").split(";")[0]!.trim().toLowerCase();
   if (type !== "application/json") throw fail(415, "bad_type", "Expected JSON.");
 }

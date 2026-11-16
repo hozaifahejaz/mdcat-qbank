@@ -3,6 +3,11 @@ name: Deploy to Cloudflare Pages
 # main goes to production. Any other branch gets its own preview at <branch>.mdcat-qbank.pages.dev.
 on:
   push:
+    # The Android app has its own workflow (android.yml); a push that only changes it leaves the site alone.
+    paths-ignore:
+      - "android/**"
+      - ".github/workflows/android.yml"
+      - ".github/workflows/android-release.yml"
   workflow_dispatch:
 
 jobs:
