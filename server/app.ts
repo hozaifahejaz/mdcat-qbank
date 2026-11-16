@@ -29,6 +29,8 @@ export const appRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
       paper: paper.map((p) => ({ subject: p.subject, count: p.count })),
       offline: { enabled: offlineEnabled(env), maxQuestions: OFFLINE_MAX, leaseDays: OFFLINE_LEASE_DAYS },
       integrity: { cloudProjectNumber: env.PLAY_CLOUD_PROJECT_NUMBER ? Number(env.PLAY_CLOUD_PROJECT_NUMBER) : null },
+      // The website's Google client ID: the app asks Google for an ID token made out to it (POST /api/auth/google/native).
+      google: { webClientId: env.GOOGLE_CLIENT_ID ?? null },
       support: { email: site.supportEmail, whatsapp: site.whatsapp, site: site.url },
     });
   },
