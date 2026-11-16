@@ -2,15 +2,16 @@ import Logo from "@/components/Logo";
 import Reveal from "@/components/Reveal";
 import SampleQuestion from "@/components/SampleQuestion";
 import ThemeToggle from "@/components/ThemeToggle";
-import Waitlist from "@/components/Waitlist";
+import BankSize from "@/components/BankSize";
 import { paper, prices, site } from "@/lib/site";
 import "./landing.css";
 
-/* Every test on the roadmap (docs/plan.md, "Phased roadmap"). Only MDCAT is live; the rest are labelled coming soon. */
+/* Every test on the roadmap (docs/plan.md, "Phased roadmap"). The three medical tests have their own banks
+   (lib/banks.ts); the rest are labelled coming soon. */
 const tests = [
   { name: "PMDC MDCAT", field: "Medical", live: true },
-  { name: "NUMS MDCAT", field: "Medical" },
-  { name: "AKU test", field: "Medical" },
+  { name: "NUMS MDCAT", field: "Medical", live: true },
+  { name: "AKU test", field: "Medical", live: true },
   { name: "ECAT", field: "Engineering" },
   { name: "NUST NET", field: "Engineering" },
   { name: "LAT", field: "Law" },
@@ -18,10 +19,10 @@ const tests = [
 
 const faqs = [
   { q: "Is this a coaching course?", a: "No. It's a practice tool: MCQs, explanations, timed mocks and past papers. Most students use it alongside their academy or self-study, and it costs a fraction of a course." },
-  { q: "Where do the questions come from?", a: "Our own subject experts write them from the PMDC syllabus and the textbooks it's based on. Past-paper questions are rebuilt in our own words with our own explanations. Nothing is copied from academy books or other apps." },
-  { q: "What if I find a mistake?", a: "Tap \"Report\" on the question. We answer every report within 48 hours, and if we were wrong we fix the question for everyone and correct your stats." },
-  { q: "How do I pay?", a: "JazzCash, Easypaisa, debit or credit card, or bank transfer. It's a one-time payment for the season, with no renewal." },
-  { q: "Do you cover NUMS, AKU or other tests?", a: "PMDC MDCAT first. NUMS is next, and we'll add other university tests after that." },
+  { q: "Where do the questions come from?", a: "Every question is written for this bank from the PMDC syllabus and the textbooks it's based on, then checked against the textbook. Past-paper questions are rebuilt in our own words with our own explanations. Nothing is copied from academy books or other apps." },
+  { q: "What if I find a mistake?", a: "Tap \"Report\" on the question. A reviewer checks every report, and if we were wrong we fix the question for everyone." },
+  { q: "How do I pay?", a: site.payments ? "JazzCash, Easypaisa, debit or credit card, or bank transfer. It's a one-time payment for the season, with no renewal." : "Payments open soon: JazzCash, Easypaisa, debit or credit card, or bank transfer, as a one-time payment with no renewal. The free questions are open now." },
+  { q: "Do you cover NUMS, AKU or other tests?", a: "Yes. One account covers PMDC MDCAT, NUMS MDCAT and the AKU test, and you can also practise by FSc textbook chapter. Engineering and law tests come later." },
   { q: "Are you affiliated with PMDC?", a: `No. ${site.name} is independent and not affiliated with PMDC, NUMS or any university.` },
 ];
 
@@ -60,9 +61,10 @@ export default function Home() {
                 Chapter-wise MDCAT questions, every one explained, and timed mocks built like the real paper.
               </p>
               <div className="ctas">
-                <a className="pill pill-dark" href="#try">Try a question</a>
-                <a className="pill pill-light" href="#pricing">See pricing</a>
+                <a className="pill pill-dark" href="/signup">Start free</a>
+                <a className="pill pill-light" href="#try">Try a question</a>
               </div>
+              <BankSize />
               <div className="who" aria-label="Questions per subject on the paper">
                 <span className="who-h muted">On the paper</span>
                 {paper.map((p) => (
@@ -74,7 +76,7 @@ export default function Home() {
           </header>
 
           <section className="tests" aria-labelledby="tests-h">
-            <p className="tests-h muted" id="tests-h">MDCAT now. More tests every season.</p>
+            <p className="tests-h muted" id="tests-h">Three medical tests now. More every season.</p>
             <div className="marquee">
               <ul className="marquee-track">
                 {[0, 1].map((copy) => tests.map((t) => (
@@ -123,14 +125,14 @@ export default function Home() {
           <section id="pricing">
             <div className="center rv">
               <h2>One payment. The whole season.</h2>
-              <p className="muted">No subscription. A season pass lasts until the {site.examMonth} MDCAT.{!site.launched && " Payments open soon."}</p>
+              <p className="muted">No subscription. A season pass lasts until the {site.examMonth} MDCAT.{!site.payments && " Payments open soon."}</p>
             </div>
             <div className="plans">
               <div className="card plan rv">
                 <h3>Free</h3>
                 <div className="price"><small>Rs.</small><b>0</b></div>
                 <ul>
-                  <li>{site.launched ? "A free set of questions in every subject" : "Free questions in every subject, from launch"}</li>
+                  <li>100 free questions across every subject</li>
                   <li>One mini mock</li>
                   <li>Basic progress stats</li>
                 </ul>
@@ -144,6 +146,7 @@ export default function Home() {
                 <ul>
                   <li className="plus">Everything in Free, plus</li>
                   <li>The full question bank, every chapter</li>
+                  <li>MDCAT, NUMS and AKU banks</li>
                   <li>Full-length timed mocks</li>
                   <li>Past papers by year</li>
                   <li>Chapter-by-chapter dashboard</li>
@@ -217,20 +220,11 @@ export default function Home() {
 
           <div className="final rv" id="join">
             <h2>Start practising before MDCAT {site.season}.</h2>
-            {site.launched ? (
-              <>
-                <p>Make a free account and try the questions.</p>
-                <div className="ctas">
-                  <a className="pill pill-dark" href="/signup">Start free</a>
-                  <a className="pill pill-light" href="#try">Try a question</a>
-                </div>
-              </>
-            ) : (
-              <>
-                <p>The question bank opens soon. Leave your email or number and we&apos;ll tell you the day it does.</p>
-                <Waitlist />
-              </>
-            )}
+            <p>Make a free account and try the questions.</p>
+            <div className="ctas">
+              <a className="pill pill-dark" href="/signup">Start free</a>
+              <a className="pill pill-light" href="#try">Try a question</a>
+            </div>
           </div>
         </div>
       </main>

@@ -57,6 +57,7 @@ export default function Users({ user: me }: { user: AccountUser }) {
   return (
     <div className="dgrid">
       <PageHead title="Users and plans" sub="Find an account to change its plan or role, or clear its devices.">
+        <a className="dpill light small" href="/api/admin/users/export" download>Download CSV</a>
         <button type="button" className="dpill dark small" onClick={() => setSel("new")}>Add account</button>
       </PageHead>
       <div className="q-head">
@@ -146,6 +147,14 @@ function Detail({ id, me, onClose, onChanged }: { id: string; me: AccountUser; o
         <div><dt>Last seen</dt><dd>{u.lastSeen ? fullDay(u.lastSeen) : "–"}</dd></div>
         <div><dt>Account ID</dt><dd><code className="small">{u.id}</code></dd></div>
       </dl>
+      {d.study && (
+        <dl className="kpis three">
+          <div><dt>Answered</dt><dd>{d.study.answered.toLocaleString("en-GB")}</dd></div>
+          <div><dt>Right</dt><dd>{d.study.answered ? `${Math.round((d.study.correct / d.study.answered) * 100)}%` : "–"}</dd></div>
+          <div><dt>Tests</dt><dd>{d.study.tests}</dd></div>
+        </dl>
+      )}
+      {d.study && <p className="muted small">{d.study.lastAnswer ? `Last answered a question on ${fullDay(d.study.lastAnswer)}.` : "Has not answered a question yet."}</p>}
       {err && <p className="note-bad" role="alert">{err}</p>}
       {locked && <p className="note-warn">This is the owner&apos;s account. Only the owner can change it.</p>}
 

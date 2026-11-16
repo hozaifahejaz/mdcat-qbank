@@ -4,6 +4,7 @@ import { hashPassword } from "./crypto";
 import { requireSession } from "./session";
 import { createUser, userByEmail } from "./users";
 import { visitSummary } from "./visits";
+import { keptActivity } from "./insights";
 
 /* The admin panel's API (/api/admin/*). Every route checks the caller's role here, on the server; the panel hiding
    buttons is only for convenience. Writers add and edit their own drafts, reviewers run the blind solve and the
@@ -147,6 +148,14 @@ const questionRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
     else if (stageIds.includes(view as StageId)) { where.push("q.stage = ?"); args.push(view); }
     const subject = str(p.get("subject"), 40);
     if (subjectCodes[subject]) { where.push("q.subject = ?"); args.push(subject); }
+    // Narrower filters, for working through thousands of questions: one chapter, the free set, a past paper.
+    const chapter = str(p.get("chapter"), 120);
+    if (chapter) { where.push("q.chapter = ?"); args.push(chapter); }
+    const free = p.get("free");
+    if (free === "1" || free === "0") where.push(`q.free = ${free}`);
+    const paperYear = p.get("paper");
+    if (paperYear === "any") where.push("q.paper IS NOT NULL");
+    else if (paperYear && Number.isInteger(Number(paperYear))) { where.push("q.paper = ?"); args.push(Number(paperYear)); }
     const search = str(p.get("q"), 100).replace(/[%_]/g, "");
     if (search) { where.push("(q.id LIKE ? OR q.stem LIKE ? OR q.topic LIKE ? OR w.name LIKE ?)"); args.push(...Array(4).fill(`%${search}%`)); }
     const offset = Math.max(0, Number(p.get("offset")) || 0);
@@ -346,6 +355,33 @@ const questionRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
     return json({ question: present(await getQuestion(c.db, r.id), me) });
   },
 
+  /* The same publishing switches for many questions at once: in or out of the free set, a past-paper year, and
+     whether they count as on the MDCAT syllabus. Only what's sent is changed. */
+  "POST /api/admin/questions/bulk": async (c) => {
+    const me = await admin(c);
+    const b = await body(c.request);
+    const ids = [...new Set((Array.isArray(b.ids) ? b.ids : []).filter((x): x is string => typeof x === "string" && x.length <= 20))].slice(0, 500);
+    if (!ids.length) throw fail(400, "no_questions", "Tick some questions first.");
+    const sets: string[] = [];
+    const args: unknown[] = [];
+    const said: string[] = [];
+    if (typeof b.free === "boolean") { sets.push("free = ?"); args.push(b.free ? 1 : 0); said.push(b.free ? "into the free set" : "out of the free set"); }
+    if (typeof b.mdcat === "boolean") { sets.push("mdcat = ?"); args.push(b.mdcat ? 1 : 0); said.push(b.mdcat ? "on the MDCAT syllabus" : "off the MDCAT syllabus"); }
+    if (b.paper === null || typeof b.paper === "number") {
+      const year = b.paper as number | null;
+      if (year !== null && !(Number.isInteger(year) && year >= 2000 && year <= 2100)) throw fail(400, "bad_year", "Pick a past-paper year, or none.");
+      sets.push("paper = ?"); args.push(year); said.push(year ? `past paper ${year}` : "no past paper");
+    }
+    if (!sets.length) throw fail(400, "nothing", "Pick what to change.");
+    const res = await c.db.batch([
+      c.db.prepare(`UPDATE questions SET ${sets.join(", ")} WHERE id IN (SELECT value FROM json_each(?))`).bind(...args, JSON.stringify(ids)),
+      log(c.db, me, "question.bulk", ids.length === 1 ? ids[0]! : `${ids.length} questions`, `${said.join(", ")}: ${ids.slice(0, 12).join(", ")}${ids.length > 12 ? "…" : ""}`.slice(0, 480)),
+      c.db.prepare("SELECT count(*) AS n FROM questions WHERE id IN (SELECT value FROM json_each(?))").bind(JSON.stringify(ids)),
+    ]);
+    // Not meta.changes: that also counts the rows the bank_version triggers touch.
+    return json({ ok: true, changed: (res[2]!.results[0] as { n: number }).n });
+  },
+
   /* A question's history. Writers see it for their own questions only. While a question waits for its blind solve,
      nobody but its writer sees the history: earlier lines can name the key ("Picked A, key C"). */
   "GET /api/admin/questions/log": async (c) => {
@@ -374,7 +410,7 @@ const reportRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
           u.name AS student, x.name AS resolver, q.stem, q.stage, q.subject
         FROM reports r LEFT JOIN users u ON u.id = r.user_id LEFT JOIN users x ON x.id = r.resolved_by LEFT JOIN questions q ON q.id = r.question_id
         WHERE ${status === "open" ? "r.status = 'open'" : "r.status != 'open'"}
-        ORDER BY ${status === "open" ? "r.created_at ASC" : "r.resolved_at DESC"} LIMIT 200`)
+        ORDER BY ${status === "open" ? "(SELECT count(*) FROM reports o WHERE o.question_id = r.question_id AND o.status = 'open') DESC, r.question_id, r.created_at ASC" : "r.resolved_at DESC"} LIMIT 200`)
       .all();
     return json({ reports: results });
   },
@@ -456,20 +492,27 @@ const userRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
     await admin(c);
     const id = str(new URL(c.request.url).searchParams.get("id"), 64);
     const u = await targetUser(c.db, id);
-    const [devices, identities, logRows, takeovers, notes, given] = await c.db.batch([
+    const [devices, identities, logRows, takeovers, notes, given, study, tests] = await c.db.batch([
       c.db.prepare("SELECT d.id, d.label, d.created_at, d.last_seen_at, (d.id = u.active_device_id) AS active FROM devices d JOIN users u ON u.id = d.user_id WHERE d.user_id = ? AND d.removed_at IS NULL ORDER BY d.created_at").bind(id),
       c.db.prepare("SELECT provider FROM identities WHERE user_id = ?").bind(id),
       c.db.prepare("SELECT l.action, l.detail, l.created_at, a.name AS actor FROM admin_log l LEFT JOIN users a ON a.id = l.actor_id WHERE l.target = ? ORDER BY l.id DESC LIMIT 30").bind(id),
       c.db.prepare("SELECT count(*) AS n FROM device_events WHERE user_id = ? AND kind = 'takeover' AND created_at > ?").bind(id, Date.now() - DAY),
       c.db.prepare("SELECT kind, detail, created_at FROM security_events WHERE user_id = ? ORDER BY id DESC LIMIT 20").bind(id),
       c.db.prepare("SELECT coalesce(max(count), 0) AS n FROM rate_limits WHERE key = ? AND window_start >= ?").bind(`given:${id}`, Date.now() - DAY),
+      // How much they have studied: questions answered (the latest answer to each), how many right, tests, last answer.
+      c.db.prepare(`SELECT count(*) AS answered, sum(CASE WHEN l.answer = q.answer THEN 1 ELSE 0 END) AS correct, max(l.at) AS last_at FROM (
+          SELECT question_id, answer, max(counted_at) AS at FROM answers WHERE user_id = ?1 AND counted_at IS NOT NULL AND answer IS NOT NULL GROUP BY question_id
+        ) l JOIN questions q ON q.id = l.question_id`).bind(id),
+      c.db.prepare("SELECT count(*) AS n FROM attempts WHERE user_id = ? AND finished_at IS NOT NULL AND total > 0").bind(id),
     ]);
+    const st = study!.results[0] as { answered: number; correct: number | null; last_at: number | null } | undefined;
     return json({
       user: presentUser(u),
       devices: (devices!.results as { active: number | null }[]).map((d) => ({ ...d, active: d.active === 1 })),
       methods: [...new Set((identities!.results as { provider: string }[]).map((r) => r.provider))],
       takeoversToday: (takeovers!.results[0] as { n: number }).n,
       questionsToday: (given!.results[0] as { n: number }).n,
+      study: { answered: st?.answered ?? 0, correct: st?.correct ?? 0, tests: (tests!.results[0] as { n: number }).n, lastAnswer: st?.last_at ? new Date(st.last_at).toISOString() : null },
       notes: notes!.results,
       log: logRows!.results,
     });
@@ -575,42 +618,44 @@ const overviewRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
   "GET /api/admin/overview": async (c) => {
     const me = await staff(c);
     const now = Date.now();
-    const [stagesRes, subjRes] = await c.db.batch([
+    const isAdmin = me.role === "admin";
+    // One trip for everything every role sees, and for admins one more (plus the kept numbers) alongside it.
+    const base = c.db.batch([
       c.db.prepare("SELECT stage, count(*) AS n FROM questions GROUP BY stage"),
       c.db.prepare("SELECT subject, count(*) AS n FROM questions WHERE stage = 'live' GROUP BY subject"),
+      c.db.prepare("SELECT count(*) AS n FROM questions WHERE writer_id = ? AND stage = 'draft' AND sent_back IS NOT NULL").bind(me.id),
+      c.db.prepare("SELECT count(*) AS n FROM questions WHERE stage = 'blind' AND blind_answer IS NULL AND writer_id != ?").bind(me.id),
+      c.db.prepare("SELECT count(DISTINCT question_id) AS n FROM reports WHERE status = 'open'"),
     ]);
+    const extra = !isAdmin ? null : c.db.batch([
+      c.db.prepare("SELECT count(*) AS total, sum(created_at > ?) AS week, sum(role != 'student') AS staff FROM users").bind(now - 7 * DAY),
+      c.db.prepare("SELECT plan, count(*) AS n FROM users WHERE plan != 'free' AND (plan_expires_at IS NULL OR plan_expires_at > ?) GROUP BY plan").bind(now),
+      c.db.prepare("SELECT l.action, l.target, l.detail, l.created_at, a.name AS actor FROM admin_log l LEFT JOIN users a ON a.id = l.actor_id ORDER BY l.id DESC LIMIT 15"),
+      c.db.prepare("SELECT count(*) AS n FROM waitlist"),
+      c.db.prepare(`SELECT e.user_id AS id, u.name, u.email, u.phone, e.kind, e.detail, max(e.created_at) AS at
+        FROM security_events e JOIN users u ON u.id = e.user_id WHERE e.created_at > ? GROUP BY e.user_id, e.kind ORDER BY at DESC LIMIT 20`).bind(now - 7 * DAY),
+    ]);
+    const [res, more, visits, growth] = await Promise.all([base, extra, isAdmin ? visitSummary(c.db) : null, isAdmin ? keptActivity(c.db).catch(() => null) : null]);
+    const n = (i: number) => (res[i]!.results[0] as { n: number } | undefined)?.n ?? 0;
     const byStage = Object.fromEntries(stageIds.map((s) => [s, 0])) as Record<StageId, number>;
-    (stagesRes!.results as { stage: StageId; n: number }[]).forEach((r) => { byStage[r.stage] = r.n; });
-    const liveBySubject = Object.fromEntries((subjRes!.results as { subject: string; n: number }[]).map((r) => [r.subject, r.n]));
-
-    const mine = await c.db.prepare("SELECT count(*) AS n FROM questions WHERE writer_id = ? AND stage = 'draft' AND sent_back IS NOT NULL").bind(me.id).first<{ n: number }>();
-    const waitingBlind = await c.db.prepare("SELECT count(*) AS n FROM questions WHERE stage = 'blind' AND blind_answer IS NULL AND writer_id != ?").bind(me.id).first<{ n: number }>();
-
-    const openReports = me.role === "writer" ? 0 : (await c.db.prepare("SELECT count(DISTINCT question_id) AS n FROM reports WHERE status = 'open'").first<{ n: number }>())?.n ?? 0;
+    (res[0]!.results as { stage: StageId; n: number }[]).forEach((r) => { byStage[r.stage] = r.n; });
+    const liveBySubject = Object.fromEntries((res[1]!.results as { subject: string; n: number }[]).map((r) => [r.subject, r.n]));
 
     let users = null;
-    let visits = null;
     let waitlist = 0;
     let activity: unknown[] = [];
     let watch: unknown[] = [];
-    if (me.role === "admin") {
-      const [u, plans, act] = await c.db.batch([
-        c.db.prepare("SELECT count(*) AS total, sum(created_at > ?) AS week, sum(role != 'student') AS staff FROM users").bind(now - 7 * DAY),
-        c.db.prepare("SELECT plan, count(*) AS n FROM users WHERE plan != 'free' AND (plan_expires_at IS NULL OR plan_expires_at > ?) GROUP BY plan").bind(now),
-        c.db.prepare("SELECT l.action, l.target, l.detail, l.created_at, a.name AS actor FROM admin_log l LEFT JOIN users a ON a.id = l.actor_id ORDER BY l.id DESC LIMIT 15"),
-      ]);
-      const t = u!.results[0] as { total: number; week: number | null; staff: number | null };
+    if (more) {
+      const t = more[0]!.results[0] as { total: number; week: number | null; staff: number | null };
       users = {
         total: t.total, newThisWeek: t.week ?? 0, staff: t.staff ?? 0,
-        paid: Object.fromEntries((plans!.results as { plan: string; n: number }[]).map((r) => [r.plan, r.n])),
+        paid: Object.fromEntries((more[1]!.results as { plan: string; n: number }[]).map((r) => [r.plan, r.n])),
       };
-      activity = act!.results;
-      visits = await visitSummary(c.db);
-      waitlist = (await c.db.prepare("SELECT count(*) AS n FROM waitlist").first<{ n: number }>())?.n ?? 0;
-      watch = (await c.db.prepare(`SELECT e.user_id AS id, u.name, u.email, u.phone, e.kind, e.detail, max(e.created_at) AS at
-        FROM security_events e JOIN users u ON u.id = e.user_id WHERE e.created_at > ? GROUP BY e.user_id, e.kind ORDER BY at DESC LIMIT 20`).bind(now - 7 * DAY).all()).results;
+      activity = more[2]!.results;
+      waitlist = (more[3]!.results[0] as { n: number } | undefined)?.n ?? 0;
+      watch = more[4]!.results;
     }
-    return json({ byStage, liveBySubject, sentBackToMe: mine?.n ?? 0, waitingBlind: waitingBlind?.n ?? 0, openReports, waitlist, users, visits, activity, watch });
+    return json({ byStage, liveBySubject, sentBackToMe: n(2), waitingBlind: n(3), openReports: me.role === "writer" ? 0 : n(4), waitlist, users, visits, activity, watch, growth: growth?.days ?? null });
   },
 };
 

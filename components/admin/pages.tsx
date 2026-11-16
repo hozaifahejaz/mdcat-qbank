@@ -1,6 +1,7 @@
 "use client";
 
 import AdminFrame from "@/components/admin/AdminFrame";
+import Bank from "@/components/admin/Bank";
 import Overview from "@/components/admin/Overview";
 import Questions from "@/components/admin/Questions";
 import Reports from "@/components/admin/Reports";
@@ -17,3 +18,4 @@ export const VisitorsPage = () => <AdminFrame active="/admin/visitors" adminOnly
 export const RevealPage = () => <AdminFrame active="/admin/reveal" adminOnly>{() => <RevealScreen />}</AdminFrame>;
 export const ReportsPage = () => <AdminFrame active="/admin/reports" reviewerOnly>{() => <Reports />}</AdminFrame>;
 export const WaitlistPage = () => <AdminFrame active="/admin/waitlist" adminOnly>{() => <Waitlist />}</AdminFrame>;
+export const BankPage = () => <AdminFrame active="/admin/bank">{(user) => <Bank user={user} />}</AdminFrame>;

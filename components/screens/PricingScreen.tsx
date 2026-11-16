@@ -14,7 +14,7 @@ const cards = [
     name: "Free",
     price: 0,
     per: "",
-    items: [site.launched ? "A free set in every subject" : "Free questions when the bank opens", "1 mini mock", "Basic stats"],
+    items: ["100 free questions", "1 mini mock", "Basic stats"],
     cta: { label: "Start free", href: "/signup" },
     tone: "var(--card)",
   },

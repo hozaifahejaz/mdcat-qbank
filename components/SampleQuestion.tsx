@@ -83,10 +83,13 @@ export default function SampleQuestion() {
               </ul>
             </div>
             <div className="res-foot">
+              {/* The subject goes with them, so the welcome screen can start their first set in it. */}
+              <a className="pill pill-dark small" href="/signup" onClick={() => { try { localStorage.setItem("start-subject", q.subject); } catch {} }}>
+                Practise more {q.subject}, free
+              </a>
               <button type="button" className="pill pill-light small" onClick={() => choose((at + 1) % samples.length)}>
                 Next question
               </button>
-              <span className="muted">Spot a mistake? Every question has a report button.</span>
             </div>
           </>
         )}

@@ -266,3 +266,10 @@ footer { border-top: 1px solid var(--line); padding-block: 40px; font-size: 0.93
   .navbar { flex-wrap: nowrap; border-radius: 999px; }
   .navbar ul { display: none; }
 }
+
+/* The bank in three facts, under the hero buttons. */
+.proof { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 18px; margin-top: 18px; font-size: 0.9375rem; color: var(--muted); min-height: 1.5em; }
+.proof span { display: inline-flex; align-items: center; gap: 6px; }
+.proof span + span::before { content: ""; width: 4px; height: 4px; border-radius: 50%; background: currentColor; opacity: 0.5; margin-right: 12px; }
+.proof b { color: var(--ink); font-weight: 800; font-variant-numeric: tabular-nums; }
+@media (max-width: 520px) { .proof { gap: 4px 12px; font-size: 0.875rem; } .proof span + span::before { margin-right: 6px; } }

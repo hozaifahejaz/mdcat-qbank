@@ -38,7 +38,7 @@ function Billing({ user }: { user: AccountUser }) {
           <p className="muted">
             {paid
               ? <>Full access{user.planExpiresAt ? <> until <b>{fullDay(user.planExpiresAt)}</b></> : null}. One payment, no renewal.</>
-              : site.launched ? "A free set of questions in every subject, one mini mock and basic stats." : "Free questions, one mini mock and basic stats once the bank opens."}
+              : "100 free questions across every subject, one mini mock and basic stats."}
           </p>
           <div className="hello-ctas">
             {user.plan !== "season" && <a className="dpill dark" href="/checkout?plan=season">{paid ? "Switch to" : "Get"} the Season Pass · {money(plans.season.price)}</a>}

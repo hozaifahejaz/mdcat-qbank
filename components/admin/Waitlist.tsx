@@ -18,11 +18,12 @@ export default function Waitlist() {
   return (
     <div className="dgrid">
       <PageHead title="Waitlist" sub="People who asked to hear when Examwise opens.">
+        {!!rows?.length && <a className="dpill light small" href="/api/admin/waitlist/export" download>Download CSV</a>}
         {!!rows?.length && <button type="button" className="dpill light small" onClick={copy}>Copy all</button>}
       </PageHead>
       {err && <p className="note-bad">{err}</p>}
       {!rows ? <div className="sk" style={{ height: 240 }} /> : !rows.length ? (
-        <section className="dcard panel"><Empty title="Nobody yet" text="Sign-ups from the landing page's waitlist form show up here." /></section>
+        <section className="dcard panel"><Empty title="Nobody yet" text="The landing page now sends people straight to sign-up, so this list only holds earlier entries." /></section>
       ) : (
         <section className="dcard panel">
           <table className="wl-table">

@@ -5,7 +5,7 @@ import { PageHead } from "@/components/app/AppShell";
 import Empty from "@/components/app/Empty";
 import { friendlyError } from "@/lib/auth";
 import {
-  type AdminQuestion, type LogEntry, type QuestionPage, actionNames, advanceQuestion, blindSolve, deleteQuestion, discardEdit, getQuestion, listQuestions,
+  type AdminQuestion, type LogEntry, type QuestionPage, actionNames, advanceQuestion, blindSolve, bulkQuestions, deleteQuestion, discardEdit, getQuestion, listQuestions,
   questionLog, saveQuestion, sendBack, setQuestionMeta,
 } from "@/lib/admin";
 import { subjects, syllabus } from "@/lib/bank";
@@ -36,6 +36,12 @@ export default function Questions({ user }: { user: AccountUser }) {
   const [subject, setSubject] = useState<Subject | "all">("all");
   const [search, setSearch] = useState("");
   const [query, setQuery] = useState("");
+  const [chapter, setChapter] = useState("");
+  const [free, setFree] = useState("");
+  const [paper, setPaper] = useState("");
+  // Admins can tick several questions and change their publishing switches together.
+  const [picked, setPicked] = useState<Set<string>>(() => new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
   const [sel, setSel] = useState<string | null>(null);
   // The open question when it isn't on the loaded page (opened by link, or just moved out of the current tab).
   const [extra, setExtra] = useState<AdminQuestion | null>(null);
@@ -44,7 +50,7 @@ export default function Questions({ user }: { user: AccountUser }) {
   const first = useRef(true);
 
   // The queue is filtered and paged on the server, 50 at a time, so it stays quick with thousands of questions.
-  const filters = useMemo(() => ({ view, subject: subject === "all" ? "" : subject, q: query }), [view, subject, query]);
+  const filters = useMemo(() => ({ view, subject: subject === "all" ? "" : subject, q: query, chapter: subject === "all" ? "" : chapter, free, paper }), [view, subject, query, chapter, free, paper]);
   const load = useCallback(() => listQuestions({ ...filters, offset: 0 }).then((d) => { setPage(d); setErr(""); return d; }, (e) => { setErr(friendlyError(e)); return null; }), [filters]);
   const loadMore = async () => {
     if (!page) return;
@@ -63,7 +69,12 @@ export default function Questions({ user }: { user: AccountUser }) {
       first.current = false;
       const p = new URLSearchParams(window.location.search);
       const st = p.get("stage") as View | null;
-      if (st && st !== view && (st === "all" || st === "mine" || stages.some((s) => s.id === st))) { setView(st); return; }
+      // Bank health links to one chapter with ?subject= and ?chapter=.
+      const sub = p.get("subject");
+      const newView = st && st !== view && (st === "all" || st === "mine" || stages.some((s) => s.id === st));
+      if (sub) { setSubject(sub as Subject); setChapter(p.get("chapter") ?? ""); }
+      if (newView) setView(st);
+      if (newView || sub) return;
       const id = p.get("id");
       if (p.get("new")) setSel("new");
       else if (id) { setSel(id); getQuestion(id).then(setExtra, (e) => setErr(friendlyError(e))); }
@@ -82,6 +93,21 @@ export default function Questions({ user }: { user: AccountUser }) {
     await load();
     setSel(q?.id ?? null);
     setToast(message);
+  };
+
+  const isAdmin = user.role === "admin";
+  const togglePick = (id: string) => setPicked((p) => { const n = new Set(p); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+  const bulk = async (change: Parameters<typeof bulkQuestions>[1], say: string) => {
+    if (!picked.size || bulkBusy) return;
+    setBulkBusy(true);
+    try {
+      const r = await bulkQuestions([...picked], change);
+      setPicked(new Set());
+      setExtra(null);
+      await load();
+      setToast(`${r.changed} question${r.changed === 1 ? "" : "s"} ${say}.`);
+    } catch (e) { setErr(friendlyError(e)); }
+    setBulkBusy(false);
   };
 
   // The "Auto checks" stage passes straight through, so it has no tab.
@@ -112,22 +138,53 @@ export default function Questions({ user }: { user: AccountUser }) {
         <aside className="dcard queue" aria-label="Questions">
           <div className="queue-f">
             <input type="search" placeholder="Search stem, ID, topic, writer" value={search} onChange={(e) => setSearch(e.target.value)} aria-label="Search" />
-            <select value={subject} onChange={(e) => setSubject(e.target.value as Subject | "all")} aria-label="Subject">
+            <select value={subject} onChange={(e) => { setSubject(e.target.value as Subject | "all"); setChapter(""); }} aria-label="Subject">
               <option value="all">All subjects</option>
               {subjects.map((s) => <option key={s}>{s}</option>)}
             </select>
+            {subject !== "all" && (
+              <select value={chapter} onChange={(e) => setChapter(e.target.value)} aria-label="Chapter">
+                <option value="">All chapters</option>
+                {syllabus[subject].map((ch) => <option key={ch}>{ch}</option>)}
+              </select>
+            )}
+            <div className="queue-f2">
+              <select value={free} onChange={(e) => setFree(e.target.value)} aria-label="Free set">
+                <option value="">Free and paid</option>
+                <option value="1">Free set only</option>
+                <option value="0">Pass only</option>
+              </select>
+              <select value={paper} onChange={(e) => setPaper(e.target.value)} aria-label="Past papers">
+                <option value="">Bank and past papers</option>
+                <option value="any">Past papers only</option>
+              </select>
+            </div>
+            {page && <p className="muted small queue-n">{page.total.toLocaleString("en-GB")} match{page.total === 1 ? "es" : ""}{isAdmin && list.length > 0 && <> · <button type="button" className="linkish" onClick={() => setPicked(picked.size === list.length ? new Set() : new Set(list.map((q) => q.id)))}>{picked.size === list.length ? "Untick all" : `Tick the ${list.length} shown`}</button></>}</p>}
           </div>
+          {isAdmin && picked.size > 0 && (
+            <div className="bulk" role="group" aria-label="Change the ticked questions">
+              <b>{picked.size} ticked</b>
+              <button type="button" className="dpill light small" disabled={bulkBusy} onClick={() => bulk({ free: true }, "added to the free set")}>Make free</button>
+              <button type="button" className="dpill light small" disabled={bulkBusy} onClick={() => bulk({ free: false }, "taken out of the free set")}>Pass only</button>
+              <button type="button" className="dpill light small" disabled={bulkBusy} onClick={() => bulk({ mdcat: true }, "put on the MDCAT syllabus")}>On MDCAT</button>
+              <button type="button" className="dpill light small" disabled={bulkBusy} onClick={() => bulk({ mdcat: false }, "taken off the MDCAT syllabus")}>Off MDCAT</button>
+              <button type="button" className="linkish" onClick={() => setPicked(new Set())}>Clear</button>
+            </div>
+          )}
           <ul>
             {sel === "new" && (
               <li><button type="button" className="qrow" aria-current="true"><span className="qrow-top"><code>New</code><span className="stage s-draft">Draft</span></span><span className="qrow-stem muted">Not saved yet</span></button></li>
             )}
             {list.map((q) => (
-              <li key={q.id}>
+              <li key={q.id} className={isAdmin ? "qpick" : undefined}>
+                {isAdmin && <input type="checkbox" checked={picked.has(q.id)} onChange={() => togglePick(q.id)} aria-label={`Tick ${q.id}`} />}
                 <button type="button" className="qrow" aria-current={q.id === sel || undefined} onClick={() => setSel(q.id)}>
                   <span className="qrow-top">
                     <code>{q.id}</code>
                     <span className={`stage s-${q.stage}`}>{stageLabel(q.stage)}</span>
                     {q.sentBack && q.stage === "draft" && <span className="acc warn">Sent back</span>}
+                    {q.free && <span className="acc good">Free</span>}
+                    {q.paper && <span className="acc">{q.paper}</span>}
                   </span>
                   <span className="qrow-stem">{q.stem || <span className="muted">No stem yet</span>}</span>
                   <span className="muted small">{q.subject} · {q.topic || q.chapter} · {q.writer}</span>
