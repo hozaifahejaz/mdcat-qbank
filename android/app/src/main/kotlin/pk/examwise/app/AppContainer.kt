@@ -1,6 +1,5 @@
 package pk.examwise.app
 
-import android.annotation.SuppressLint
 import android.app.Application
 import android.os.Build
 import android.provider.Settings
@@ -29,7 +28,6 @@ class AppContainer(val app: Application) {
     val tokens = KeystoreTokenStore(prefs)
     val api = ExamwiseApi(BuildConfig.API_BASE, BuildConfig.VERSION_CODE, tokens)
 
-    @SuppressLint("HardwareIds")
     val deviceKey: String by lazy {
         DeviceKey.fromAndroidId(Settings.Secure.getString(app.contentResolver, Settings.Secure.ANDROID_ID) ?: "unknown")
     }
