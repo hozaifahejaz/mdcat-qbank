@@ -13,12 +13,14 @@ const MAX_TAKEOVERS = 6;
 /* Admin accounts are exempt: any number of devices, all usable at the same time. */
 const unlimited = (s: Session) => s.role === "admin";
 
-export type DeviceRow = { id: string; label: string; created_at: number; last_seen_at: number; active: boolean };
+export type DeviceRow = { id: string; label: string; platform: string; created_at: number; last_seen_at: number; active: boolean };
+/* Where a device runs: "web" (any browser) or "android" (the app), and the app's version. */
+export type DeviceMeta = { platform: "web" | "android"; appVersion: number | null };
 
 export async function listDevices(db: D1Database, userId: string): Promise<DeviceRow[]> {
   const { results } = await db
     .prepare(
-      `SELECT d.id, d.label, d.created_at, d.last_seen_at, (d.id = u.active_device_id) AS active
+      `SELECT d.id, d.label, d.platform, d.created_at, d.last_seen_at, (d.id = u.active_device_id) AS active
          FROM devices d JOIN users u ON u.id = d.user_id
         WHERE d.user_id = ? AND d.removed_at IS NULL ORDER BY d.created_at`,
     )
@@ -35,7 +37,7 @@ const cleanKey = (key: string) => {
 
 /* Make this browser the active device, registering it first if there's a free slot.
    Signing in on one device therefore locks the other one at its next check-in. */
-export async function claimDevice(db: D1Database, session: Session, rawKey: string, rawLabel: string) {
+export async function claimDevice(db: D1Database, session: Session, rawKey: string, rawLabel: string, meta: DeviceMeta = { platform: "web", appVersion: null }) {
   const key = cleanKey(rawKey);
   const label = cleanLabel(rawLabel);
   const uid = session.user_id;
@@ -52,11 +54,11 @@ export async function claimDevice(db: D1Database, session: Session, rawKey: stri
     // The count check and the insert are one statement, so two sign-ins at once can't both take the last slot.
     const res = await db
       .prepare(
-        `INSERT INTO devices (id, user_id, device_key, label, created_at, last_seen_at)
-         SELECT ?1, ?2, ?3, ?4, ?5, ?5
+        `INSERT INTO devices (id, user_id, device_key, label, created_at, last_seen_at, platform, app_version)
+         SELECT ?1, ?2, ?3, ?4, ?5, ?5, ?7, ?8
           WHERE (SELECT count(*) FROM devices WHERE user_id = ?2 AND removed_at IS NULL) < ?6`,
       )
-      .bind(id, uid, key, label, now, exempt ? Number.MAX_SAFE_INTEGER : MAX_DEVICES)
+      .bind(id, uid, key, label, now, exempt ? Number.MAX_SAFE_INTEGER : MAX_DEVICES, meta.platform, meta.appVersion)
       .run();
     if (!res.meta.changes) return { status: "device_limit" as const, devices: await listDevices(db, uid) };
     await db.prepare("INSERT INTO device_events (user_id, device_id, kind, created_at) VALUES (?, ?, 'register', ?)").bind(uid, id, now).run();
@@ -79,7 +81,7 @@ export async function claimDevice(db: D1Database, session: Session, rawKey: stri
   const statements = [
     db.prepare("UPDATE users SET active_session_id = ?, active_device_id = ? WHERE id = ?").bind(session.id, device.id, uid),
     db.prepare("UPDATE sessions SET device_id = ? WHERE id = ?").bind(device.id, session.id),
-    db.prepare("UPDATE devices SET last_seen_at = ?, label = ? WHERE id = ?").bind(now, label, device.id),
+    db.prepare("UPDATE devices SET last_seen_at = ?, label = ?, platform = ?, app_version = ? WHERE id = ?").bind(now, label, meta.platform, meta.appVersion, device.id),
   ];
   if (takeover) {
     statements.push(db.prepare("INSERT INTO device_events (user_id, device_id, kind, created_at) VALUES (?, ?, 'takeover', ?)").bind(uid, device.id, now));

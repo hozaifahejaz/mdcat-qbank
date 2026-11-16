@@ -23,6 +23,20 @@ export interface Env {
   CF_EMAIL_API_TOKEN?: string; // Cloudflare API token with "Email Sending: Edit"
   EMAIL_FROM?: string; // e.g. "Examwise <no-reply@yourdomain.com>"
 
+  /* Android app. APP_MIN_VERSION: older app versions are told to update (426). APP_LATEST_VERSION: the newest on Play.
+     OFFLINE_ENABLED: "1" switches offline packs on. PLAY_CLOUD_PROJECT_NUMBER: the Google Cloud project linked to Play,
+     which the app needs to ask for integrity tokens. */
+  APP_MIN_VERSION?: string;
+  APP_LATEST_VERSION?: string;
+  OFFLINE_ENABLED?: string;
+  PLAY_CLOUD_PROJECT_NUMBER?: string;
+
+  /* Play Integrity (server/integrity.ts). Mode: "off" (default), "log" (note failures, let them through) or "enforce". */
+  ANDROID_PACKAGE?: string;
+  PLAY_INTEGRITY_MODE?: string;
+  PLAY_INTEGRITY_SA_EMAIL?: string;
+  PLAY_INTEGRITY_SA_KEY?: string; // the service account's private key (PEM)
+
   TURNSTILE_SITE_KEY?: string;
   TURNSTILE_SECRET_KEY?: string;
 }

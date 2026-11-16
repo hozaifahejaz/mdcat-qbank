@@ -1,18 +1,20 @@
 import { hashPassword, randomToken, sha256, verifyPassword } from "./crypto";
 import { claimDevice, checkDevice, listDevices, releaseDevice, removeDevice } from "./devices";
 import type { Env } from "./env";
-import { HttpError, assertSameOrigin, body, clientIp, fail, json, redirect, safeNext, str } from "./http";
+import { HttpError, assertJson, assertSameOrigin, body, clientIp, fail, json, redirect, safeNext, str } from "./http";
 import { linkEmail, mailConfigured, sendMail } from "./mail";
-import { type Provider, appleConfigured, clearStateCookie, finishOAuth, googleConfigured, startOAuth } from "./oauth";
+import { type Provider, appleConfigured, clearStateCookie, finishOAuth, googleConfigured, startOAuth, verifyGoogleIdToken } from "./oauth";
 import { rateLimit, rateLimitPeek } from "./ratelimit";
-import { clearSessionCookie, createSession, getSession, requireSession, rotateSession } from "./session";
+import { type NewSession, appVersion, bearer, clearSessionCookie, createSession, getSession, isApp, note, requireSession, rotateSession } from "./session";
 import { adminRoutes } from "./admin";
 import { visitRoutes } from "./visits";
 import { studyRoutes } from "./study";
 import { prefRoutes } from "./prefs";
 import { insightRoutes } from "./insights";
+import { appRoutes } from "./app";
 import { checkCode, sendCode, smsConfigured } from "./sms";
 import { checkCaptcha } from "./turnstile";
+import { checkIntegrity } from "./integrity";
 import { createUser, publicUser, publicUserById, userByEmail, userById, userByPhone, userForOAuth } from "./users";
 import { normalisePhone } from "../lib/phone";
 
@@ -21,7 +23,18 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 type Ctx = { env: Env; request: Request; db: D1Database; ip: string; origin: string };
 
-const signedIn = (cookie: string, extra: Record<string, unknown> = {}) => json({ ok: true, ...extra }, { headers: { "set-cookie": cookie } });
+/* A sign-in's answer. The website gets the session as a cookie; the app gets the secret in the body and keeps it itself. */
+const signedIn = (request: Request, s: NewSession, extra: Record<string, unknown> = {}) =>
+  isApp(request)
+    ? json({ ok: true, ...extra, token: s.token, expiresAt: s.expiresAt })
+    : json({ ok: true, ...extra }, { headers: { "set-cookie": s.cookie } });
+
+/* Proof that a person, not a script, is signing in: Turnstile on the website; in the app, which can't show Turnstile,
+   Google's Play Integrity check (server/integrity.ts). */
+async function humanCheck(c: Ctx, b: Record<string, unknown>): Promise<void> {
+  if (isApp(c.request)) await checkIntegrity(c.env, { action: "auth", deviceKey: str(b.deviceKey, 64), token: b.integrity });
+  else await checkCaptcha(c.env, b.captcha, c.ip);
+}
 
 function password(v: unknown): string {
   const p = typeof v === "string" ? v : "";
@@ -103,14 +116,14 @@ const routes: Record<string, (c: Ctx) => Promise<Response>> = {
     const next = safeNext(b.next);
     await rateLimit(c.db, `signup:ip:${c.ip}`, 10, HOUR);
     await rateLimit(c.db, `signup:email:${addr}`, 3, HOUR);
-    await checkCaptcha(c.env, b.captcha, c.ip);
+    await humanCheck(c, b);
 
     const existing = await userByEmail(c.db, addr);
     if (!mailConfigured(c.env)) {
       // No email sending yet, so no confirmation step: the account works straight away.
       if (existing) throw fail(409, "user_already_exists", "An account with this email already exists. Sign in instead.");
       const userId = await createUser(c.db, { name: fullName, email: addr, passwordHash: await hashPassword(pw) });
-      return signedIn(await createSession(c.db, userId, c.request), { status: "signed_in" });
+      return signedIn(c.request, await createSession(c.db, userId, c.request), { status: "signed_in" });
     }
     if (existing?.email_verified_at) {
       // Same answer as a new sign-up, so this can't be used to check who has an account. The owner gets a heads-up.
@@ -139,7 +152,7 @@ const routes: Record<string, (c: Ctx) => Promise<Response>> = {
     const addr = email(b.email);
     await rateLimit(c.db, `resend:ip:${c.ip}`, 10, HOUR);
     await rateLimit(c.db, `resend:email:${addr}`, 3, HOUR);
-    await checkCaptcha(c.env, b.captcha, c.ip);
+    await humanCheck(c, b);
     const u = await userByEmail(c.db, addr);
     if (u && !u.email_verified_at && mailConfigured(c.env)) await sendVerifyEmail(c, u.id, addr, safeNext(b.next));
     return json({ status: "check_email" });
@@ -150,7 +163,7 @@ const routes: Record<string, (c: Ctx) => Promise<Response>> = {
     await rateLimit(c.db, `verify:ip:${c.ip}`, 30, HOUR);
     const userId = await useToken(c.db, b.token, "verify_email");
     await c.db.prepare("UPDATE users SET email_verified_at = coalesce(email_verified_at, ?) WHERE id = ?").bind(Date.now(), userId).run();
-    return signedIn(await createSession(c.db, userId, c.request));
+    return signedIn(c.request, await createSession(c.db, userId, c.request));
   },
 
   "POST /api/auth/signin": async (c) => {
@@ -160,7 +173,7 @@ const routes: Record<string, (c: Ctx) => Promise<Response>> = {
     // from elsewhere can't lock its owner out; the wider ones bound guessing from many addresses.
     const limits: [string, number, number][] = [[`signin:ip:${c.ip}`, 30, HOUR], [`signin:pair:${addr}:${c.ip}`, 5, HOUR / 4], [`signin:email:${addr}`, 40, HOUR]];
     for (const [key, limit, window] of limits) await rateLimitPeek(c.db, key, limit, window);
-    await checkCaptcha(c.env, b.captcha, c.ip);
+    await humanCheck(c, b);
     const u = await userByEmail(c.db, addr);
     const ok = await verifyPassword(typeof b.password === "string" ? b.password : "", u?.password_hash ?? null);
     if (!u || !ok) {
@@ -168,7 +181,7 @@ const routes: Record<string, (c: Ctx) => Promise<Response>> = {
       throw fail(401, "invalid_credentials", "That email and password don't match. Check them, or reset your password.");
     }
     if (!u.email_verified_at && mailConfigured(c.env)) throw fail(403, "email_not_confirmed", "Please confirm your email first. We sent you a link when you signed up.");
-    return signedIn(await createSession(c.db, u.id, c.request));
+    return signedIn(c.request, await createSession(c.db, u.id, c.request));
   },
 
   "POST /api/auth/forgot": async (c) => {
@@ -176,7 +189,7 @@ const routes: Record<string, (c: Ctx) => Promise<Response>> = {
     const addr = email(b.email);
     await rateLimit(c.db, `forgot:ip:${c.ip}`, 10, HOUR);
     await rateLimit(c.db, `forgot:email:${addr}`, 3, HOUR);
-    await checkCaptcha(c.env, b.captcha, c.ip);
+    await humanCheck(c, b);
     if (!mailConfigured(c.env)) throw fail(503, "email_off", "Password reset by email isn't switched on yet. Please contact support.");
     const u = await userByEmail(c.db, addr);
     if (u) {
@@ -197,7 +210,7 @@ const routes: Record<string, (c: Ctx) => Promise<Response>> = {
       c.db.prepare("UPDATE users SET password_hash = ?, email_verified_at = coalesce(email_verified_at, ?), active_session_id = NULL, active_device_id = NULL WHERE id = ?").bind(await hashPassword(pw), Date.now(), userId),
       c.db.prepare("DELETE FROM sessions WHERE user_id = ?").bind(userId),
     ]);
-    return signedIn(await createSession(c.db, userId, c.request));
+    return signedIn(c.request, await createSession(c.db, userId, c.request));
   },
 
   "POST /api/auth/phone/start": async (c) => {
@@ -207,7 +220,7 @@ const routes: Record<string, (c: Ctx) => Promise<Response>> = {
     await rateLimit(c.db, `otp:ip:${c.ip}`, 10, HOUR);
     await rateLimit(c.db, `otp:gap:${phone}`, 1, 55 * 1000);
     await rateLimit(c.db, `otp:phone:${phone}`, 5, HOUR);
-    await checkCaptcha(c.env, b.captcha, c.ip);
+    await humanCheck(c, b);
     await sendCode(c.env, phone);
     return json({ status: "sent", phone });
   },
@@ -222,7 +235,43 @@ const routes: Record<string, (c: Ctx) => Promise<Response>> = {
     if (!(await checkCode(c.env, phone, code))) throw fail(400, "bad_code", "That code is wrong or has expired. Request a new one.");
     const u = await userByPhone(c.db, phone);
     const userId = u?.id ?? (await createUser(c.db, { name: name(b.name, false), phone }));
-    return signedIn(await createSession(c.db, userId, c.request), { created: !u });
+    return signedIn(c.request, await createSession(c.db, userId, c.request), { created: !u });
+  },
+
+  /* Google sign-in from the Android app: the phone sends the ID token it got from Google. */
+  "POST /api/auth/google/native": async (c) => {
+    if (!googleConfigured(c.env)) throw fail(503, "provider_off", "Google sign-in isn't switched on yet.");
+    const b = await body(c.request);
+    await rateLimit(c.db, `gnative:ip:${c.ip}`, 30, HOUR);
+    await humanCheck(c, b);
+    const profile = await verifyGoogleIdToken(c.env, str(b.idToken, 4096));
+    const userId = await userForOAuth(c.db, "google", profile);
+    return signedIn(c.request, await createSession(c.db, userId, c.request));
+  },
+
+  /* Delete the account and everything tied to it (answers, tests, bookmarks, devices, sessions: the tables cascade).
+     Someone holding only a stolen session can't do it: a password account must type its password, and an account
+     without one must have signed in within the last 10 minutes. Staff accounts are removed by an admin instead. */
+  "POST /api/auth/delete-account": async (c) => {
+    const s = await requireSession(c.db, c.request);
+    const b = await body(c.request);
+    await rateLimit(c.db, `delete:${s.user_id}`, 10, HOUR);
+    const u = await userById(c.db, s.user_id);
+    if (!u) throw fail(401, "signed_out", "Please sign in.");
+    if (u.role !== "student") throw fail(403, "staff_account", "Staff accounts can't be deleted here. Ask an admin.");
+    if (u.password_hash) {
+      if (!(await verifyPassword(typeof b.password === "string" ? b.password : "", u.password_hash))) {
+        throw fail(401, "wrong_password", "That password isn't right.");
+      }
+    } else if (Date.now() - s.created_at > 10 * 60 * 1000) {
+      throw fail(401, "reauth_required", "For your safety, please sign in again, then delete your account.");
+    }
+    await c.db.batch([
+      // Reports stay for the reviewers without a name on them; the rest goes with the account.
+      c.db.prepare("UPDATE reports SET user_id = NULL WHERE user_id = ?").bind(u.id),
+      c.db.prepare("DELETE FROM users WHERE id = ?").bind(u.id),
+    ]);
+    return json({ ok: true }, { headers: { "set-cookie": clearSessionCookie() } });
   },
 
   "POST /api/auth/signout": async ({ db, request }) => {
@@ -234,14 +283,23 @@ const routes: Record<string, (c: Ctx) => Promise<Response>> = {
     return json({ ok: true }, { headers: { "set-cookie": clearSessionCookie() } });
   },
 
-  "POST /api/device/claim": async ({ db, request }) => {
+  "POST /api/device/claim": async ({ db, request, env }) => {
     const s = await requireSession(db, request);
     const b = await body(request);
-    const res = await claimDevice(db, s, str(b.deviceKey, 64), str(b.label, 80));
+    const app = isApp(request);
+    const trusted = app && await checkIntegrity(env, {
+      action: "claim", deviceKey: str(b.deviceKey, 64), token: b.integrity,
+      noteFailure: (why) => note(db, s.user_id, "integrity", why).run(),
+    });
+    const res = await claimDevice(db, s, str(b.deviceKey, 64), str(b.label, 80), { platform: isApp(request) ? "android" : "web", appVersion: appVersion(request) });
     if (res.status !== "active") return json(res);
+    if (trusted) await db.prepare("UPDATE devices SET integrity_at = ? WHERE user_id = ? AND device_key = ? AND removed_at IS NULL").bind(Date.now(), s.user_id, str(b.deviceKey, 64).toLowerCase()).run();
     const { took_over, ...out } = res;
-    // Taking the account over from another device gives this browser a new cookie, so a copy of the old one is dead.
-    return took_over ? json(out, { headers: { "set-cookie": await rotateSession(db, s) } }) : json(out);
+    // Taking the account over from another device gives this browser a new cookie (the app a new secret), so a copy
+    // of the old one is dead.
+    if (!took_over) return json(out);
+    const fresh = await rotateSession(db, s);
+    return isApp(request) ? json({ ...out, token: fresh.token, expiresAt: fresh.expiresAt }) : json(out, { headers: { "set-cookie": fresh.cookie } });
   },
 
   "POST /api/device/check": async ({ db, request }) => {
@@ -272,7 +330,7 @@ async function oauth(c: Ctx, provider: Provider, step: "start" | "callback"): Pr
     const userId = await userForOAuth(c.db, provider, profile);
     const session = await createSession(c.db, userId, c.request);
     // Seen from the browser this is a top-level navigation back to our site, so the Lax session cookie sticks.
-    return redirect(`/auth/callback?next=${encodeURIComponent(safeNext(next))}`, [session, clearStateCookie()]);
+    return redirect(`/auth/callback?next=${encodeURIComponent(safeNext(next))}`, [session.cookie, clearStateCookie()]);
   } catch (e) {
     if (e instanceof HttpError) return toSignIn(e.code);
     console.error(e);
@@ -290,10 +348,21 @@ export async function handle(request: Request, env: Env): Promise<Response> {
       if (step === "start" && request.method !== "GET") throw fail(405, "method", "Method not allowed.");
       return await oauth(c, o[1] as Provider, step);
     }
+    // An app too old to be safe is asked to update before anything else; the config call says which version is needed.
+    const min = Number(env.APP_MIN_VERSION) || 0;
+    if (isApp(request) && url.pathname !== "/api/app/config" && (appVersion(request) ?? 0) < min) {
+      throw fail(426, "update_required", "Please update Examwise to keep going.");
+    }
     const key = `${request.method} ${url.pathname}`;
-    const route = routes[key] ?? adminRoutes[key] ?? visitRoutes[key] ?? studyRoutes[key] ?? prefRoutes[key] ?? insightRoutes[key];
+    const route = routes[key] ?? adminRoutes[key] ?? visitRoutes[key] ?? studyRoutes[key] ?? prefRoutes[key] ?? insightRoutes[key] ?? appRoutes[key];
     if (!route) throw fail(404, "not_found", "Not found.");
-    if (request.method !== "GET") assertSameOrigin(request);
+    // Cookies are sent by the browser on their own, so a cookie request must come from our own pages. The app sends no
+    // cookies, and marks its requests with headers (X-Client, Authorization) that another site's page can't add without
+    // our permission (browsers ask first, and we never say yes), so those can't be forged from elsewhere.
+    if (request.method !== "GET") {
+      if (!request.headers.get("cookie") && (bearer(request) || isApp(request))) assertJson(request);
+      else assertSameOrigin(request);
+    }
     return await route(c);
   } catch (e) {
     if (e instanceof HttpError) return json({ error: { code: e.code, message: e.message, ...e.extra } }, { status: e.status });
