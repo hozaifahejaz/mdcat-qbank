@@ -3,6 +3,12 @@
    instant too. Lists that carry answers and explanations stay in memory. Emptied on sign-out. */
 const PREFIX = "seen:";
 const mem = new Map<string, unknown>();
+/* When each copy came from the server, and loads still on their way, so pages that open within a few seconds of each
+   other (or of a link being pointed at) share one request instead of asking again. */
+const loadedAt = new Map<string, number>();
+const loading = new Map<string, Promise<unknown>>();
+/* A copy this young is shown as it is, with no new request behind it. */
+export const FRESH_MS = 20_000;
 
 export function seen<T>(key: string, persist = false): T | undefined {
   if (mem.has(key)) return mem.get(key) as T;
@@ -25,6 +31,8 @@ export function keep(key: string, value: unknown, persist = false) {
 
 export function forgetAll() {
   mem.clear();
+  loadedAt.clear();
+  loading.clear();
   try {
     for (let i = sessionStorage.length - 1; i >= 0; i--) {
       const k = sessionStorage.key(i);
@@ -33,13 +41,44 @@ export function forgetAll() {
   } catch {}
 }
 
-/* Hands `show` the last copy straight away (if there is one), then the fresh one. Rejects only when the load fails
-   and there was nothing to show. */
-export function fresh<T>(key: string, load: () => Promise<T>, show: (v: T) => void, persist = false): Promise<void> {
+/* After the student answers, finishes or bookmarks something: copies still show, but the next look asks again. */
+export function outdated() {
+  loadedAt.clear();
+}
+
+/* One request per key at a time; its answer is kept for the next look. */
+function load<T>(key: string, get: () => Promise<T>, persist: boolean): Promise<T> {
+  const on = loading.get(key) as Promise<T> | undefined;
+  if (on) return on;
+  const p = get().then(
+    (v) => { keep(key, v, persist); loadedAt.set(key, Date.now()); return v; },
+  ).finally(() => { if (loading.get(key) === p) loading.delete(key); });
+  loading.set(key, p);
+  return p;
+}
+
+const recent = (key: string) => Date.now() - (loadedAt.get(key) ?? 0) < FRESH_MS;
+
+/* Hands `show` the last copy straight away (if there is one), then the fresh one. A copy from the last few seconds
+   needs no new request. Rejects only when the load fails and there was nothing to show. */
+export function fresh<T>(key: string, get: () => Promise<T>, show: (v: T) => void, persist = false): Promise<void> {
   const old = seen<T>(key, persist);
   if (old !== undefined) show(old);
-  return load().then(
-    (v) => { keep(key, v, persist); show(v); },
+  if (old !== undefined && recent(key)) return Promise.resolve();
+  return load(key, get, persist).then(
+    (v) => { show(v); },
     (e) => { if (old === undefined) throw e; },
   );
+}
+
+/* Fetch a page's numbers before it opens (a link pointed at, or a quiet moment), so it opens with them. */
+export function warm<T>(key: string, get: () => Promise<T>, persist = false) {
+  if (recent(key) || loading.has(key)) return;
+  load(key, get, persist).catch(() => {});
+}
+
+/* The answer from the last few seconds (one fetched ahead of time, say), or a new request. Memory only. */
+export function cached<T>(key: string, get: () => Promise<T>): Promise<T> {
+  if (recent(key) && mem.has(key)) return Promise.resolve(mem.get(key) as T);
+  return load(key, get, false);
 }

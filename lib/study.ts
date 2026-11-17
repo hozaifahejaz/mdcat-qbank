@@ -1,7 +1,7 @@
 /* The browser side of the study API (server/study.ts): starting and sitting tests, results, mistakes, bookmarks and
    reports. Everything is saved on the server, so a test started on the phone can be finished on the laptop. */
 import { api } from "@/lib/api";
-import { fresh } from "@/lib/cache";
+import { cached, fresh, warm } from "@/lib/cache";
 import type { Asked, Question } from "@/lib/bank";
 import type { TestResult } from "@/lib/dashboard-data";
 
@@ -76,6 +76,12 @@ export const watchCatalog = (bank: string, show: (c: Catalog) => void) =>
     return getCatalog(bank);
   }, show, true).catch(() => {});
 
+/* Fetch a bank's catalog ahead of its page (lib/warm.ts). */
+export const warmCatalog = (bank: string) => warm(`catalog:${bank}`, () => {
+  catalogs.delete(bank); asked.set(bank, Date.now());
+  return getCatalog(bank);
+}, true);
+
 /* Starting a test answers with the test itself, ready to sit. */
 export const startTest = (o: StartOptions) => api<{ id: string; count: number; short: boolean; attempt: OpenAttempt }>("/api/study/start", { body: o });
 export const getOpenAttempt = (id: string) => api<OpenAttempt | { finished: true; id: string }>(`/api/study/attempt?id=${encodeURIComponent(id)}`);
@@ -89,13 +95,15 @@ export const getPool = (o: Pick<StartOptions, "bank" | "subject" | "subjects" | 
   if (o.subjects?.length) p.set("subjects", o.subjects.join("|"));
   if (o.chapters?.length) p.set("chapters", o.chapters.join("|"));
   if (o.topic) p.set("topic", o.topic);
-  return api<Pool>(`/api/study/pool?${p}`);
+  return cached(`pool:${p}`, () => api<Pool>(`/api/study/pool?${p}`));
 };
 export const finishTest = (id: string) => api<{ id: string; empty?: boolean }>("/api/study/finish", { body: { id } });
 export const getReview = (id: string) => api<Review>(`/api/study/review?id=${encodeURIComponent(id)}`);
 export const getHistory = () => api<{ tests: TestResult[] }>("/api/study/history").then((r) => r.tests);
 export const watchHistory = (show: (t: TestResult[]) => void) => fresh("history", getHistory, show, true);
+export const warmHistory = () => warm("history", getHistory, true);
 /* These two carry answers and explanations, so they are remembered only while the tab stays open on the site. */
+export const warmMistakes = () => { warm("mistakes", getMistakes); warm("bookmarks", getBookmarks); };
 export const watchMistakes = (show: (m: Mistake[]) => void) => fresh("mistakes", getMistakes, show);
 export const watchBookmarks = (show: (q: Question[]) => void) => fresh("bookmarks", getBookmarks, show);
 export const getMistakes = () => api<{ mistakes: Mistake[] }>("/api/study/mistakes").then((r) => r.mistakes);

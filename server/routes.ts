@@ -5,7 +5,7 @@ import { HttpError, assertJson, assertSameOrigin, body, clientIp, fail, json, re
 import { linkEmail, mailConfigured, sendMail } from "./mail";
 import { type Provider, appleConfigured, clearStateCookie, finishOAuth, googleConfigured, startOAuth, verifyGoogleIdToken } from "./oauth";
 import { rateLimit, rateLimitPeek } from "./ratelimit";
-import { type NewSession, appVersion, bearer, clearSessionCookie, createSession, getSession, isApp, note, requireSession, rotateSession } from "./session";
+import { type NewSession, appVersion, bearer, clearSessionCookie, createSession, forgetReusedSessions, getSession, isApp, note, requireSession, rotateSession } from "./session";
 import { adminRoutes } from "./admin";
 import { visitRoutes } from "./visits";
 import { studyRoutes } from "./study";
@@ -366,7 +366,13 @@ export async function handle(request: Request, env: Env): Promise<Response> {
       if (!request.headers.get("cookie") && (bearer(request) || isApp(request))) assertJson(request);
       else assertSameOrigin(request);
     }
-    return await route(c);
+    try {
+      return await route(c);
+    } finally {
+      // Sign-in, device, account and admin changes can change who may do what, so sessions reused for study requests
+      // (server/session.ts) are looked up afresh after one. Study writes, page counts and the device check change none of that.
+      if (request.method !== "GET" && !/^\/api\/(study\/|visit$|device\/check$)/.test(url.pathname)) forgetReusedSessions();
+    }
   } catch (e) {
     if (e instanceof HttpError) return json({ error: { code: e.code, message: e.message, ...e.extra } }, { status: e.status });
     console.error(e);
