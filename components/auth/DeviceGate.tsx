@@ -18,6 +18,9 @@ type State =
 const CHECK_EVERY_MS = 30_000;
 /* Set once this tab has been let in, so the next page shows at once while the check runs behind it. */
 const LET_IN = "let-in";
+/* When this tab last heard "active" from the server. Moving to another page within the check interval doesn't ask
+   again: the 30-second check carries on from the new page, and the server checks every data request itself. */
+let checkedAt = 0;
 
 /* Wrap any signed-in page in this. It sends signed-out visitors to /signin, and enforces "one active device":
    it checks in every 30 seconds and whenever the tab comes back into view, and if another device has taken
@@ -30,6 +33,7 @@ export default function DeviceGate({ children }: { children: React.ReactNode }) 
   const claim = useCallback(async () => {
     const res = await claimDevice();
     keep(LET_IN, res.status === "active", true);
+    checkedAt = res.status === "active" ? Date.now() : 0;
     setState(res.status === "active" ? { kind: "active" } : res.status === "takeover_limit" ? { kind: "switches", until: res.next_allowed_at } : { kind: "limit", devices: res.devices });
   }, []);
 
@@ -42,10 +46,12 @@ export default function DeviceGate({ children }: { children: React.ReactNode }) 
   const check = useCallback(async () => {
     try {
       const res = await checkDevice();
+      checkedAt = res.status === "active" ? Date.now() : 0;
       if (res.status === "active") { keep(LET_IN, true, true); setState({ kind: "active" }); }
       else if (res.status === "locked") { keep(LET_IN, false, true); setState({ kind: "locked", label: res.active_label }); }
       else await claim();
     } catch (e) {
+      checkedAt = 0;
       // Signed out elsewhere (or this device was removed): back to sign-in.
       if (e instanceof ApiError && e.status === 401) return toSignIn();
       // A dropped connection shouldn't throw the student out; only a first load that fails shows an error.
@@ -60,8 +66,11 @@ export default function DeviceGate({ children }: { children: React.ReactNode }) 
 
   useEffect(() => {
     // Who is signed in and whether this device may use the account are asked together, not one after the other.
-    getCurrentUser().then((user) => { if (!user && !navigator.onLine) return; if (!user) toSignIn(); });
-    check();
+    const letIn = seen<boolean>(LET_IN, true) && lastUser();
+    if (!letIn || Date.now() - checkedAt > CHECK_EVERY_MS) {
+      getCurrentUser().then((user) => { if (!user && !navigator.onLine) return; if (!user) toSignIn(); });
+      check();
+    }
     const timer = setInterval(() => { if (document.visibilityState === "visible") check(); }, CHECK_EVERY_MS);
     const onVisible = () => { if (document.visibilityState === "visible") check(); };
     document.addEventListener("visibilitychange", onVisible);

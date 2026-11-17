@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { type Device, formatPhone, friendlyError, myDevices, removeDevice, signOut } from "@/lib/auth";
 import { planNames } from "@/lib/format";
-import type { AccountUser } from "@/lib/user";
+import { type AccountUser, knowUser } from "@/lib/user";
 import AppShell, { AccountTabs, PageHead } from "@/components/app/AppShell";
 import DeviceList from "@/components/auth/DeviceList";
 
@@ -35,6 +35,7 @@ function AccountBody({ me }: { me: AccountUser }) {
     try {
       const res = await api<{ user: AccountUser }>("/api/auth/me", { method: "PATCH", body: { name: full } });
       setUser(res.user);
+      knowUser(res.user);
       setSaved("Saved.");
     } catch (err) {
       setError(friendlyError(err));

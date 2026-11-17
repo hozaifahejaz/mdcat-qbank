@@ -2,11 +2,27 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { seen } from "@/lib/cache";
+import { lastUser } from "@/lib/user";
+import { warmCatalog, warmHistory } from "@/lib/study";
+import { warmPage } from "@/lib/warm";
 
 /* Moves between signed-in pages without reloading the site: a click on an ordinary link swaps the page in place,
    and pointing at (or touching) a link fetches that page ahead of the click. Links stay plain <a> everywhere.
    The landing and sign-in pages have their own styles, so going to or from them is still a normal page load. */
 const OUTSIDE = /^\/($|signin|signup|forgot-password|reset-password|auth\/|api\/)/;
+
+/* The signed-in pages. Their page files are fetched in a quiet moment after the first page shows, so a click swaps the
+   page at once instead of waiting on the network first (on a phone, a touch comes only a moment before the tap).
+   Fetched again every few minutes while the tab is open, since the router only trusts its copies for five. */
+const PAGES = ["/dashboard", "/practice", "/mocks", "/past-papers", "/progress", "/mistakes", "/history", "/test", "/review", "/account", "/account/billing", "/pricing"];
+const REFETCH_MS = 4 * 60 * 1000;
+
+const idle = (f: () => void) => {
+  const w = window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number };
+  if (w.requestIdleCallback) w.requestIdleCallback(f, { timeout: 2000 });
+  else setTimeout(f, 300);
+};
 
 type Router = ReturnType<typeof useRouter>;
 let router: Router | null = null;
@@ -38,13 +54,31 @@ export default function Nav() {
   const r = useRouter();
   useEffect(() => {
     router = r;
-    const fetched = new Set<string>();
     const warm = (e: Event) => {
       const l = linkOf(e);
-      if (!l || fetched.has(l.url.pathname)) return;
-      fetched.add(l.url.pathname);
+      if (!l) return;
+      // The page itself is usually fetched already (below), in which case this costs nothing. Its numbers are fetched
+      // now, unless they were a moment ago.
       r.prefetch(l.url.pathname + l.url.search);
+      warmPage(l.url.pathname, l.url.search);
     };
+    // Only on signed-in pages: the landing and sign-in pages don't need the app.
+    let last = 0;
+    const ahead = () => {
+      if (OUTSIDE.test(window.location.pathname) || !lastUser() || document.visibilityState !== "visible") return;
+      if (Date.now() - last < REFETCH_MS) return;
+      last = Date.now();
+      idle(() => {
+        for (const p of PAGES) r.prefetch(p);
+        // The numbers most pages open with, once a session, if this tab has never had them.
+        if (seen("history", true) === undefined) warmHistory();
+        if (seen("catalog:mdcat", true) === undefined) warmCatalog("mdcat");
+      });
+    };
+    ahead();
+    // Checked often so a tab that has only just learnt who is signed in starts soon; it does nothing until it's due.
+    const timer = setInterval(ahead, 2000);
+    document.addEventListener("visibilitychange", ahead);
     const click = (e: MouseEvent) => {
       if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
       const l = linkOf(e);
@@ -57,6 +91,8 @@ export default function Nav() {
     document.addEventListener("focusin", warm);
     document.addEventListener("click", click);
     return () => {
+      clearInterval(timer);
+      document.removeEventListener("visibilitychange", ahead);
       document.removeEventListener("pointerover", warm);
       document.removeEventListener("touchstart", warm);
       document.removeEventListener("focusin", warm);

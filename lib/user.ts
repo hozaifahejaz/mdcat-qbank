@@ -24,11 +24,40 @@ export function rememberUser(u: AccountUser | null) {
 }
 
 /* The signed-in student, or null when signed out (or when the API can't be reached).
-   Accounts made with a phone number have no email. Several parts of a page ask at once; they share one request. */
+   Accounts made with a phone number have no email. Every page asks, and moving between pages shouldn't mean asking
+   the server again each time, so an answer is shared for half a minute. The server checks the session on every data
+   request anyway; this only decides what the frame draws and whether to send a signed-out visitor to sign in. */
+const SHARE_MS = 30_000;
 let asking: Promise<AccountUser | null> | null = null;
+let askedAt = 0;
 export function getCurrentUser(): Promise<AccountUser | null> {
-  asking ??= api<{ user: AccountUser | null }>("/api/auth/me")
-    .then(({ user }) => { rememberUser(user); return user; }, () => null)
-    .finally(() => { setTimeout(() => { asking = null; }, 2000); });
+  if (asking && Date.now() - askedAt > SHARE_MS) asking = null;
+  if (!asking) {
+    askedAt = Date.now();
+    const p: Promise<AccountUser | null> = api<{ user: AccountUser | null }>("/api/auth/me")
+      .then(({ user }) => {
+        rememberUser(user);
+        // Only a signed-in answer is shared; signed out, the next page asks again (it may be just after signing in).
+        if (!user && asking === p) asking = null;
+        return user;
+      }, () => {
+        // A failed ask isn't shared: the next page asks again.
+        if (asking === p) asking = null;
+        return null;
+      });
+    asking = p;
+  }
   return asking;
+}
+
+/* After the account itself changes here (a new name): the next ask gets this copy. */
+export function knowUser(u: AccountUser) {
+  rememberUser(u);
+  asking = Promise.resolve(u);
+  askedAt = Date.now();
+}
+
+/* On sign-out: the next ask goes to the server. */
+export function forgetUser() {
+  asking = null;
 }
