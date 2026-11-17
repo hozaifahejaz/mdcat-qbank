@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AppFrame } from "@/components/app/AppShell";
+import { Framed } from "@/components/app/AppShell";
 import Empty from "@/components/app/Empty";
 import Icon from "@/components/app/Icon";
 import BarChart from "@/components/dashboard/BarChart";
@@ -85,9 +85,9 @@ export default function Dashboard() {
 
   const aside = narrow === false && user && data && coach ? <Coach data={data} onHide={() => toggleCoach(false)} /> : null;
   return (
-    <AppFrame active="/dashboard" user={user} aside={aside}>
+    <Framed active="/dashboard" aside={aside}>
       {user && data && narrow !== null && !fresher ? narrow ? <MobileHome data={data} /> : <Body data={data} name={user.name} coachHidden={!coach} onShowCoach={() => toggleCoach(true)} onBank={setBank} onGoal={setGoal} /> : <Skeleton />}
-    </AppFrame>
+    </Framed>
   );
 }
 

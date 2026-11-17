@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
+import { usePathname } from "next/navigation";
 import DeviceGate from "@/components/auth/DeviceGate";
 import Icon from "@/components/app/Icon";
 import Logo from "@/components/Logo";
@@ -55,9 +57,17 @@ export function initials(name: string) {
 
 /* The frame every signed-in screen shares: sidebar on the left, a white work surface with a top bar, and an optional
    side panel on the right (the dashboard's study coach). On phones the sidebar slides in from the menu button. */
-export function AppFrame({ active, title, user, aside, nav = studentNav, children }: { active?: string; title?: string; user: AccountUser | null; aside?: React.ReactNode; nav?: Nav; children: React.ReactNode }) {
+export function AppFrame({ active, title, user, aside, nav = studentNav, bare, hasAside, asideSlot, children }: {
+  active?: string; title?: string; user: AccountUser | null; aside?: React.ReactNode; nav?: Nav; children: React.ReactNode;
+  /* For the shared layout: bare drops the frame around the page (the test player), and asideSlot is where a page
+     puts its own side panel. The page itself stays in the same place in the tree either way, so it never restarts. */
+  bare?: boolean; hasAside?: boolean; asideSlot?: (el: HTMLDivElement | null) => void;
+}) {
   const [open, setOpen] = useState(false);
   const [more, setMore] = useState(false);
+  // The frame outlives the page now, so a menu left open is closed when the page changes.
+  const path = usePathname();
+  useEffect(() => { setOpen(false); setMore(false); }, [path]);
   const navLinks = nav.groups.flatMap((g) => g.links);
   const here = navLinks.find((l) => l.href === active);
   const tabs = nav.tabs;
@@ -79,8 +89,8 @@ export function AppFrame({ active, title, user, aside, nav = studentNav, childre
   }, [open, more]);
 
   return (
-    <div className={`dash frame ${aside ? "has-aside" : ""}`}>
-      <aside className={`side ${open ? "open" : ""}`} aria-label="Sidebar">
+    <div className={bare ? "dash bare" : `dash frame ${aside || hasAside ? "has-aside" : ""}`}>
+      {!bare && <aside className={`side ${open ? "open" : ""}`} aria-label="Sidebar">
         <div className="side-top">
           <Logo href={nav.home} />
           <ThemeToggle />
@@ -118,11 +128,11 @@ export function AppFrame({ active, title, user, aside, nav = studentNav, childre
             {chip}
           </a>
         </div>
-      </aside>
-      {open && <button type="button" className="scrim" aria-label="Close menu" onClick={() => setOpen(false)} />}
+      </aside>}
+      {!bare && open && <button type="button" className="scrim" aria-label="Close menu" onClick={() => setOpen(false)} />}
 
-      <div className="surface">
-        <header className="topbar">
+      <div className={bare ? undefined : "surface"}>
+        {!bare && <header className="topbar">
           <button type="button" className="icon-btn menu-btn" onClick={() => setOpen(true)} aria-label="Open menu" aria-expanded={open}><Icon name="menu" /></button>
           <p className="crumbs">
             <span className="muted">{admin ? `${site.name} admin` : site.name}</span>
@@ -138,14 +148,15 @@ export function AppFrame({ active, title, user, aside, nav = studentNav, childre
             <ThemeToggle />
             <a className="avatar m-avatar" href="/account" aria-label="Account">{user ? initials(user.name) : ""}</a>
           </div>
-        </header>
-        <div className="surface-body">
-          <main className="dwrap">{children}</main>
+        </header>}
+        <div className={bare ? undefined : "surface-body"}>
+          <div className={bare ? undefined : "dwrap"} role={bare ? undefined : "main"}>{children}</div>
           {aside}
+          {asideSlot && <div ref={asideSlot} className="aside-slot" />}
         </div>
       </div>
 
-      <nav className="tabbar" aria-label="Main" style={{ gridTemplateColumns: `repeat(${tabs.length + 1}, minmax(0, 1fr))` }}>
+      {!bare && <nav className="tabbar" aria-label="Main" style={{ gridTemplateColumns: `repeat(${tabs.length + 1}, minmax(0, 1fr))` }}>
         {tabs.map((href) => {
           const l = navLinks.find((x) => x.href === href)!;
           return (
@@ -157,9 +168,9 @@ export function AppFrame({ active, title, user, aside, nav = studentNav, childre
         <button type="button" onClick={() => setMore(true)} aria-expanded={more} aria-current={active && !tabs.includes(active) ? "page" : undefined}>
           <Icon name="menu" size={22} /><span>More</span>
         </button>
-      </nav>
+      </nav>}
 
-      {more && (
+      {!bare && more && (
         <>
           <button type="button" className="sheet-scrim" aria-label="Close" onClick={() => setMore(false)} />
           <div className="sheet" role="dialog" aria-modal="true" aria-label="More">
@@ -185,14 +196,67 @@ export function AppFrame({ active, title, user, aside, nav = studentNav, childre
   );
 }
 
-/* A signed-in screen: device lock, frame, and the page body once the student is known. */
-export default function AppShell({ active, title, bare, children }: { active?: string; title?: string; bare?: boolean; children: (user: AccountUser) => React.ReactNode }) {
+/* What a page tells the shared frame about itself. */
+type Meta = { active?: string; title?: string; bare?: boolean; aside?: boolean };
+const FrameContext = createContext<{ user: AccountUser | null; set: (m: Meta) => void; slot: HTMLDivElement | null } | null>(null);
+
+/* The one frame around every signed-in student page (app/(app)/layout.tsx). It stays on screen while pages change
+   inside it: the sidebar, the phone tab bar and the device check are set up once, not once per page. */
+export function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <DeviceGate>
-      <Shell active={active} title={title} bare={bare}>{children}</Shell>
+      <SharedFrame>{children}</SharedFrame>
     </DeviceGate>
   );
 }
+
+function SharedFrame({ children }: { children: React.ReactNode }) {
+  const [user, setUser] = useState<AccountUser | null>(null);
+  const [meta, setMeta] = useState<Meta>({});
+  const [slot, setSlot] = useState<HTMLDivElement | null>(null);
+  const path = usePathname();
+  useLayoutEffect(() => { setUser((u) => u ?? lastUser()); }, []);
+  // Asked again on each page (the answer is shared for half a minute), so a new name or plan shows in the frame.
+  useEffect(() => { getCurrentUser().then((u) => { if (u) setUser(u); }); }, [path]);
+  const set = useCallback((m: Meta) => setMeta((o) => (o.active === m.active && o.title === m.title && o.bare === m.bare && o.aside === m.aside ? o : m)), []);
+  const ctx = useMemo(() => ({ user, set, slot }), [user, set, slot]);
+  return (
+    <FrameContext value={ctx}>
+      <AppFrame active={meta.active} title={meta.title} user={user} bare={meta.bare} hasAside={meta.aside} asideSlot={setSlot}>{children}</AppFrame>
+    </FrameContext>
+  );
+}
+
+/* A page inside the shared frame: says which link is lit, its title, and (optionally) a side panel of its own. */
+export function Framed({ active, title, bare, aside, children }: { active?: string; title?: string; bare?: boolean; aside?: React.ReactNode; children: React.ReactNode }) {
+  const f = useContext(FrameContext);
+  const set = f?.set;
+  const has = !!aside;
+  // Before the paint, so the frame never shows the last page's title or highlight.
+  useLayoutEffect(() => { set?.({ active, title, bare, aside: has }); }, [set, active, title, bare, has]);
+  return <>{children}{aside && f?.slot ? createPortal(aside, f.slot) : null}</>;
+}
+
+/* A signed-in screen: the page body once the student is known, inside the shared frame. */
+export default function AppShell({ active, title, bare, children }: { active?: string; title?: string; bare?: boolean; children: (user: AccountUser) => React.ReactNode }) {
+  const f = useContext(FrameContext);
+  // Outside the shared layout a page brings the device lock and frame itself.
+  if (!f) {
+    return (
+      <DeviceGate>
+        <Shell active={active} title={title} bare={bare}>{children}</Shell>
+      </DeviceGate>
+    );
+  }
+  return (
+    <Framed active={active} title={title} bare={bare}>
+      {f.user ? children(f.user) : bare ? <div className="sk" style={{ height: "100dvh", borderRadius: 0 }} /> : (
+        <div className="dgrid" aria-busy="true"><div className="sk" style={{ height: 120 }} /><div className="sk" style={{ height: 360 }} /></div>
+      )}
+    </Framed>
+  );
+}
+
 
 function Shell({ active, title, bare, children }: { active?: string; title?: string; bare?: boolean; children: (user: AccountUser) => React.ReactNode }) {
   const [user, setUser] = useState<AccountUser | null>(null);

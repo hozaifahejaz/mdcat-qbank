@@ -122,6 +122,9 @@
 /* Question player: a plain page. A thin bar on top, the question and its options, and Previous, Navigator and Next
    pinned to the bottom of the screen. */
 .dash:has(> .player) { padding-bottom: 0; }
+/* The test player inside the shared frame: the frame's wrappers stay in the tree (so the page never restarts) but take up no room. */
+.dash.bare { padding-bottom: 0; }
+.dash.bare > div, .dash.bare > div > div, .dash.bare > div > div > div { display: contents; }
 .player { min-height: 100dvh; background: var(--card); padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
 .player .dwrap { max-width: 1040px; }
 .ptop-wrap { position: sticky; top: 0; z-index: 20; background: var(--card); }
