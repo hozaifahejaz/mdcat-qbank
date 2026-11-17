@@ -516,6 +516,8 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
     const idx = Number(b.idx);
     const answer = Number(b.answer);
     const ok = Number.isInteger(idx) && Number.isInteger(answer) && answer >= 0 && answer <= 3;
+    // The website has usually fetched the explanation already (peek, below) and only needs the answer locked in.
+    const quiet = b.quiet === true;
     // One trip: the answer is locked in only on this student's own open practice set, then the question is read back.
     const [own, , rowRes, served, picks] = await c.db.batch([
       c.db.prepare("SELECT * FROM attempts WHERE id = ?1 AND user_id = ?2").bind(id, me.id),
@@ -523,20 +525,44 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
           AND attempt_id = (SELECT id FROM attempts WHERE id = ?1 AND user_id = ?2 AND finished_at IS NULL AND mode = 'tutor' AND (deadline_at IS NULL OR deadline_at + ${GRACE} >= ?4))`)
         .bind(id, me.id, ok ? answer : null, Date.now(), secs(b.seconds), ok ? idx : -1, ok ? 1 : 0),
       c.db.prepare(`SELECT question_id, checked, answer FROM answers WHERE attempt_id = ${OWN} AND idx = ?3`).bind(id, me.id, ok ? idx : -1),
-      c.db.prepare(`SELECT * FROM served WHERE id = (SELECT question_id FROM answers WHERE attempt_id = ${OWN} AND idx = ?3)`).bind(id, me.id, ok ? idx : -1),
-      c.db.prepare(statsSql(`SELECT question_id FROM answers WHERE attempt_id = ${OWN} AND idx = ?3`)).bind(id, me.id, ok ? idx : -1),
+      ...(quiet ? [] : [
+        c.db.prepare(`SELECT * FROM served WHERE id = (SELECT question_id FROM answers WHERE attempt_id = ${OWN} AND idx = ?3)`).bind(id, me.id, ok ? idx : -1),
+        c.db.prepare(statsSql(`SELECT question_id FROM answers WHERE attempt_id = ${OWN} AND idx = ?3`)).bind(id, me.id, ok ? idx : -1),
+      ]),
     ]);
     const a = await stillOpen(c.db, own!.results[0] as AttemptRow | undefined);
     if (a.mode !== "tutor") throw fail(400, "timed", "Answers in a timed test open when you submit it.");
     if (!ok) throw fail(400, "bad_answer", "Pick an answer first.");
     const row = rowRes!.results[0] as { question_id: string; checked: number; answer: number | null } | undefined;
     if (!row) throw fail(404, "not_found", "That question isn't in this test.");
+    if (quiet) {
+      if (!row.checked) throw fail(409, "not_saved", "That answer didn't save. Please try again.");
+      return json({ answer: row.answer });
+    }
     const q = served!.results[0] as Served | undefined;
     // The key only ever goes out for an answer that is locked in.
     if (!q || !row.checked) throw fail(404, "not_found", "This question was taken down for a fix.");
     return json({ answer: row.answer, reveal: full(q), stats: readStats(picks!.results).get(q.id) ?? null });
   },
-
+  /* The answer and explanation of the question on screen, fetched while the student reads it so Submit shows the
+     result without a wait. Only for a question of the student's own open practice set with explanations on; timed
+     tests and mocks never get one. */
+  "GET /api/study/peek": async (c) => {
+    const me = await student(c, true);
+    const p = new URL(c.request.url).searchParams;
+    const id = str(p.get("id"), 64);
+    const idx = Number(p.get("idx") ?? "x");
+    const mine = `SELECT question_id FROM answers WHERE idx = ?3 AND attempt_id = (SELECT id FROM attempts WHERE id = ?1 AND user_id = ?2
+        AND finished_at IS NULL AND mode = 'tutor' AND (deadline_at IS NULL OR deadline_at + ${GRACE} >= ?4))`;
+    const args = [id, me.id, Number.isInteger(idx) ? idx : -1, Date.now()];
+    const [served, picks] = await c.db.batch([
+      c.db.prepare(`SELECT * FROM served WHERE id = (${mine})`).bind(...args),
+      c.db.prepare(statsSql(mine)).bind(...args),
+    ]);
+    const q = served!.results[0] as Served | undefined;
+    if (!q) throw fail(404, "not_found", "That question isn't open.");
+    return json({ reveal: full(q), stats: readStats(picks!.results).get(q.id) ?? null });
+  },
   "POST /api/study/finish": async (c) => {
     const me = await student(c, true);
     const b = await body(c.request);

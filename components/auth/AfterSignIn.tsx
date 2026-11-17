@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { type Device, claimDevice, friendlyError } from "@/lib/auth";
 import DeviceLimit from "@/components/auth/DeviceLimit";
+import { forgetAll } from "@/lib/cache";
 
 /* Runs once a session exists: makes this device the active one (locking the other), then goes to `next`.
    If the account already has two other devices, asks which one to remove first. */
@@ -10,6 +11,9 @@ export default function AfterSignIn({ next }: { next: string }) {
   const [limit, setLimit] = useState<Device[] | null>(null);
   const [error, setError] = useState("");
   const [attempt, setAttempt] = useState(0);
+
+  // A new sign-in starts clean: nothing the last person to use this browser saw is shown to the next.
+  useEffect(() => { forgetAll(); }, []);
 
   useEffect(() => {
     let live = true;

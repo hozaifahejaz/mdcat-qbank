@@ -9,7 +9,7 @@ import { ApiError } from "@/lib/api";
 import { friendlyError } from "@/lib/auth";
 import { subjects } from "@/lib/bank";
 import { clock, letters } from "@/lib/format";
-import { type OpenAttempt, type Stats, checkAnswer, finishTest, reportQuestion, saveAnswer, setBookmark } from "@/lib/study";
+import { type OpenAttempt, type Stats, checkAnswer, finishTest, lockAnswer, peekAnswer, reportQuestion, saveAnswer, setBookmark } from "@/lib/study";
 import type { Question } from "@/lib/bank";
 import type { AccountUser } from "@/lib/user";
 
@@ -70,11 +70,14 @@ export default function TestPlayer({ user, attempt, note }: Props) {
   };
 
   const leaving = useRef(false);
+  // Answers still being locked in behind a result that is already on screen.
+  const locks = useRef(new Set<Promise<void>>());
   const submit = useCallback(async () => {
     if (leaving.current) return;
     leaving.current = true;
     setBusy(true);
     try {
+      await Promise.allSettled([...locks.current]);
       const done = await finishTest(attempt.id);
       // Nothing was checked, so there's no result to show.
       leave(done.empty ? "/practice" : `/review?id=${encodeURIComponent(attempt.id)}`);
@@ -144,8 +147,55 @@ export default function TestPlayer({ user, attempt, note }: Props) {
     setFlagged((x) => x.map((v, k) => (k === i ? f : v)));
     if (!reveal) save(i, answers[i] ?? null, f);
   };
+  /* Tutor sets: the result of the question on screen is fetched while the student reads it, so Submit shows it
+     without waiting on the network. Held in memory only, and never asked for in a timed test or a mock. */
+  const peeks = useRef(new Map<number, { reveal: Question; stats: Stats | null }>());
+  const revealed = !!reveals[i];
+  useEffect(() => {
+    if (!tutor || revealed || peeks.current.has(i)) return;
+    const k = i;
+    // A short pause, so paging quickly through questions asks for nothing.
+    const t = setTimeout(() => { peekAnswer(attempt.id, items[k]!.idx).then((r) => { peeks.current.set(k, r); }, () => {}); }, 250);
+    return () => clearTimeout(t);
+  }, [i, tutor, revealed, attempt.id, items]);
+
+  /* Locks an answer in after its result is already showing. A dropped connection is tried again; if it still can't
+     be saved the result is taken back, so what's on screen always matches what the server has. */
+  const lock = (k: number, answer: number, secs: number) => {
+    pending.current++;
+    const run = async () => {
+      for (let tries = 0; ; tries++) {
+        try {
+          await lockAnswer(attempt.id, items[k]!.idx, answer, secs);
+          setProblem("");
+          return;
+        } catch (e) {
+          if (e instanceof ApiError && (e.code === "time_up" || e.code === "finished")) {
+            if (!leaving.current) { leaving.current = true; leave(`/review?id=${encodeURIComponent(attempt.id)}`); }
+            return;
+          }
+          if (e instanceof ApiError && (e.status === 0 || e.status >= 500) && tries < 3) { await new Promise((r) => setTimeout(r, 1200 * (tries + 1))); continue; }
+          setReveals((x) => x.map((v, j) => (j === k ? null : v)));
+          setProblem(`Your answer to question ${k + 1} didn't save. ${friendlyError(e)}`);
+          return;
+        }
+      }
+    };
+    const p = run().finally(() => { pending.current--; locks.current.delete(p); });
+    locks.current.add(p);
+  };
+
   const check = async () => {
     if (chosen === null || reveal) return;
+    const ahead = peeks.current.get(i);
+    if (ahead) {
+      const k = i, secs = tally(i, true);
+      setReveals((x) => x.map((v, j) => (j === k ? ahead.reveal : v)));
+      setStats((x) => x.map((v, j) => (j === k ? ahead.stats : v)));
+      setTimes((t) => t.map((v, j) => (j === k ? secs : v)));
+      lock(k, chosen, secs);
+      return;
+    }
     setBusy(true);
     try {
       const secs = tally(i, true);
@@ -258,7 +308,7 @@ export default function TestPlayer({ user, attempt, note }: Props) {
         {note && i === 0 && <p className="note-chip">{note}</p>}
         {problem && <p className="note-bad" role="alert">{problem}</p>}
         <Protected user={user}>
-          <article className="qpage" aria-labelledby="stem">
+          <article key={i} className="qpage" aria-labelledby="stem">
             <div className="qhead">
               <h1 className="qno">Question {i + 1}</h1>
               <span className="qacts">

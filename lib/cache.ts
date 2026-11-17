@@ -1,7 +1,10 @@
 /* What a page showed last time, kept so the next visit can show it at once while the fresh copy loads.
-   Held in memory for moving between pages, and (for the plain numbers only) in sessionStorage so a reload is
-   instant too. Lists that carry answers and explanations stay in memory. Emptied on sign-out. */
+   Held in memory for moving between pages, and (for the plain numbers only) in the browser's storage, so a reload, a
+   new tab or tomorrow's first visit opens with them too. Lists that carry answers and explanations stay in memory.
+   Emptied on sign-out, on a new sign-in, and when the server says the session is gone. */
 const PREFIX = "seen:";
+/* A stored copy older than this is not shown: too much has changed for it to be worth a glance. */
+const KEEP_MS = 14 * 24 * 60 * 60 * 1000;
 const mem = new Map<string, unknown>();
 /* When each copy came from the server, and loads still on their way, so pages that open within a few seconds of each
    other (or of a link being pointed at) share one request instead of asking again. */
@@ -14,11 +17,12 @@ export function seen<T>(key: string, persist = false): T | undefined {
   if (mem.has(key)) return mem.get(key) as T;
   if (!persist) return undefined;
   try {
-    const raw = sessionStorage.getItem(PREFIX + key);
+    const raw = localStorage.getItem(PREFIX + key);
     if (raw === null) return undefined;
-    const v = JSON.parse(raw) as T;
-    mem.set(key, v);
-    return v;
+    const kept = JSON.parse(raw) as { t: number; v: T };
+    if (!kept || typeof kept.t !== "number" || Date.now() - kept.t > KEEP_MS) { localStorage.removeItem(PREFIX + key); return undefined; }
+    mem.set(key, kept.v);
+    return kept.v;
   } catch {
     return undefined;
   }
@@ -26,19 +30,22 @@ export function seen<T>(key: string, persist = false): T | undefined {
 
 export function keep(key: string, value: unknown, persist = false) {
   mem.set(key, value);
-  if (persist) try { sessionStorage.setItem(PREFIX + key, JSON.stringify(value)); } catch {}
+  if (persist) try { localStorage.setItem(PREFIX + key, JSON.stringify({ t: Date.now(), v: value })); } catch {}
 }
 
 export function forgetAll() {
   mem.clear();
   loadedAt.clear();
   loading.clear();
-  try {
-    for (let i = sessionStorage.length - 1; i >= 0; i--) {
-      const k = sessionStorage.key(i);
-      if (k?.startsWith(PREFIX)) sessionStorage.removeItem(k);
-    }
-  } catch {}
+  for (const store of ["localStorage", "sessionStorage"] as const) {
+    try {
+      const s = window[store];
+      for (let i = s.length - 1; i >= 0; i--) {
+        const k = s.key(i);
+        if (k?.startsWith(PREFIX)) s.removeItem(k);
+      }
+    } catch {}
+  }
 }
 
 /* After the student answers, finishes or bookmarks something: copies still show, but the next look asks again. */

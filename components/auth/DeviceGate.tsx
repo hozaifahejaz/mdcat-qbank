@@ -16,7 +16,7 @@ type State =
   | { kind: "error"; message: string };
 
 const CHECK_EVERY_MS = 30_000;
-/* Set once this tab has been let in, so the next page shows at once while the check runs behind it. */
+/* Set once this browser has been let in, so the next page (or the next visit) shows at once while the check runs behind it. */
 const LET_IN = "let-in";
 /* When this tab last heard "active" from the server. Moving to another page within the check interval doesn't ask
    again: the 30-second check carries on from the new page, and the server checks every data request itself. */

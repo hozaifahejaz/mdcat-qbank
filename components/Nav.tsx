@@ -24,6 +24,8 @@ const idle = (f: () => void) => {
   else setTimeout(f, 300);
 };
 
+let registered = false;
+
 type Router = ReturnType<typeof useRouter>;
 let router: Router | null = null;
 
@@ -73,6 +75,12 @@ export default function Nav() {
         // The numbers most pages open with, once a session, if this tab has never had them.
         if (seen("history", true) === undefined) warmHistory();
         if (seen("catalog:mdcat", true) === undefined) warmCatalog("mdcat");
+        // Keeps the app's own files on this device (out/sw.js, made by scripts/build-sw.mjs), so the next visit opens
+        // from the device and only the student's numbers cross the network. Signed-in pages only.
+        if (!registered && "serviceWorker" in navigator) {
+          registered = true;
+          navigator.serviceWorker.register("/sw.js").catch(() => {});
+        }
       });
     };
     ahead();

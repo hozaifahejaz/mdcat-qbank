@@ -87,6 +87,10 @@ export const startTest = (o: StartOptions) => api<{ id: string; count: number; s
 export const getOpenAttempt = (id: string) => api<OpenAttempt | { finished: true; id: string }>(`/api/study/attempt?id=${encodeURIComponent(id)}`);
 export const saveAnswer = (id: string, idx: number, answer: number | null, flagged: boolean, seconds?: number) => api("/api/study/answer", { body: { id, idx, answer, flagged, seconds } });
 export const checkAnswer = (id: string, idx: number, answer: number, seconds?: number) => api<{ answer: number; reveal: Question; stats: Stats | null }>("/api/study/check", { body: { id, idx, answer, seconds } });
+/* Tutor sets: the result of the question on screen, fetched while it is being read, so Submit can show it at once
+   (peekAnswer) and only has to lock the answer in behind it (lockAnswer). Kept in memory only. */
+export const peekAnswer = (id: string, idx: number) => api<{ reveal: Question; stats: Stats | null }>(`/api/study/peek?id=${encodeURIComponent(id)}&idx=${idx}`);
+export const lockAnswer = (id: string, idx: number, answer: number, seconds?: number) => api<{ answer: number }>("/api/study/check", { body: { id, idx, answer, seconds, quiet: true } });
 /* How many of a selection are unused, incorrect, marked, omitted and correct for this student. */
 export const getPool = (o: Pick<StartOptions, "bank" | "subject" | "subjects" | "chapters" | "topic">) => {
   const p = new URLSearchParams();

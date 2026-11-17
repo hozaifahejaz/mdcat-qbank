@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
-import Nav from "@/components/Nav";
 import Track from "@/components/Track";
 import { site } from "@/lib/site";
 import "./globals.css";
@@ -11,7 +10,8 @@ export const metadata: Metadata = {
   metadataBase: new URL(site.url),
   title: `MDCAT MCQs with full explanations · ${site.name}`,
   description: "Practise PMDC MDCAT MCQs by chapter, with a full explanation on every question, full-length timed mocks and past papers. One season pass, Rs. 2,999.",
-  icons: { icon: "/favicon.svg" },
+  icons: { icon: "/favicon.svg", apple: "/icons/apple-touch-icon.png" },
+  manifest: "/manifest.webmanifest",
   openGraph: {
     type: "website",
     siteName: site.name,
@@ -41,7 +41,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         {children}
-        <Nav />
         <Track />
       </body>
     </html>
