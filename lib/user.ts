@@ -15,7 +15,7 @@ export type StudentUser = {
 export type AccountUser = StudentUser & { methods: ("email" | "phone" | "google" | "apple")[]; role: Role };
 
 const KEY = "me";
-/* The account as this tab last saw it, so pages can draw their frame before the server answers.
+/* The account as this browser last saw it, so pages can draw their frame before the server answers.
    Only for drawing: the server decides what the account may load. */
 export const lastUser = () => seen<AccountUser>(KEY, true) ?? null;
 export function rememberUser(u: AccountUser | null) {
