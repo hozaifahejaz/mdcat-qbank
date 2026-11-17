@@ -75,6 +75,7 @@ export default function Nav() {
         // The numbers most pages open with, once a session, if this tab has never had them.
         if (seen("history", true) === undefined) warmHistory();
         if (seen("catalog:mdcat", true) === undefined) warmCatalog("mdcat");
+        if (seen("dashboard", true) === undefined) warmPage("/dashboard");
         // Keeps the app's own files on this device (out/sw.js, made by scripts/build-sw.mjs), so the next visit opens
         // from the device and only the student's numbers cross the network. Signed-in pages only.
         if (!registered && "serviceWorker" in navigator) {

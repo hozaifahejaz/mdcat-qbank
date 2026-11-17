@@ -1,10 +1,14 @@
 import Nav from "@/components/Nav";
+import { AdminLayout } from "@/components/admin/AdminFrame";
+import "@/app/auth.css";
+import "@/app/dashboard.css";
+import "@/app/app.css";
 
-/* In-place page changes inside the admin panel (components/Nav.tsx). */
+/* Every admin page shares one frame, and moves between them happen in place (components/Nav.tsx). */
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <>
-      {children}
+      <AdminLayout>{children}</AdminLayout>
       <Nav />
     </>
   );

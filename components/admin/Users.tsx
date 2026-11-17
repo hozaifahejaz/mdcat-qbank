@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { PageHead } from "@/components/app/AppShell";
 import Empty from "@/components/app/Empty";
 import { friendlyError } from "@/lib/auth";
-import { type AdminUser, type UserDetail, actionNames, noteNames, createAccount, getUser, listUsers, resetDevices, setPlan, setRole, signOutUser } from "@/lib/admin";
+import { type AdminUser, type UserDetail, actionNames, noteNames, createAccount, getUser, lastUsers, listUsers, resetDevices, setPlan, setRole, signOutUser } from "@/lib/admin";
 import { day, fullDay, planNames } from "@/lib/format";
 import { formatPhone } from "@/lib/phone";
 import { type Role, roleNames, roles } from "@/lib/qc";
@@ -26,13 +26,13 @@ export default function Users({ user: me }: { user: AccountUser }) {
   // The overview's "Accounts to look at" links here with ?q=.
   useEffect(() => { const asked = new URLSearchParams(window.location.search).get("q"); if (asked) setQ(asked); }, []);
   const [filter, setFilter] = useState("");
-  const [users, setUsers] = useState<AdminUser[] | null>(null);
-  const [more, setMore] = useState(false);
+  const [users, setUsers] = useState<AdminUser[] | null>(() => lastUsers()?.users ?? null);
+  const [more, setMore] = useState(() => lastUsers()?.hasMore ?? false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [err, setErr] = useState("");
   const [sel, setSel] = useState<string | null>(null);
   const [toast, setToast] = useState("");
-  const [meOwner, setMeOwner] = useState(false);
+  const [meOwner, setMeOwner] = useState(() => lastUsers()?.meOwner ?? false);
 
   const load = useCallback(() => listUsers(q, filter).then((r) => { setUsers(r.users); setMore(r.hasMore); setMeOwner(r.meOwner); }, (e) => setErr(friendlyError(e))), [q, filter]);
   const loadMore = async () => {

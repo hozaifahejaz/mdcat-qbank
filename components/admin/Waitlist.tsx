@@ -4,12 +4,12 @@ import { useEffect, useState } from "react";
 import { PageHead } from "@/components/app/AppShell";
 import Empty from "@/components/app/Empty";
 import { friendlyError } from "@/lib/auth";
-import { type WaitlistEntry, getWaitlist } from "@/lib/admin";
+import { type WaitlistEntry, getWaitlist, last } from "@/lib/admin";
 import { day } from "@/lib/format";
 
 /* /admin/waitlist — people who left an email or number on the landing page to hear when Examwise opens. */
 export default function Waitlist() {
-  const [rows, setRows] = useState<WaitlistEntry[] | null>(null);
+  const [rows, setRows] = useState<WaitlistEntry[] | null>(() => last<WaitlistEntry[]>("waitlist"));
   const [err, setErr] = useState("");
   useEffect(() => { getWaitlist().then(setRows, (e) => setErr(friendlyError(e))); }, []);
 

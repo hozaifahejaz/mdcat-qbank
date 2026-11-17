@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { PageHead } from "@/components/app/AppShell";
 import Empty from "@/components/app/Empty";
 import { friendlyError } from "@/lib/auth";
-import { type VisitRow, type Visits, getVisits } from "@/lib/admin";
+import { type VisitRow, type Visits, getVisits, last } from "@/lib/admin";
 
 type Metric = "visitors" | "views";
 
@@ -35,10 +35,12 @@ function change(now: number, before: number, days: number) {
 /* /admin/visitors — how many people visit the site, what they look at, and where they come from. Admins only. */
 export default function Visitors() {
   const [days, setDays] = useState(30);
-  const [d, setD] = useState<Visits | null>(null);
+  const [d, setD] = useState<Visits | null>(() => last<Visits>("visits:30"));
   const [err, setErr] = useState("");
   useEffect(() => {
     setErr("");
+    const had = last<Visits>(`visits:${days}`);
+    if (had) setD(had);
     getVisits(days).then(setD, (e) => setErr(friendlyError(e)));
   }, [days]);
 

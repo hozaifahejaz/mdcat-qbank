@@ -641,9 +641,8 @@ dl.kpis.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .gr-bars i.zero { background: var(--line); }
 .gr-x { display: flex; justify-content: space-between; }
 
-/* A brief fade as a page, a question or its answer comes in, so a change reads as a response and not a jump. The
-   content is readable from the first frame (it starts part-way in), and nothing moves for people who ask for less motion. */
+/* The answer fades in under the options. Pages and questions swap with no effect at all: a fade on every move made
+   the whole page blink. */
 @keyframes come-in { from { opacity: .35; } }
-.frame .surface-body > .dwrap > *, .qpage { animation: come-in .14s ease-out; }
 .qresult { animation: come-in .2s ease-out; }
-@media (prefers-reduced-motion: reduce) { .frame .surface-body > .dwrap > *, .qpage, .qresult { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .qresult { animation: none; } }
