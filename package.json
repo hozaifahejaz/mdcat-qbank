@@ -4,10 +4,10 @@
   "version": "0.1.0",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build && node scripts/build-sw.mjs",
     "start": "next start",
     "typecheck": "tsc --noEmit && tsc --noEmit -p functions",
-    "preview": "next build && wrangler d1 migrations apply mdcat-qbank --local && wrangler pages dev",
+    "preview": "npm run build && wrangler d1 migrations apply mdcat-qbank --local && wrangler pages dev",
     "test": "vitest run"
   },
   "dependencies": {

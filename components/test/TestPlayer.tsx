@@ -308,7 +308,7 @@ export default function TestPlayer({ user, attempt, note }: Props) {
         {note && i === 0 && <p className="note-chip">{note}</p>}
         {problem && <p className="note-bad" role="alert">{problem}</p>}
         <Protected user={user}>
-          <article className="qpage" aria-labelledby="stem">
+          <article key={i} className="qpage" aria-labelledby="stem">
             <div className="qhead">
               <h1 className="qno">Question {i + 1}</h1>
               <span className="qacts">
