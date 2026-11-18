@@ -53,7 +53,9 @@ export default function Visitors() {
   );
 
   if (err) return <div className="dgrid">{head}<p className="note-bad">{err}</p></div>;
-  if (!d || d.days !== days) return <div className="dgrid">{head}<div className="sk" style={{ height: 520 }} /></div>;
+  if (!d) return <div className="dgrid">{head}<div className="sk" style={{ height: 520 }} /></div>;
+  // A range not looked at before: the last one's numbers stay on screen until the new ones land.
+  const shown = d.days;
 
   const t = d.totals;
   return (
@@ -61,14 +63,14 @@ export default function Visitors() {
       {head}
       <section className="dcard panel">
         <dl className="kpis">
-          <div><dt>Visitors</dt><dd>{n(t.visitors)}</dd>{change(t.visitors, d.previous.visitors, days)}</div>
-          <div><dt>Page views</dt><dd>{n(t.views)}</dd>{change(t.views, d.previous.views, days)}</div>
+          <div><dt>Visitors</dt><dd>{n(t.visitors)}</dd>{change(t.visitors, d.previous.visitors, shown)}</div>
+          <div><dt>Page views</dt><dd>{n(t.views)}</dd>{change(t.views, d.previous.views, shown)}</div>
           <div><dt>On the site now</dt><dd className="live">{d.now > 0 && <i aria-hidden="true" />}{n(d.now)}</dd><span className="muted small">in the last 5 minutes</span></div>
           <div><dt>New accounts</dt><dd>{n(t.signups)}</dd>{t.visitors > 0 && t.signups <= t.visitors && <span className="muted small">{((t.signups / t.visitors) * 100).toFixed(1)}% of visitors</span>}</div>
         </dl>
-        <VisitsChart daily={d.daily} weekly={days > 31} />
+        <VisitsChart daily={d.daily} weekly={shown > 31} />
         <p className="muted small">
-          A visitor is counted once a day, so over {days} days someone who comes back on three days counts three times.
+          A visitor is counted once a day, so over {shown} days someone who comes back on three days counts three times.
           {t.views > 0 && ` ${(t.views / Math.max(1, t.visitors)).toFixed(1)} pages per visit; ${Math.round((t.signedIn / Math.max(1, t.visitors)) * 100)}% of visits were signed in.`}
         </p>
       </section>

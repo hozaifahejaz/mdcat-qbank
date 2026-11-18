@@ -3,7 +3,8 @@
 import { Fragment, useState } from "react";
 import Icon from "@/components/app/Icon";
 import { banks, toneOf } from "@/lib/banks";
-import { type ChapterStat, type Dashboard, ESTIMATE_AFTER, estimateScore } from "@/lib/dashboard-data";
+import { warm } from "@/lib/cache";
+import { type ChapterStat, type Dashboard, ESTIMATE_AFTER, estimateScore, getDashboard } from "@/lib/dashboard-data";
 import { band, pct } from "@/lib/format";
 import { examDateFor, goalChoices, savePrefs } from "@/lib/prefs";
 import { paper } from "@/lib/site";
@@ -137,6 +138,10 @@ function ordered(chapters: ChapterStat[]) {
 export function Subjects({ data, onBank }: { data: Dashboard; onBank?: (bank: string) => void }) {
   const [open, setOpen] = useState<string | null>(null);
   const bankId = data.bank ?? "mdcat";
+  // The tab lights the moment it is pressed, and its numbers are fetched as soon as it is pointed at or touched.
+  const [pressed, setPressed] = useState<string | null>(null);
+  const lit = pressed ?? bankId;
+  const ahead = (id: string) => { if (id !== bankId) warm(`dashboard:${id}`, () => getDashboard(undefined, id), true); };
   const practise = (subject: string, chapter?: string) => `/practice?${new URLSearchParams({ bank: bankId, subject, ...(chapter ? { chapter } : {}) })}`;
   return (
     <section className="box" aria-labelledby="subj-h">
@@ -145,7 +150,8 @@ export function Subjects({ data, onBank }: { data: Dashboard; onBank?: (bank: st
         {onBank && (
           <div className="bk-tabs" role="tablist" aria-label="Question bank">
             {banks.map((b) => (
-              <button key={b.id} type="button" role="tab" aria-selected={b.id === bankId} onClick={() => b.id !== bankId && onBank(b.id)}>{b.short}</button>
+              <button key={b.id} type="button" role="tab" aria-selected={b.id === lit} onPointerEnter={() => ahead(b.id)} onTouchStart={() => ahead(b.id)} onFocus={() => ahead(b.id)}
+                onClick={() => { if (b.id !== lit) { setPressed(b.id); onBank(b.id); } }}>{b.short}</button>
             ))}
           </div>
         )}

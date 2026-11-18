@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { seen } from "@/lib/cache";
 import { lastUser } from "@/lib/user";
@@ -33,10 +33,29 @@ function inApp(url: URL) {
   return url.origin === window.location.origin && !OUTSIDE.test(url.pathname) && !OUTSIDE.test(window.location.pathname) && !/\.[a-z0-9]+$/i.test(url.pathname);
 }
 
+/* The same page asked for again with another query (/test?id=… from the test page, a filtered admin list from that
+   list): screens read their address once, when they open, so the page is opened afresh inside the frame that is
+   already on screen. The layouts key the page on this count (usePageTurn), which is all it takes: no reload. */
+let turn = 0;
+const turned = new Set<() => void>();
+const onTurn = (f: () => void) => { turned.add(f); return () => { turned.delete(f); }; };
+export const usePageTurn = () => useSyncExternalStore(onTurn, () => turn, () => 0);
+let shown = "";
+function again(url: URL, replace = false) {
+  const to = url.pathname + url.search + url.hash;
+  if (replace) window.history.replaceState(null, "", to);
+  else window.history.pushState(null, "", to);
+  shown = window.location.pathname + window.location.search;
+  window.scrollTo(0, 0);
+  turn++;
+  for (const f of turned) f();
+}
+
 /* For code that used to set window.location: the same move, without the reload when both ends are in the app. */
 export function go(href: string, replace = false) {
   const url = new URL(href, window.location.href);
-  if (router && inApp(url) && url.pathname !== window.location.pathname) {
+  if (router && inApp(url) && url.pathname === window.location.pathname) again(url, replace);
+  else if (router && inApp(url)) {
     if (replace) router.replace(url.pathname + url.search + url.hash);
     else router.push(url.pathname + url.search + url.hash);
   } else if (replace) window.location.replace(href);
@@ -47,8 +66,9 @@ function linkOf(e: Event): { a: HTMLAnchorElement; url: URL } | null {
   const a = (e.target as Element | null)?.closest?.("a[href]") as HTMLAnchorElement | null;
   if (!a || a.target || a.hasAttribute("download") || a.getAttribute("rel")?.includes("external")) return null;
   const url = new URL(a.href, window.location.href);
-  // The same page with another query still reloads: screens read their address once, when they open.
-  if (!inApp(url) || url.pathname === window.location.pathname) return null;
+  if (!inApp(url)) return null;
+  // A jump within the page that is showing is the browser's own business.
+  if (url.hash && url.pathname === window.location.pathname && url.search === window.location.search) return null;
   return { a, url };
 }
 
@@ -58,7 +78,7 @@ export default function Nav() {
     router = r;
     const warm = (e: Event) => {
       const l = linkOf(e);
-      if (!l) return;
+      if (!l || l.url.pathname + l.url.search === window.location.pathname + window.location.search) return;
       // The page itself is usually fetched already (below), in which case this costs nothing. Its numbers are fetched
       // now, unless they were a moment ago.
       r.prefetch(l.url.pathname + l.url.search);
@@ -93,8 +113,20 @@ export default function Nav() {
       const l = linkOf(e);
       if (!l) return;
       e.preventDefault();
-      r.push(l.url.pathname + l.url.search + l.url.hash);
+      if (l.url.pathname !== window.location.pathname) return r.push(l.url.pathname + l.url.search + l.url.hash);
+      // The link of the page that is showing: nothing to load, back to its top. With another query, the page afresh.
+      if (l.url.search === window.location.search) window.scrollTo(0, 0);
+      else again(l.url);
     };
+    // Back and forward between two addresses of one page: the page afresh too, since it read its address once.
+    shown = window.location.pathname + window.location.search;
+    const back = () => {
+      const was = shown.split("?")[0];
+      const now = window.location.pathname + window.location.search;
+      if (now !== shown && was === window.location.pathname) { shown = now; turn++; for (const f of turned) f(); }
+      shown = now;
+    };
+    window.addEventListener("popstate", back);
     document.addEventListener("pointerover", warm, { passive: true });
     document.addEventListener("touchstart", warm, { passive: true });
     document.addEventListener("focusin", warm);
@@ -106,6 +138,7 @@ export default function Nav() {
       document.removeEventListener("touchstart", warm);
       document.removeEventListener("focusin", warm);
       document.removeEventListener("click", click);
+      window.removeEventListener("popstate", back);
     };
   }, [r]);
   return null;
