@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
+import { fresh } from "@/lib/cache";
 import { type Device, formatPhone, friendlyError, myDevices, removeDevice, signOut } from "@/lib/auth";
 import { planNames } from "@/lib/format";
 import { type AccountUser, knowUser } from "@/lib/user";
@@ -24,7 +25,8 @@ function AccountBody({ me }: { me: AccountUser }) {
   const [busyId, setBusyId] = useState("");
 
   useEffect(() => {
-    myDevices().then(setDevices).catch((e) => setError(friendlyError(e)));
+    // The list as last seen shows at once; the fresh one follows.
+    fresh("devices", myDevices, setDevices, true).catch((e) => setError(friendlyError(e)));
   }, []);
 
   async function saveName(e: React.FormEvent) {

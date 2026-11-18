@@ -1,5 +1,6 @@
 /* The student's study stats on the dashboard, in the shape /api/study/dashboard returns. */
 import { api } from "@/lib/api";
+import { seen } from "@/lib/cache";
 import type { StudentUser } from "@/lib/user";
 
 export type Subject = "Biology" | "Chemistry" | "Physics" | "English" | "Logical Reasoning" | "Mathematics";
@@ -47,7 +48,12 @@ export type Dashboard = {
 };
 
 /* The student's numbers, worked out on the server from their own answers (server/study.ts). */
-export const getDashboard = (_user?: StudentUser, bank?: string | null) => api<Dashboard>(`/api/study/dashboard${bank ? `?bank=${encodeURIComponent(bank)}` : ""}`);
+export const getDashboard = (_user?: StudentUser, bank?: string | null) => {
+  // Without a bank the server lays the numbers out in the one the student chose; saying which one this browser saw
+  // last lets it read everything in one go.
+  const hint = bank ? null : seen<Dashboard>("dashboard", true)?.bank;
+  return api<Dashboard>(`/api/study/dashboard${bank ? `?bank=${encodeURIComponent(bank)}` : hint ? `?hint=${encodeURIComponent(hint)}` : ""}`);
+};
 
 /* A rough MDCAT score out of 180 from the latest answer to each question: each subject's accuracy times its share of
    the paper. Needs enough answers overall and in the three big subjects; a subject with very few borrows the overall

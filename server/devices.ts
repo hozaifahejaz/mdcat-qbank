@@ -37,46 +37,46 @@ const cleanKey = (key: string) => {
 
 /* Make this browser the active device, registering it first if there's a free slot.
    Signing in on one device therefore locks the other one at its next check-in. */
-export async function claimDevice(db: D1Database, session: Session, rawKey: string, rawLabel: string, meta: DeviceMeta = { platform: "web", appVersion: null }) {
+export async function claimDevice(db: D1Database, session: Session, rawKey: string, rawLabel: string, meta: DeviceMeta = { platform: "web", appVersion: null }, first: D1PreparedStatement[] = []) {
   const key = cleanKey(rawKey);
   const label = cleanLabel(rawLabel);
   const uid = session.user_id;
   const now = Date.now();
   const exempt = unlimited(session);
 
-  let device = await db
-    .prepare("SELECT id FROM devices WHERE user_id = ? AND device_key = ? AND removed_at IS NULL")
-    .bind(uid, key)
-    .first<{ id: string }>();
+  // One trip for everything the decision needs: this device, who holds the account, and today's switches. `first` is
+  // the caller's own statements (a new sign-in saves its session here), so they cost no trip of their own.
+  const read = (await db.batch([
+    ...first,
+    db.prepare("SELECT id FROM devices WHERE user_id = ? AND device_key = ? AND removed_at IS NULL").bind(uid, key),
+    db.prepare("SELECT active_device_id FROM users WHERE id = ?").bind(uid),
+    db.prepare("SELECT count(*) AS n, min(created_at) AS first FROM device_events WHERE user_id = ? AND kind = 'takeover' AND created_at > ?").bind(uid, now - DAY_MS),
+  ])).slice(first.length);
+  let device = read[0]!.results[0] as { id: string } | undefined;
+  const user = read[1]!.results[0] as { active_device_id: string | null } | undefined;
+  const since = read[2]!.results[0] as { n: number; first: number | null } | undefined;
 
   if (!device) {
     const id = uuid();
     // The count check and the insert are one statement, so two sign-ins at once can't both take the last slot.
-    const res = await db
-      .prepare(
+    const [added] = await db.batch([
+      db.prepare(
         `INSERT INTO devices (id, user_id, device_key, label, created_at, last_seen_at, platform, app_version)
          SELECT ?1, ?2, ?3, ?4, ?5, ?5, ?7, ?8
           WHERE (SELECT count(*) FROM devices WHERE user_id = ?2 AND removed_at IS NULL) < ?6`,
-      )
-      .bind(id, uid, key, label, now, exempt ? Number.MAX_SAFE_INTEGER : MAX_DEVICES, meta.platform, meta.appVersion)
-      .run();
-    if (!res.meta.changes) return { status: "device_limit" as const, devices: await listDevices(db, uid) };
-    await db.prepare("INSERT INTO device_events (user_id, device_id, kind, created_at) VALUES (?, ?, 'register', ?)").bind(uid, id, now).run();
+      ).bind(id, uid, key, label, now, exempt ? Number.MAX_SAFE_INTEGER : MAX_DEVICES, meta.platform, meta.appVersion),
+      // Noted only if the device went in.
+      db.prepare("INSERT INTO device_events (user_id, device_id, kind, created_at) SELECT ?1, ?2, 'register', ?3 WHERE EXISTS (SELECT 1 FROM devices WHERE id = ?2)").bind(uid, id, now),
+    ]);
+    if (!added!.meta.changes) return { status: "device_limit" as const, devices: await listDevices(db, uid) };
     device = { id };
   }
 
-  const user = await db.prepare("SELECT active_device_id FROM users WHERE id = ?").bind(uid).first<{ active_device_id: string | null }>();
   const takeover = !exempt && !!user?.active_device_id && user.active_device_id !== device.id;
-  if (takeover) {
-    const since = await db
-      .prepare("SELECT count(*) AS n, min(created_at) AS first FROM device_events WHERE user_id = ? AND kind = 'takeover' AND created_at > ?")
-      .bind(uid, now - DAY_MS)
-      .first<{ n: number; first: number | null }>();
-    if ((since?.n ?? 0) >= MAX_TAKEOVERS) {
-      const noted = await db.prepare("SELECT 1 FROM security_events WHERE user_id = ? AND kind = 'takeover_limit' AND created_at > ?").bind(uid, now - DAY_MS).first();
-      if (!noted) await note(db, uid, "takeover_limit", `Switched devices ${MAX_TAKEOVERS} times in a day`).run();
-      return { status: "takeover_limit" as const, next_allowed_at: new Date((since?.first ?? now) + DAY_MS).toISOString() };
-    }
+  if (takeover && (since?.n ?? 0) >= MAX_TAKEOVERS) {
+    const noted = await db.prepare("SELECT 1 FROM security_events WHERE user_id = ? AND kind = 'takeover_limit' AND created_at > ?").bind(uid, now - DAY_MS).first();
+    if (!noted) await note(db, uid, "takeover_limit", `Switched devices ${MAX_TAKEOVERS} times in a day`).run();
+    return { status: "takeover_limit" as const, next_allowed_at: new Date((since?.first ?? now) + DAY_MS).toISOString() };
   }
   const statements = [
     db.prepare("UPDATE users SET active_session_id = ?, active_device_id = ? WHERE id = ?").bind(session.id, device.id, uid),
@@ -87,13 +87,8 @@ export async function claimDevice(db: D1Database, session: Session, rawKey: stri
     statements.push(db.prepare("INSERT INTO device_events (user_id, device_id, kind, created_at) VALUES (?, ?, 'takeover', ?)").bind(uid, device.id, now));
   }
   await db.batch(statements);
-  if (exempt) return { status: "active" as const, takeovers_today: 0, took_over: false };
-
-  const takeovers = await db
-    .prepare("SELECT count(*) AS n FROM device_events WHERE user_id = ? AND kind = 'takeover' AND created_at > ?")
-    .bind(uid, now - DAY_MS)
-    .first<{ n: number }>();
-  return { status: "active" as const, takeovers_today: takeovers?.n ?? 0, took_over: takeover };
+  if (exempt) return { status: "active" as const, takeovers_today: 0, took_over: false, device_id: device.id };
+  return { status: "active" as const, takeovers_today: (since?.n ?? 0) + (takeover ? 1 : 0), took_over: takeover, device_id: device.id };
 }
 
 /* The 30-second check-in. */
@@ -149,6 +144,5 @@ export async function removeDevice(db: D1Database, session: Session, deviceId: s
 }
 
 /* On sign-out, give up the active slot so the other device carries on without a prompt. */
-export async function releaseDevice(db: D1Database, session: Session) {
-  await db.prepare("UPDATE users SET active_session_id = NULL, active_device_id = NULL WHERE id = ? AND active_session_id = ?").bind(session.user_id, session.id).run();
-}
+export const releaseDevice = (db: D1Database, session: Session) =>
+  db.prepare("UPDATE users SET active_session_id = NULL, active_device_id = NULL WHERE id = ? AND active_session_id = ?").bind(session.user_id, session.id);

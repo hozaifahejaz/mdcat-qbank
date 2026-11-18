@@ -6,11 +6,11 @@ import { seen } from "@/lib/cache";
 import { lastUser } from "@/lib/user";
 import { warmCatalog, warmHistory } from "@/lib/study";
 import { warmPage } from "@/lib/warm";
+import { OUTSIDE } from "@/lib/paths";
 
 /* Moves between signed-in pages without reloading the site: a click on an ordinary link swaps the page in place,
    and pointing at (or touching) a link fetches that page ahead of the click. Links stay plain <a> everywhere.
    The landing and sign-in pages have their own styles, so going to or from them is still a normal page load. */
-const OUTSIDE = /^\/($|signin|signup|forgot-password|reset-password|auth\/|api\/)/;
 
 /* The signed-in pages. Their page files are fetched in a quiet moment after the first page shows, so a click swaps the
    page at once instead of waiting on the network first (on a phone, a touch comes only a moment before the tap).
@@ -75,6 +75,7 @@ export default function Nav() {
         // The numbers most pages open with, once a session, if this tab has never had them.
         if (seen("history", true) === undefined) warmHistory();
         if (seen("catalog:mdcat", true) === undefined) warmCatalog("mdcat");
+        if (seen("dashboard", true) === undefined) warmPage("/dashboard");
         // Keeps the app's own files on this device (out/sw.js, made by scripts/build-sw.mjs), so the next visit opens
         // from the device and only the student's numbers cross the network. Signed-in pages only.
         if (!registered && "serviceWorker" in navigator) {

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
-import { formatPhone, friendlyError, normalisePhone } from "@/lib/auth";
+import { type Entered, formatPhone, friendlyError, normalisePhone, thisDevice } from "@/lib/auth";
 import Turnstile from "@/components/auth/Turnstile";
 
 type Mode = "signin" | "signup";
@@ -10,7 +10,7 @@ const RESEND_AFTER = 60;
 
 /* Phone number and a 6-digit SMS code. The same flow signs in an existing number or creates a new account,
    so a student who picks the "wrong" page still gets in. */
-export default function PhoneForm({ mode, siteKey, available, onSignedIn }: { mode: Mode; siteKey: string; available: boolean; onSignedIn: () => void }) {
+export default function PhoneForm({ mode, siteKey, available, onSignedIn }: { mode: Mode; siteKey: string; available: boolean; onSignedIn: (e: Entered) => void }) {
   const [name, setName] = useState("");
   const [raw, setRaw] = useState("");
   const [phone, setPhone] = useState("");
@@ -59,8 +59,7 @@ export default function PhoneForm({ mode, siteKey, available, onSignedIn }: { mo
     if (token.length !== 6) return setError("Enter the 6-digit code from the SMS.");
     setBusy(true); setError("");
     try {
-      await api("/api/auth/phone/verify", { body: { phone, code: token, name: mode === "signup" ? name.trim() : "" } });
-      onSignedIn();
+      onSignedIn(await api<Entered>("/api/auth/phone/verify", { body: { phone, code: token, name: mode === "signup" ? name.trim() : "", ...thisDevice() } }));
     } catch (err) {
       setError(friendlyError(err));
       setBusy(false);

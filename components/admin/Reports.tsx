@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { PageHead } from "@/components/app/AppShell";
 import Empty from "@/components/app/Empty";
 import { friendlyError } from "@/lib/auth";
-import { type Report, listReports, resolveReports } from "@/lib/admin";
+import { type Report, last, listReports, resolveReports } from "@/lib/admin";
 import { day } from "@/lib/format";
 import { stageLabel } from "@/lib/qc";
 
@@ -12,11 +12,11 @@ import { stageLabel } from "@/lib/qc";
    reports is hidden from new tests until it's fixed or the reports are dismissed here. */
 export default function Reports() {
   const [tab, setTab] = useState<"open" | "closed">("open");
-  const [rows, setRows] = useState<Report[] | null>(null);
+  const [rows, setRows] = useState<Report[] | null>(() => last<Report[]>("reports:open"));
   const [err, setErr] = useState("");
   const [toast, setToast] = useState("");
 
-  const load = useCallback(() => { setRows(null); listReports(tab).then(setRows, (e) => setErr(friendlyError(e))); }, [tab]);
+  const load = useCallback(() => { setRows(last<Report[]>(`reports:${tab}`)); listReports(tab).then(setRows, (e) => setErr(friendlyError(e))); }, [tab]);
   useEffect(load, [load]);
   useEffect(() => { if (toast) { const t = setTimeout(() => setToast(""), 3200); return () => clearTimeout(t); } }, [toast]);
 

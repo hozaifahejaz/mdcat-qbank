@@ -6,11 +6,11 @@ export type UserRow = {
   password_hash: string | null; plan: string; plan_expires_at: number | null; role: string;
 };
 
-const COLUMNS = "id, name, email, email_verified_at, phone, password_hash, plan, plan_expires_at, role";
+export const USER_COLUMNS = "id, name, email, email_verified_at, phone, password_hash, plan, plan_expires_at, role";
 
-export const userById = (db: D1Database, id: string) => db.prepare(`SELECT ${COLUMNS} FROM users WHERE id = ?`).bind(id).first<UserRow>();
-export const userByEmail = (db: D1Database, email: string) => db.prepare(`SELECT ${COLUMNS} FROM users WHERE email = ?`).bind(email).first<UserRow>();
-export const userByPhone = (db: D1Database, phone: string) => db.prepare(`SELECT ${COLUMNS} FROM users WHERE phone = ?`).bind(phone).first<UserRow>();
+export const userById = (db: D1Database, id: string) => db.prepare(`SELECT ${USER_COLUMNS} FROM users WHERE id = ?`).bind(id).first<UserRow>();
+export const userByEmail = (db: D1Database, email: string) => db.prepare(`SELECT ${USER_COLUMNS} FROM users WHERE email = ?`).bind(email).first<UserRow>();
+export const userByPhone = (db: D1Database, phone: string) => db.prepare(`SELECT ${USER_COLUMNS} FROM users WHERE phone = ?`).bind(phone).first<UserRow>();
 
 export async function createUser(db: D1Database, fields: { name?: string; email?: string | null; emailVerified?: boolean; phone?: string | null; passwordHash?: string | null }): Promise<string> {
   const id = uuid();
@@ -93,7 +93,7 @@ export async function publicUser(db: D1Database, u: UserRow, linked?: { provider
 /* The same, read in one trip to the database. Null when the account is gone. */
 export async function publicUserById(db: D1Database, id: string) {
   const [user, linked] = await db.batch([
-    db.prepare(`SELECT ${COLUMNS} FROM users WHERE id = ?`).bind(id),
+    db.prepare(`SELECT ${USER_COLUMNS} FROM users WHERE id = ?`).bind(id),
     db.prepare("SELECT provider FROM identities WHERE user_id = ?").bind(id),
   ]);
   const u = user!.results[0] as UserRow | undefined;

@@ -1,3 +1,4 @@
+import Ahead from "@/components/Ahead";
 import Logo from "@/components/Logo";
 import ThemeToggle from "@/components/ThemeToggle";
 import { site } from "@/lib/site";
@@ -25,6 +26,7 @@ export default function AuthFrame({ children, side = false, top }: { children: R
         {children}
         {side && <SidePanel />}
       </main>
+      <Ahead />
       <footer className="auth-wrap auth-foot">
         {site.name} is independent and not affiliated with PMDC, NUMS or any university.
       </footer>

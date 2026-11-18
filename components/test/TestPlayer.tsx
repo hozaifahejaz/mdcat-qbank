@@ -152,12 +152,15 @@ export default function TestPlayer({ user, attempt, note }: Props) {
   const peeks = useRef(new Map<number, { reveal: Question; stats: Stats | null }>());
   const revealed = !!reveals[i];
   useEffect(() => {
-    if (!tutor || revealed || peeks.current.has(i)) return;
-    const k = i;
+    if (!tutor) return;
+    // Once this question's result is showing, the next one's is fetched while the explanation is read, so answering
+    // straight after "Next" is just as quick.
+    const k = revealed ? i + 1 : i;
+    if (k >= items.length || reveals[k] || peeks.current.has(k)) return;
     // A short pause, so paging quickly through questions asks for nothing.
     const t = setTimeout(() => { peekAnswer(attempt.id, items[k]!.idx).then((r) => { peeks.current.set(k, r); }, () => {}); }, 250);
     return () => clearTimeout(t);
-  }, [i, tutor, revealed, attempt.id, items]);
+  }, [i, tutor, revealed, attempt.id, items]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* Locks an answer in after its result is already showing. A dropped connection is tried again; if it still can't
      be saved the result is taken back, so what's on screen always matches what the server has. */

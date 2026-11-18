@@ -69,7 +69,15 @@ export type UserDetail = {
   log: LogEntry[];
 };
 
-export const getOverview = () => api<Overview>("/api/admin/overview");
+/* The last answer to each of the admin panel's page reads, held in memory while the tab is open. A page opens with
+   its last copy at once (`last`) and the fresh one replaces it, so moving around the panel doesn't blink a loading
+   placeholder each time. Nothing is written to the browser's storage. */
+const kept = new Map<string, unknown>();
+const keep = <T>(key: string, p: Promise<T>) => p.then((v) => { kept.set(key, v); return v; });
+export const last = <T>(key: string) => (kept.get(key) as T | undefined) ?? null;
+export const questionsKey = (p: { view: string; subject: string; q: string; chapter?: string; free?: string; paper?: string }) => `questions:${p.view}|${p.subject}|${p.q}|${p.chapter ?? ""}|${p.free ?? ""}|${p.paper ?? ""}`;
+
+export const getOverview = () => keep("overview", api<Overview>("/api/admin/overview"));
 
 /* Visitors are counted once a day (server/visits.ts), so a total over a range adds up each day's visitors. */
 export type VisitRow = { key: string; visitors: number; views: number };
@@ -82,7 +90,7 @@ export type Visits = {
   pages: VisitRow[]; referrers: VisitRow[]; campaigns: VisitRow[]; countries: VisitRow[];
   devices: VisitRow[]; os: VisitRow[]; browsers: VisitRow[];
 };
-export const getVisits = (days: number) => api<Visits>(`/api/admin/visitors?days=${days}`);
+export const getVisits = (days: number) => keep(`visits:${days}`, api<Visits>(`/api/admin/visitors?days=${days}`));
 
 export type QuestionPage = {
   questions: AdminQuestion[];
@@ -94,7 +102,7 @@ export type QuestionPage = {
   spread: { known: number; pct: number[] };
 };
 export const listQuestions = (p: { view: string; subject: string; q: string; offset: number; chapter?: string; free?: string; paper?: string }) =>
-  api<QuestionPage>(`/api/admin/questions?${new URLSearchParams({ view: p.view, subject: p.subject, q: p.q, offset: String(p.offset), chapter: p.chapter ?? "", free: p.free ?? "", paper: p.paper ?? "" })}`);
+  ((get) => (p.offset === 0 ? keep(questionsKey(p), get) : get))(api<QuestionPage>(`/api/admin/questions?${new URLSearchParams({ view: p.view, subject: p.subject, q: p.q, offset: String(p.offset), chapter: p.chapter ?? "", free: p.free ?? "", paper: p.paper ?? "" })}`));
 /* The publishing switches for many questions at once. Only what's given is changed. */
 export const bulkQuestions = (ids: string[], change: { free?: boolean; mdcat?: boolean; paper?: number | null }) =>
   api<{ changed: number }>("/api/admin/questions/bulk", { body: { ids, ...change } });
@@ -102,11 +110,11 @@ export const bulkQuestions = (ids: string[], change: { free?: boolean; mdcat?: b
 /* How students are answering: the questions worth a second look (server/insights.ts). */
 export type QualityRow = { id: string; subject: string; chapter: string; stem: string; key: number; n: number; pct: number; picks: number[]; reports: number; why: "wrong_pick" | "low" };
 export type Quality = { at: number; minAnswers: number; measured: number; average: number | null; look: QualityRow[] };
-export const getQuality = (fresh = false) => api<Quality>(`/api/admin/quality${fresh ? "?fresh=1" : ""}`);
+export const getQuality = (fresh = false) => keep("quality", api<Quality>(`/api/admin/quality${fresh ? "?fresh=1" : ""}`));
 
 /* Questions students can be served, per bank, subject and chapter. listed: the chapter is on that bank's syllabus. */
 export type Coverage = { questions: number; banks: { id: string; name: string; subjects: { subject: string; chapters: { chapter: string; total: number; free: number; listed: boolean }[] }[] }[] };
-export const getCoverage = () => api<Coverage>("/api/admin/coverage");
+export const getCoverage = () => keep("coverage", api<Coverage>("/api/admin/coverage"));
 export type GrowthDay = { date: string; signups: number; answers: number; active: number };
 export const getQuestion = (id: string) => api<{ question: AdminQuestion }>(`/api/admin/questions/one?id=${encodeURIComponent(id)}`).then((r) => r.question);
 export const discardEdit = (id: string) => api<{ question: AdminQuestion }>("/api/admin/questions/discard", { body: { id } }).then((r) => r.question);
@@ -123,12 +131,14 @@ export type Report = {
   created_at: number; resolved_at: number | null; student: string | null; resolver: string | null;
   stem: string | null; stage: StageId | null; subject: string | null;
 };
-export const listReports = (status: "open" | "closed") => api<{ reports: Report[] }>(`/api/admin/reports?status=${status}`).then((r) => r.reports);
+export const listReports = (status: "open" | "closed") => keep(`reports:${status}`, api<{ reports: Report[] }>(`/api/admin/reports?status=${status}`).then((r) => r.reports));
 export const resolveReports = (questionId: string, status: "fixed" | "dismissed", note: string) => api("/api/admin/reports/resolve", { body: { questionId, status, note } });
 export type WaitlistEntry = { contact: string; kind: "email" | "phone"; created_at: number };
-export const getWaitlist = () => api<{ waitlist: WaitlistEntry[] }>("/api/admin/waitlist").then((r) => r.waitlist);
+export const getWaitlist = () => keep("waitlist", api<{ waitlist: WaitlistEntry[] }>("/api/admin/waitlist").then((r) => r.waitlist));
 
-export const listUsers = (q: string, filter: string, offset = 0) => api<{ users: AdminUser[]; hasMore: boolean; meOwner: boolean }>(`/api/admin/users?q=${encodeURIComponent(q)}&filter=${filter}&offset=${offset}`);
+type UserPage = { users: AdminUser[]; hasMore: boolean; meOwner: boolean };
+export const listUsers = (q: string, filter: string, offset = 0) => ((get) => (!q && !filter && !offset ? keep("users", get) : get))(api<UserPage>(`/api/admin/users?q=${encodeURIComponent(q)}&filter=${filter}&offset=${offset}`));
+export const lastUsers = () => last<UserPage>("users");
 export const getUser = (id: string) => api<UserDetail>(`/api/admin/users/one?id=${encodeURIComponent(id)}`);
 export const createAccount = (a: { name: string; email: string; password: string; role: Role }) => api<{ user: AdminUser }>("/api/admin/users/create", { body: a });
 export const setRole = (id: string, role: Role) => api<{ user: AdminUser }>("/api/admin/users/role", { body: { id, role } });

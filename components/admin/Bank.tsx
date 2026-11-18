@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { PageHead } from "@/components/app/AppShell";
 import Empty from "@/components/app/Empty";
 import { friendlyError } from "@/lib/auth";
-import { type Coverage, type Quality, getCoverage, getQuality } from "@/lib/admin";
+import { type Coverage, type Quality, getCoverage, getQuality, last } from "@/lib/admin";
 import { letters } from "@/lib/format";
 import type { AccountUser } from "@/lib/user";
 
@@ -14,8 +14,8 @@ const nf = (n: number) => n.toLocaleString("en-GB");
 
 /* /admin/bank — how full each chapter of each test is, and which questions students' answers say need a look. */
 export default function Bank({ user }: { user: AccountUser }) {
-  const [cov, setCov] = useState<Coverage | null>(null);
-  const [q, setQ] = useState<Quality | null>(null);
+  const [cov, setCov] = useState<Coverage | null>(() => last<Coverage>("coverage"));
+  const [q, setQ] = useState<Quality | null>(() => last<Quality>("quality"));
   const [bank, setBank] = useState("mdcat");
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);

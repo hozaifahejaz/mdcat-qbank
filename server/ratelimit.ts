@@ -29,8 +29,11 @@ export function overLimit(row: Counter | null | undefined, limit: number, window
 
 /* The same check without counting this try: throws once `key` has already been hit `limit` times in the window. */
 export async function rateLimitPeek(db: D1Database, key: string, limit: number, windowMs: number): Promise<void> {
+  peeked(await usedStmt(db, key).first<Counter>(), limit, windowMs);
+}
+/* Its second half, for a row read with usedStmt in a caller's own batch. */
+export function peeked(row: Counter | null | undefined, limit: number, windowMs: number): void {
   const now = Date.now();
-  const row = await db.prepare("SELECT count, window_start FROM rate_limits WHERE key = ?").bind(key).first<{ count: number; window_start: number }>();
   if (row && row.window_start >= now - windowMs && row.count >= limit) {
     const wait = Math.max(1, Math.ceil((row.window_start + windowMs - now) / 1000));
     throw fail(429, "rate_limited", "Too many tries. Please wait a little and try again.", { retry_after: wait });

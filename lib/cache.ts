@@ -33,6 +33,13 @@ export function keep(key: string, value: unknown, persist = false) {
   if (persist) try { localStorage.setItem(PREFIX + key, JSON.stringify({ t: Date.now(), v: value })); } catch {}
 }
 
+/* A copy that has just come from the server by another road (a test's results arrive with its submission): kept, and
+   not asked for again for the next few seconds. */
+export function keepFresh(key: string, value: unknown, persist = false) {
+  keep(key, value, persist);
+  loadedAt.set(key, Date.now());
+}
+
 export function forgetAll() {
   mem.clear();
   loadedAt.clear();

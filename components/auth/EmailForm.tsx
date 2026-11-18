@@ -2,14 +2,14 @@
 
 import { useState } from "react";
 import { ApiError, api } from "@/lib/api";
-import { friendlyError } from "@/lib/auth";
+import { type Entered, friendlyError, thisDevice } from "@/lib/auth";
 import Turnstile from "@/components/auth/Turnstile";
 
 type Mode = "signin" | "signup";
 
 /* Email and password. Sign-up signs straight in, or, once email sending is on, emails a confirmation link first
    (it lands on /auth/callback). Sign-in is immediate. */
-export default function EmailForm({ mode, next, siteKey, onSignedIn }: { mode: Mode; next: string; siteKey: string; onSignedIn: () => void }) {
+export default function EmailForm({ mode, next, siteKey, onSignedIn }: { mode: Mode; next: string; siteKey: string; onSignedIn: (e: Entered) => void }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -36,12 +36,12 @@ export default function EmailForm({ mode, next, siteKey, onSignedIn }: { mode: M
     const addr = email.trim().toLowerCase();
     try {
       if (mode === "signup") {
-        const res = await api<{ status: string }>("/api/auth/signup", { body: { name: name.trim(), email: addr, password, next, captcha: spend() } });
-        if (res.status === "signed_in") return onSignedIn();
+        const res = await api<{ status: string } & Entered>("/api/auth/signup", { body: { name: name.trim(), email: addr, password, next, captcha: spend(), ...thisDevice() } });
+        if (res.status === "signed_in") return onSignedIn(res);
         setSentTo(addr);
       } else {
-        await api("/api/auth/signin", { body: { email: addr, password, captcha: spend() } });
-        onSignedIn();
+        // No "busy" reset on success: the button stays as it is until the dashboard replaces the page.
+        return onSignedIn(await api<Entered>("/api/auth/signin", { body: { email: addr, password, captcha: spend(), ...thisDevice() } }));
       }
     } catch (err) {
       setUnconfirmed(err instanceof ApiError && err.code === "email_not_confirmed");

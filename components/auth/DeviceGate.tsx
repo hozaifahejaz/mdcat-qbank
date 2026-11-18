@@ -8,6 +8,10 @@ import { forgetAll, keep, seen } from "@/lib/cache";
 import { getCurrentUser, lastUser } from "@/lib/user";
 
 type State =
+  /* Before this browser has had its say: what the saved page file holds, and the first moment after it loads. The
+     page's frame is in it, shown or hidden by a mark the document sets on itself before anything is drawn
+     (app/layout.tsx), so someone who is let in sees the frame straight away, not a spinner first. */
+  | { kind: "opening" }
   | { kind: "loading" }
   | { kind: "active" }
   | { kind: "locked"; label: string | null }
@@ -21,6 +25,12 @@ const LET_IN = "let-in";
 /* When this tab last heard "active" from the server. Moving to another page within the check interval doesn't ask
    again: the 30-second check carries on from the new page, and the server checks every data request itself. */
 let checkedAt = 0;
+/* A sign-in that has just made this the account's active device (components/auth/AfterSignIn.tsx): the page it opens
+   shows at once, with nothing to ask first. */
+export function admitted() {
+  keep(LET_IN, true, true);
+  checkedAt = Date.now();
+}
 
 /* Wrap any signed-in page in this. It sends signed-out visitors to /signin, and enforces "one active device":
    it checks in every 30 seconds and whenever the tab comes back into view, and if another device has taken
@@ -28,7 +38,7 @@ let checkedAt = 0;
    page straight away and checks behind it, so moving around never waits. The server enforces the same rule on data
    (requireActiveSession in server/routes.ts), so this screen is the friendly half, not the only guard. */
 export default function DeviceGate({ children }: { children: React.ReactNode }) {
-  const [state, setState] = useState<State>({ kind: "loading" });
+  const [state, setState] = useState<State>({ kind: "opening" });
 
   const claim = useCallback(async () => {
     const res = await claimDevice();
@@ -61,7 +71,8 @@ export default function DeviceGate({ children }: { children: React.ReactNode }) 
 
   // Before the first paint, so a tab that is already let in never flashes the spinner.
   useLayoutEffect(() => {
-    if (seen<boolean>(LET_IN, true) && lastUser()) setState((s) => (s.kind === "loading" ? { kind: "active" } : s));
+    const letIn = seen<boolean>(LET_IN, true) && lastUser();
+    setState((s) => (s.kind === "opening" ? { kind: letIn ? "active" : "loading" } : s));
   }, []);
 
   useEffect(() => {
@@ -80,7 +91,14 @@ export default function DeviceGate({ children }: { children: React.ReactNode }) 
     };
   }, [check, toSignIn]);
 
-  if (state.kind === "active") return <>{children}</>;
+  if (state.kind === "active" || state.kind === "opening") {
+    return (
+      <>
+        {state.kind === "opening" && <div className="center-state gate-wait" role="status"><div className="spinner" aria-label="Loading" /></div>}
+        <div className={state.kind === "opening" ? "gate-body" : "gate-in"}>{children}</div>
+      </>
+    );
+  }
   if (state.kind === "limit") {
     return <div className="center-state"><DeviceLimit devices={state.devices} onFreed={() => { setState({ kind: "loading" }); claim(); }} /></div>;
   }

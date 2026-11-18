@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
-import { friendlyError, readNext } from "@/lib/auth";
+import { type Entered, friendlyError, readNext, thisDevice } from "@/lib/auth";
 import { getCurrentUser } from "@/lib/user";
 import AuthFrame from "@/components/auth/AuthFrame";
 import AfterSignIn from "@/components/auth/AfterSignIn";
@@ -15,6 +15,7 @@ import AfterSignIn from "@/components/auth/AfterSignIn";
 export default function Callback() {
   const [next, setNext] = useState<string | null>(null);
   const [problem, setProblem] = useState("");
+  const [entered, setEntered] = useState<Entered>({});
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -28,18 +29,19 @@ export default function Callback() {
     (async () => {
       if (token) {
         try {
-          await api("/api/auth/verify-email", { body: { token } });
+          setEntered(await api<Entered>("/api/auth/verify-email", { body: { token, ...thisDevice() } }));
         } catch (e) {
           return setProblem(`${friendlyError(e)} If you already confirmed it, just sign in.`);
         }
         return setNext(target);
       }
-      if (await getCurrentUser()) setNext(target);
+      const user = await getCurrentUser();
+      if (user) { setEntered({ user }); setNext(target); }
       else setProblem("Sign-in didn't complete. Please try again.");
     })();
   }, []);
 
-  if (next) return <AuthFrame><AfterSignIn next={next} /></AuthFrame>;
+  if (next) return <AuthFrame><AfterSignIn next={next} entered={entered} /></AuthFrame>;
   return (
     <AuthFrame>
       {problem ? (
