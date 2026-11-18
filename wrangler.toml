@@ -11,7 +11,9 @@ database_name = "mdcat-qbank"
 database_id = "f909e867-fab8-4834-a715-e9dc75b3a4af"
 migrations_dir = "migrations"
 
-# Run the API next to the database rather than next to the visitor: each request makes a few database calls,
-# and those are slow from far away.
+# Run the API next to the database rather than next to the visitor: each request makes a few database calls, and
+# each one is a round trip. The database's main copy is in Tokyo (D1 answers with served_by_colo = NRT), while
+# visitors from Pakistan arrive in Singapore, about 80 ms away per call. "smart" mode never moved the code (answers
+# said cf-placement: local-SIN), so the place is named outright: the Cloudflare site nearest AWS's Tokyo region.
 [placement]
-mode = "smart"
+region = "aws:ap-northeast-1"
