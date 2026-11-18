@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { PageHead } from "@/components/app/AppShell";
 import Empty from "@/components/app/Empty";
+import { go } from "@/components/Nav";
 import { friendlyError } from "@/lib/auth";
 import { type Coverage, type Quality, getCoverage, getQuality, last } from "@/lib/admin";
 import { letters } from "@/lib/format";
@@ -59,7 +60,7 @@ export default function Bank({ user }: { user: AccountUser }) {
                   <thead><tr><th>Question</th><th>Right</th><th>Picks</th><th>Why</th></tr></thead>
                   <tbody>
                     {q.look.map((r) => (
-                      <tr key={r.id} onClick={() => { window.location.href = `/admin/questions?id=${encodeURIComponent(r.id)}`; }}>
+                      <tr key={r.id} onClick={() => go(`/admin/questions?id=${encodeURIComponent(r.id)}`)}>
                         <td>
                           <a className="link-row" href={`/admin/questions?id=${encodeURIComponent(r.id)}`}>
                             <b>{r.id}{r.reports > 0 && <> <span className="badge bad">{r.reports} report{r.reports === 1 ? "" : "s"}</span></>}</b>

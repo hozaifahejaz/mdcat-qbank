@@ -1,7 +1,8 @@
 "use client";
 
-import { createContext, useContext, useEffect, useLayoutEffect, useMemo, useState } from "react";
+import { Fragment, createContext, useContext, useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { AppFrame, type Nav, type NavGroup } from "@/components/app/AppShell";
+import { usePageTurn } from "@/components/Nav";
 import Empty from "@/components/app/Empty";
 import { isStaff } from "@/lib/qc";
 import { type AccountUser, getCurrentUser, lastUser } from "@/lib/user";
@@ -40,6 +41,7 @@ const AdminContext = createContext<{ user: AccountUser; setActive: (href: string
 export function AdminLayout({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AccountUser | null>(null);
   const [active, setActive] = useState("");
+  const turn = usePageTurn();
   // The account as last seen, before the first paint, so the frame doesn't wait on the server to draw.
   useLayoutEffect(() => { setUser((u) => u ?? lastUser()); }, []);
   useEffect(() => {
@@ -66,7 +68,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <AdminContext value={ctx}>
-      <AppFrame user={user} active={active} nav={adminNav(user)}>{children}</AppFrame>
+      <AppFrame user={user} active={active} nav={adminNav(user)}><Fragment key={turn}>{children}</Fragment></AppFrame>
     </AdminContext>
   );
 }

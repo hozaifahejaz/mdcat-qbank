@@ -1,11 +1,12 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useState } from "react";
+import { Fragment, createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
 import DeviceGate from "@/components/auth/DeviceGate";
 import Icon from "@/components/app/Icon";
 import Logo from "@/components/Logo";
+import { usePageTurn } from "@/components/Nav";
 import ThemeToggle from "@/components/ThemeToggle";
 import { signOut } from "@/lib/auth";
 import { planNames } from "@/lib/format";
@@ -217,6 +218,8 @@ function SharedFrame({ children }: { children: React.ReactNode }) {
   // its link lit, and no sidebar around the test player.
   const [meta, setMeta] = useState<Meta>(() => ({ active: path ?? undefined, bare: path === "/test" }));
   const [slot, setSlot] = useState<HTMLDivElement | null>(null);
+  // The page that is showing, opened afresh in place when it is asked for with another query (components/Nav.tsx).
+  const turn = usePageTurn();
   useLayoutEffect(() => { setUser((u) => u ?? lastUser()); }, []);
   // Asked again on each page (the answer is shared for half a minute), so a new name or plan shows in the frame.
   useEffect(() => { getCurrentUser().then((u) => { if (u) setUser(u); }); }, [path]);
@@ -224,7 +227,7 @@ function SharedFrame({ children }: { children: React.ReactNode }) {
   const ctx = useMemo(() => ({ user, set, slot }), [user, set, slot]);
   return (
     <FrameContext value={ctx}>
-      <AppFrame active={meta.active} title={meta.title} user={user} bare={meta.bare} hasAside={meta.aside} asideSlot={setSlot}>{children}</AppFrame>
+      <AppFrame active={meta.active} title={meta.title} user={user} bare={meta.bare} hasAside={meta.aside} asideSlot={setSlot}><Fragment key={turn}>{children}</Fragment></AppFrame>
     </FrameContext>
   );
 }
