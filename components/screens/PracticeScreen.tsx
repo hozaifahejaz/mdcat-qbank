@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { type MouseEvent, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { seen } from "@/lib/cache";
 import AppShell, { PageHead } from "@/components/app/AppShell";
 import Icon from "@/components/app/Icon";
 import { type Bank, bankById, banks, toneOf } from "@/lib/banks";
 import { band, pct } from "@/lib/format";
-import { type Catalog, type ChapterPool, type Filter, type Pool, doneCount, filters, getPool, openCount, poolMatch, sumPools, testHref, totalCount, watchCatalog, watchPools } from "@/lib/study";
+import { type Catalog, type ChapterPool, type Filter, type Pool, doneCount, filters, getPool, openCount, poolMatch, sumPools, testHref, totalCount, warmCatalog, warmPools, watchCatalog, watchPools } from "@/lib/study";
 
 const counts = [10, 25, 50, 100];
 const filterNames: Record<Filter, string> = { unused: "Unused", incorrect: "Incorrect", marked: "Marked", omitted: "Omitted", correct: "Correct" };
@@ -18,11 +19,12 @@ export default function PracticeScreen() {
 const BANK_KEY = "practice-bank";
 
 /* /practice opens Create a test on the bank used last (MDCAT the first time); /practice?bank=fsc1 on that bank. The
-   bank tabs on the page switch between them. Older links that name a subject (?subject=Biology&chapter=Enzymes from
-   the dashboard) open the MDCAT bank with it ticked. */
+   bank tabs on the page switch between them in place: the address changes, the page does not load again. Older links
+   that name a subject (?subject=Biology&chapter=Enzymes from the dashboard) open the MDCAT bank with it ticked. */
 function Practice() {
   const [bank, setBank] = useState<Bank | undefined>(undefined);
-  useEffect(() => {
+  // Before the first paint, so the page opens on its bank with no placeholder in between.
+  useLayoutEffect(() => {
     const p = new URLSearchParams(window.location.search);
     let last: string | null = null;
     try { last = localStorage.getItem(BANK_KEY); } catch {}
@@ -31,8 +33,25 @@ function Practice() {
     if (picked) { try { localStorage.setItem(BANK_KEY, picked.id); } catch {} }
     setBank(b);
   }, []);
+  // The other banks' numbers, fetched once in a quiet moment where this browser has never seen them, so the first
+  // switch to each has them too. After that the copy kept from the last visit is shown and refreshed on the switch.
+  useEffect(() => {
+    if (!bank) return;
+    const t = window.setTimeout(() => { for (const b of banks) if (b.id !== bank.id) warmBank(b.id, true); }, 400);
+    return () => window.clearTimeout(t);
+  }, [bank]);
+  function pick(b: Bank) {
+    try { localStorage.setItem(BANK_KEY, b.id); } catch {}
+    window.history.replaceState(window.history.state, "", `/practice?bank=${b.id}`);
+    setBank(b);
+  }
   if (bank === undefined) return <div className="dgrid" aria-busy="true"><div className="sk" style={{ height: 320 }} /></div>;
-  return <BankPractice bank={bank} />;
+  return <BankPractice bank={bank} onBank={pick} />;
+}
+
+function warmBank(id: string, onlyNew = false) {
+  if (!onlyNew || seen(`catalog:${id}`, true) === undefined) warmCatalog(id);
+  if (!onlyNew || seen(`pools:${id}`, true) === undefined) warmPools(id);
 }
 
 /* The five banks as big buttons. The phone home screen uses the same ones. */
@@ -55,7 +74,7 @@ export function BankButtons() {
 /* What's ticked: some whole subjects (books), or some chapters of one subject. Nothing ticked means the whole bank. */
 type Sel = { kind: "subjects"; set: Set<string> } | { kind: "chapters"; subject: string; set: Set<string> };
 
-function BankPractice({ bank }: { bank: Bank }) {
+function BankPractice({ bank, onBank }: { bank: Bank; onBank: (b: Bank) => void }) {
   const [sel, setSel] = useState<Sel>({ kind: "subjects", set: new Set() });
   const [open, setOpen] = useState<Set<string>>(() => new Set());
   const [tutor, setTutor] = useState(true);
@@ -69,10 +88,15 @@ function BankPractice({ bank }: { bank: Bank }) {
   const isBook = bank.id === "fsc1" || bank.id === "fsc2";
   const noun = isBook ? "book" : "subject";
 
-  useEffect(() => {
-    watchCatalog(bank.id, setCatalog);
-    setPools(null);
-    watchPools(bank.id, setPools);
+  // Before the paint: a switch of bank draws the new bank with its own numbers in the same frame (the copy kept from
+  // the last look; the fresh one follows), never the old bank's numbers or a blank in between.
+  const first = useRef(true);
+  useLayoutEffect(() => {
+    let live = true;
+    if (!first.current) { setSel({ kind: "subjects", set: new Set() }); setOpen(new Set()); setTopic(null); setCatalog(null); setPools(null); }
+    first.current = false;
+    watchCatalog(bank.id, (c) => { if (live) setCatalog(c); });
+    watchPools(bank.id, (c) => { if (live) setPools(c); });
     const p = new URLSearchParams(window.location.search);
     const s = p.get("subject");
     const c = p.get("chapter");
@@ -83,7 +107,14 @@ function BankPractice({ bank }: { bank: Bank }) {
     if (p.get("mode") === "timed") { setTutor(false); setTimed(true); }
     const t = p.get("topic");
     if (t) setTopic(t);
+    return () => { live = false; };
   }, [bank]);
+
+  function tab(e: MouseEvent, b: Bank) {
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+    e.preventDefault();
+    if (b.id !== bank.id) onBank(b);
+  }
 
   const subjectNames = bank.subjects.map((s) => s.name);
   const chosenSubjects = sel.kind === "subjects" ? [...sel.set] : [sel.subject];
@@ -149,7 +180,8 @@ function BankPractice({ bank }: { bank: Bank }) {
 
       <nav className="ptabs" aria-label="Question bank">
         {banks.map((b) => (
-          <a key={b.id} className="tab" href={`/practice?bank=${b.id}`} aria-current={b.id === bank.id ? "page" : undefined}>{b.name}</a>
+          <a key={b.id} className="tab" href={`/practice?bank=${b.id}`} aria-current={b.id === bank.id ? "page" : undefined}
+            onClick={(e) => tab(e, b)} onPointerEnter={() => b.id !== bank.id && warmBank(b.id)} onTouchStart={() => b.id !== bank.id && warmBank(b.id)}>{b.name}</a>
         ))}
       </nav>
 
@@ -211,7 +243,7 @@ function BankPractice({ bank }: { bank: Bank }) {
                         <b>{s.name}</b>
                         <span className="muted">{s.chapters.length} chapters{partial ? ` · ${sel.set.size} picked` : ""}</span>
                       </span>
-                      <Score n={n} total={totalCount(catalog, s.name)} answered={d.answered} correct={d.correct} />
+                      <Score ready={!!catalog} n={n} total={totalCount(catalog, s.name)} answered={d.answered} correct={d.correct} />
                     </label>
                     <button type="button" className="icon-btn book-open" aria-expanded={expanded} aria-label={`${expanded ? "Hide" : "Show"} ${s.name} chapters`} onClick={() => toggleOpen(s.name)}>
                       <Icon name="chevron" size={18} />
@@ -226,7 +258,7 @@ function BankPractice({ bank }: { bank: Bank }) {
                             <label>
                               <input type="checkbox" checked={checked || (partial && sel.set.has(c))} onChange={() => toggleChapter(s.name, c)} />
                               <span className="pk-name">{isBook && <span className="muted pk-no">{i + 1}.</span>}{c}</span>
-                              <Score n={openCount(catalog, s.name, [c])} total={totalCount(catalog, s.name, [c])} answered={cd.answered} correct={cd.correct} />
+                              <Score ready={!!catalog} n={openCount(catalog, s.name, [c])} total={totalCount(catalog, s.name, [c])} answered={cd.answered} correct={cd.correct} />
                             </label>
                           </li>
                         );
@@ -276,7 +308,8 @@ function Switch({ label, on, onChange }: { label: string; on: boolean; onChange:
 }
 
 /* A subject's or chapter's progress chip: accuracy once practised, otherwise whether questions are there yet. */
-function Score({ n, total, answered, correct }: { n: number; total: number; answered: number; correct: number }) {
+function Score({ ready, n, total, answered, correct }: { ready: boolean; n: number; total: number; answered: number; correct: number }) {
+  if (!ready) return <span className="acc none" aria-hidden="true">…</span>;
   if (!n) return <span className="acc none">{total ? "With a pass" : "Coming soon"}</span>;
   if (!answered) return <span className="acc none">Not started</span>;
   const p = pct(correct, answered);
