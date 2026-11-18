@@ -25,6 +25,9 @@ const idle = (f: () => void) => {
 };
 
 let registered = false;
+/* True once a newer copy of the site has taken over this tab (after a deploy). The code running in the tab is still the
+   old one, so the next move to another page is a normal page load, which opens the new copy. */
+let stale = false;
 
 type Router = ReturnType<typeof useRouter>;
 let router: Router | null = null;
@@ -54,7 +57,10 @@ function again(url: URL, replace = false) {
 /* For code that used to set window.location: the same move, without the reload when both ends are in the app. */
 export function go(href: string, replace = false) {
   const url = new URL(href, window.location.href);
-  if (router && inApp(url) && url.pathname === window.location.pathname) again(url, replace);
+  if (stale) {
+    if (replace) window.location.replace(href);
+    else window.location.assign(href);
+  } else if (router && inApp(url) && url.pathname === window.location.pathname) again(url, replace);
   else if (router && inApp(url)) {
     if (replace) router.replace(url.pathname + url.search + url.hash);
     else router.push(url.pathname + url.search + url.hash);
@@ -100,6 +106,8 @@ export default function Nav() {
         // from the device and only the student's numbers cross the network. Signed-in pages only.
         if (!registered && "serviceWorker" in navigator) {
           registered = true;
+          const had = !!navigator.serviceWorker.controller;
+          navigator.serviceWorker.addEventListener("controllerchange", () => { if (had) stale = true; });
           navigator.serviceWorker.register("/sw.js").catch(() => {});
         }
       });
@@ -108,10 +116,17 @@ export default function Nav() {
     // Checked often so a tab that has only just learnt who is signed in starts soon; it does nothing until it's due.
     const timer = setInterval(ahead, 2000);
     document.addEventListener("visibilitychange", ahead);
+    // A tab or installed app left open asks whether the site has changed each time it comes back into view.
+    const check = () => {
+      if (document.visibilityState === "visible" && registered) navigator.serviceWorker.getRegistration().then((g) => g?.update()).catch(() => {});
+    };
+    document.addEventListener("visibilitychange", check);
     const click = (e: MouseEvent) => {
       if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
       const l = linkOf(e);
       if (!l) return;
+      // After a deploy the browser loads the page itself, so the new copy of the site shows.
+      if (stale) return;
       e.preventDefault();
       if (l.url.pathname !== window.location.pathname) return r.push(l.url.pathname + l.url.search + l.url.hash);
       // The link of the page that is showing: nothing to load, back to its top. With another query, the page afresh.
@@ -134,6 +149,7 @@ export default function Nav() {
     return () => {
       clearInterval(timer);
       document.removeEventListener("visibilitychange", ahead);
+      document.removeEventListener("visibilitychange", check);
       document.removeEventListener("pointerover", warm);
       document.removeEventListener("touchstart", warm);
       document.removeEventListener("focusin", warm);
