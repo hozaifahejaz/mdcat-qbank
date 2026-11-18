@@ -11,7 +11,7 @@ export type StudentUser = {
   planExpiresAt?: string /* ISO */;
 };
 
-/* role is "student" for everyone except Examwise staff (lib/qc.ts). */
+/* role is "student" for everyone except Markhor Prep staff (lib/qc.ts). */
 export type AccountUser = StudentUser & { methods: ("email" | "phone" | "google" | "apple")[]; role: Role };
 
 const KEY = "me";

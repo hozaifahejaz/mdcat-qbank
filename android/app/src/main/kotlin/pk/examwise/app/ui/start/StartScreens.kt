@@ -85,7 +85,7 @@ fun UpdateScreen() {
     Column(Modifier.fillMaxSize().padding(28.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
         Logo()
         Spacer(Modifier.height(24.dp))
-        Text("Update Examwise to continue", style = MaterialTheme.typography.headlineSmall, color = c.ink, textAlign = TextAlign.Center)
+        Text("Update Markhor Prep to continue", style = MaterialTheme.typography.headlineSmall, color = c.ink, textAlign = TextAlign.Center)
         Spacer(Modifier.height(8.dp))
         Text("This version no longer works. The new one is waiting on Google Play.", style = MaterialTheme.typography.bodyLarge, color = c.muted, textAlign = TextAlign.Center)
         Spacer(Modifier.height(24.dp))
@@ -107,7 +107,7 @@ fun BlockedScreen(message: String, container: AppContainer, nav: NavHostControll
     Column(Modifier.fillMaxSize().padding(28.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
         Logo()
         Spacer(Modifier.height(24.dp))
-        Text(message.ifBlank { "This device can't open Examwise. Please use the website instead." },
+        Text(message.ifBlank { "This device can't open Markhor Prep. Please use the website instead." },
             style = MaterialTheme.typography.titleMedium, color = c.ink, textAlign = TextAlign.Center)
         Spacer(Modifier.height(24.dp))
         PillButton("Sign out", onClick = {
