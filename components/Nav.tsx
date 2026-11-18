@@ -6,11 +6,11 @@ import { seen } from "@/lib/cache";
 import { lastUser } from "@/lib/user";
 import { warmCatalog, warmHistory } from "@/lib/study";
 import { warmPage } from "@/lib/warm";
+import { OUTSIDE } from "@/lib/paths";
 
 /* Moves between signed-in pages without reloading the site: a click on an ordinary link swaps the page in place,
    and pointing at (or touching) a link fetches that page ahead of the click. Links stay plain <a> everywhere.
    The landing and sign-in pages have their own styles, so going to or from them is still a normal page load. */
-const OUTSIDE = /^\/($|signin|signup|forgot-password|reset-password|auth\/|api\/)/;
 
 /* The signed-in pages. Their page files are fetched in a quiet moment after the first page shows, so a click swaps the
    page at once instead of waiting on the network first (on a phone, a touch comes only a moment before the tap).

@@ -131,3 +131,9 @@ form.stack, .stack { display: grid; gap: 14px; }
 /* A sign-in method that isn't switched on yet */
 .pill.soon { opacity: .6; }
 .soon-tag { font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; padding: 2px 7px; border-radius: 999px; background: var(--bg); color: var(--muted); margin-left: 8px; }
+
+/* The signed-in frame as the saved page file holds it (components/auth/DeviceGate.tsx): shown at once to a browser
+   that was let in before, which marks the document (app/layout.tsx); everyone else gets the spinner until the check. */
+.gate-body, .gate-in { display: contents; }
+html:not([data-in]) .gate-body { display: none; }
+html[data-in] .gate-wait { display: none; }

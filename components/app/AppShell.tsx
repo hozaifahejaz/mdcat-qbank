@@ -212,9 +212,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
 function SharedFrame({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AccountUser | null>(null);
-  const [meta, setMeta] = useState<Meta>({});
-  const [slot, setSlot] = useState<HTMLDivElement | null>(null);
   const path = usePathname();
+  // What the page will say about itself, guessed from the address so the saved page file already has the right frame:
+  // its link lit, and no sidebar around the test player.
+  const [meta, setMeta] = useState<Meta>(() => ({ active: path ?? undefined, bare: path === "/test" }));
+  const [slot, setSlot] = useState<HTMLDivElement | null>(null);
   useLayoutEffect(() => { setUser((u) => u ?? lastUser()); }, []);
   // Asked again on each page (the answer is shared for half a minute), so a new name or plan shows in the frame.
   useEffect(() => { getCurrentUser().then((u) => { if (u) setUser(u); }); }, [path]);

@@ -5,7 +5,7 @@ import AppShell, { PageHead } from "@/components/app/AppShell";
 import Icon from "@/components/app/Icon";
 import { type Bank, bankById, banks, toneOf } from "@/lib/banks";
 import { band, pct } from "@/lib/format";
-import { type Catalog, type Filter, type Pool, doneCount, filters, getPool, openCount, poolMatch, testHref, totalCount, watchCatalog } from "@/lib/study";
+import { type Catalog, type ChapterPool, type Filter, type Pool, doneCount, filters, getPool, openCount, poolMatch, sumPools, testHref, totalCount, watchCatalog, watchPools } from "@/lib/study";
 
 const counts = [10, 25, 50, 100];
 const filterNames: Record<Filter, string> = { unused: "Unused", incorrect: "Incorrect", marked: "Marked", omitted: "Omitted", correct: "Correct" };
@@ -62,7 +62,8 @@ function BankPractice({ bank }: { bank: Bank }) {
   const [timed, setTimed] = useState(false);
   const [count, setCount] = useState(25);
   const [picked, setPicked] = useState<Filter[]>([]);
-  const [mine, setMine] = useState<Pool | null>(null);
+  const [pools, setPools] = useState<ChapterPool[] | null>(null);
+  const [topicPool, setTopicPool] = useState<Pool | null>(null);
   const [topic, setTopic] = useState<string | null>(null);
   const [catalog, setCatalog] = useState<Catalog | null>(null);
   const isBook = bank.id === "fsc1" || bank.id === "fsc2";
@@ -70,6 +71,8 @@ function BankPractice({ bank }: { bank: Bank }) {
 
   useEffect(() => {
     watchCatalog(bank.id, setCatalog);
+    setPools(null);
+    watchPools(bank.id, setPools);
     const p = new URLSearchParams(window.location.search);
     const s = p.get("subject");
     const c = p.get("chapter");
@@ -115,13 +118,16 @@ function BankPractice({ bank }: { bank: Bank }) {
     : sel.set.size > 1 ? { subjects: subjectNames.filter((s) => sel.set.has(s)) } : {};
   const scopeKey = JSON.stringify([bank.id, scope, topic]);
 
-  // Where this student stands on the picked questions: the counts beside each filter.
+  // Where this student stands on the picked questions: the counts beside each filter. Every chapter's counts are
+  // already here, so ticking a box adds them up on the spot; only a single topic (from a weak-topic link) is asked for.
   useEffect(() => {
+    if (!topic) return;
     let live = true;
-    setMine(null);
-    getPool({ bank: bank.id, topic: topic ?? undefined, ...scope }).then((r) => { if (live) setMine(r); }, () => {});
+    setTopicPool(null);
+    getPool({ bank: bank.id, topic, ...scope }).then((r) => { if (live) setTopicPool(r); }, () => {});
     return () => { live = false; };
   }, [scopeKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  const mine = useMemo(() => (topic ? topicPool : pools ? sumPools(pools, chosenSubjects, chosenChapters) : null), [topic, topicPool, pools, sel]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const match = mine ? poolMatch(mine, picked) : pool;
   const start = Math.min(count, match);

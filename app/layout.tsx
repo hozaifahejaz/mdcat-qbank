@@ -30,8 +30,9 @@ export const viewport: Viewport = {
   themeColor: "#f4f4f1",
 };
 
-/* Set the theme before first paint: a saved choice wins, otherwise follow the device. */
-const themeScript = `(function(){try{var t=localStorage.getItem("theme");if(t!=="light"&&t!=="dark")t=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";document.documentElement.setAttribute("data-theme",t);var c=t==="dark"?"#0f1012":"#f4f4f1",s=function(){var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",c)};s();document.addEventListener("DOMContentLoaded",s)}catch(e){}})();`;
+/* Set the theme before first paint: a saved choice wins, otherwise follow the device. Also marks a browser that was
+   let into the app before (lib/cache.ts keeps that), so its pages show their frame at once (app/auth.css). */
+const themeScript = `(function(){try{var t=localStorage.getItem("theme");if(t!=="light"&&t!=="dark")t=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";document.documentElement.setAttribute("data-theme",t);var c=t==="dark"?"#0f1012":"#f4f4f1",s=function(){var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",c)};s();document.addEventListener("DOMContentLoaded",s)}catch(e){}try{if(JSON.parse(localStorage.getItem("seen:let-in")).v===true&&localStorage.getItem("seen:me"))document.documentElement.setAttribute("data-in","1")}catch(e){}})();`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

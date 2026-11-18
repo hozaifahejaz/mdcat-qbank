@@ -42,16 +42,31 @@ export function bearer(request: Request): string | null {
   return m ? m[1]! : null;
 }
 
-export async function createSession(db: D1Database, userId: string, request: Request): Promise<NewSession> {
+/* A new session, not yet saved: the statement that saves it (so a caller can send it along with its own in one trip),
+   what the browser or app gets, and the row as later requests will read it. */
+export async function newSession(db: D1Database, user: { id: string; role: string; plan: string; plan_expires_at: number | null }, request: Request) {
   const token = randomToken();
   const now = Date.now();
-  const u = await db.prepare("SELECT role FROM users WHERE id = ?").bind(userId).first<{ role: string }>();
-  const life = lifetime(u?.role ?? "student");
-  await db
+  const life = lifetime(user.role);
+  const id = await sha256(token);
+  const ua = agent(request);
+  const ip = clientIp(request);
+  const save = db
     .prepare("INSERT INTO sessions (id, user_id, created_at, last_seen_at, expires_at, user_agent, ip, ip_window) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
-    .bind(await sha256(token), userId, now, now, now + life, agent(request), clientIp(request), now)
-    .run();
-  return { token, cookie: cookie(SESSION_COOKIE, token, { maxAge: life / 1000 }), expiresAt: now + life };
+    .bind(id, user.id, now, now, now + life, ua, ip, now);
+  const session: Session = {
+    id, user_id: user.id, device_id: null, expires_at: now + life, last_seen_at: now, created_at: now, user_agent: ua, ip, ip_changes: 0, ip_window: now,
+    role: user.role, active_session_id: null, plan: user.plan, plan_expires_at: user.plan_expires_at,
+  };
+  const out: NewSession = { token, cookie: cookie(SESSION_COOKIE, token, { maxAge: life / 1000 }), expiresAt: now + life };
+  return { save, session, out };
+}
+
+export async function createSession(db: D1Database, userId: string, request: Request): Promise<NewSession> {
+  const u = await db.prepare("SELECT role, plan, plan_expires_at FROM users WHERE id = ?").bind(userId).first<{ role: string; plan: string; plan_expires_at: number | null }>();
+  const made = await newSession(db, { id: userId, role: u?.role ?? "student", plan: u?.plan ?? "free", plan_expires_at: u?.plan_expires_at ?? null }, request);
+  await made.save.run();
+  return made.out;
 }
 
 export const clearSessionCookie = () => cookie(SESSION_COOKIE, "", { maxAge: 0 });
@@ -69,6 +84,11 @@ function reusable(request: Request): boolean {
 }
 export function forgetReusedSessions() {
   reused.clear();
+}
+/* A session made by this very request (a sign-in): the dashboard's requests that follow in the next moments use this
+   copy instead of each looking it up. */
+export function reuseSession(s: Session) {
+  reused.set(s.id, { s, at: Date.now() });
 }
 
 export async function getSession(db: D1Database, request: Request): Promise<Session | null> {

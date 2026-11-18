@@ -1,3 +1,4 @@
+import Ahead from "@/components/Ahead";
 import Logo from "@/components/Logo";
 import Reveal from "@/components/Reveal";
 import SampleQuestion from "@/components/SampleQuestion";
@@ -245,6 +246,7 @@ export default function Home() {
           <p className="legal">Not affiliated with PMDC, NUMS or any university. MDCAT is administered by PMDC. © {new Date().getFullYear()} {site.name}</p>
         </div>
       </footer>
+      <Ahead />
       <Reveal />
     </>
   );

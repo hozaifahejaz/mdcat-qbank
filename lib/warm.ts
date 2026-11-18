@@ -1,6 +1,6 @@
 import { warm } from "@/lib/cache";
 import { getDashboard } from "@/lib/dashboard-data";
-import { getPool, warmCatalog, warmHistory, warmMistakes } from "@/lib/study";
+import { getPool, warmAttempt, warmCatalog, warmHistory, warmMistakes, warmPools, warmReview } from "@/lib/study";
 import { bankById } from "@/lib/banks";
 
 /* A page's numbers, fetched before it opens: when its link is pointed at or touched (components/Nav.tsx), so the page
@@ -19,7 +19,8 @@ export function warmPage(path: string, search = "") {
       try { last = localStorage.getItem("practice-bank"); } catch {}
       const bank = (bankById(q.get("bank")) ?? (q.get("subject") ? undefined : bankById(last)) ?? bankById("mdcat"))!.id;
       warmCatalog(bank);
-      if (!q.get("subject") && !q.get("topic")) getPool({ bank }).catch(() => {});
+      if (q.get("topic")) getPool({ bank, subject: q.get("subject") ?? undefined, topic: q.get("topic")! }).catch(() => {});
+      else warmPools(bank);
       break;
     }
     case "/mocks":
@@ -29,6 +30,13 @@ export function warmPage(path: string, search = "") {
       break;
     case "/history":
       warmHistory();
+      break;
+    // A finished test's results, or a saved test to carry on with, by the id in the link.
+    case "/review":
+      if (q.get("id")) warmReview(q.get("id")!);
+      break;
+    case "/test":
+      if (q.get("id")) warmAttempt(q.get("id")!);
       break;
     case "/mistakes":
       warmMistakes();
