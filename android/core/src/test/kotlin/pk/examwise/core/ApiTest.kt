@@ -65,7 +65,7 @@ class ApiTest {
         assertEquals("Bearer secret-token-1234567890", h["Authorization"])
         assertEquals("android", h["X-Client"])
         assertEquals("7", h["X-App-Version"])
-        assertTrue(h["User-Agent"]!!.startsWith("Examwise-Android"))
+        assertTrue(h["User-Agent"]!!.startsWith("MarkhorPrep-Android"))
     }
 
     @Test fun noBearerWhenSignedOut() = runTest {

@@ -19,7 +19,7 @@ const PLANS = ["free", "season", "bundle", "monthly"] as const;
 export async function requireRole(c: Ctx, allowed: Role[]): Promise<Staff> {
   const s = await requireSession(c.db, c.request);
   const u = await c.db.prepare("SELECT id, name, role FROM users WHERE id = ?").bind(s.user_id).first<Staff>();
-  if (!u || u.role === "student") throw fail(403, "forbidden", "This is for Examwise staff only.");
+  if (!u || u.role === "student") throw fail(403, "forbidden", "This is for Markhor Prep staff only.");
   if (!allowed.includes(u.role)) throw fail(403, "forbidden", "Only admins can do this.");
   return u;
 }
@@ -430,7 +430,7 @@ const reportRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
     return json({ ok: true, closed: res.meta.changes });
   },
 
-  /* People who asked to hear when Examwise opens. */
+  /* People who asked to hear when Markhor Prep opens. */
   "GET /api/admin/waitlist": async (c) => {
     await admin(c);
     const { results } = await c.db.prepare("SELECT contact, kind, created_at FROM waitlist ORDER BY created_at DESC LIMIT 2000").all();

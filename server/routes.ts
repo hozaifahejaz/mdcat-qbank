@@ -430,7 +430,7 @@ async function answer(request: Request, env: Env, db: D1Database): Promise<Respo
     // An app too old to be safe is asked to update before anything else; the config call says which version is needed.
     const min = Number(env.APP_MIN_VERSION) || 0;
     if (isApp(request) && url.pathname !== "/api/app/config" && (appVersion(request) ?? 0) < min) {
-      throw fail(426, "update_required", "Please update Examwise to keep going.");
+      throw fail(426, "update_required", "Please update Markhor Prep to keep going.");
     }
     const key = `${request.method} ${url.pathname}`;
     const route = routes[key] ?? adminRoutes[key] ?? visitRoutes[key] ?? studyRoutes[key] ?? prefRoutes[key] ?? insightRoutes[key] ?? appRoutes[key] ?? offlineRoutes[key];

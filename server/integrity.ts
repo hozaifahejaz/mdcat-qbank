@@ -2,7 +2,7 @@ import { b64url } from "./crypto";
 import type { Env } from "./env";
 import { fail } from "./http";
 
-/* Google Play Integrity: is this request from the real Examwise app, installed from Play, on a real phone that hasn't
+/* Google Play Integrity: is this request from the real Markhor Prep app, installed from Play, on a real phone that hasn't
    been tampered with? The app asks Google for a token whose request hash is base64url(SHA-256("action|deviceKey")),
    sends it with the request, and this file asks Google to decode it. Only the app's own features use it (sign-in from
    the app, claiming a device from the app, offline packs); the website is unaffected.
@@ -106,7 +106,7 @@ export async function checkIntegrity(
   if (!why) return true;
   console.warn(`Play Integrity ${opts.action} failed: ${why}`);
   await opts.noteFailure?.(`Play Integrity (${opts.action}): ${why}`);
-  if (mode === "enforce") throw fail(403, "integrity_failed", "This device can't open Examwise. Please use the website instead.");
+  if (mode === "enforce") throw fail(403, "integrity_failed", "This device can't open Markhor Prep. Please use the website instead.");
   return false;
 }
 
