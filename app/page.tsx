@@ -4,6 +4,8 @@ import Reveal from "@/components/Reveal";
 import SampleQuestion from "@/components/SampleQuestion";
 import ThemeToggle from "@/components/ThemeToggle";
 import BankSize from "@/components/BankSize";
+import type { Metadata } from "next";
+import { money, plans } from "@/lib/billing";
 import { paper, prices, site } from "@/lib/site";
 import "./landing.css";
 
@@ -26,6 +28,15 @@ const faqs = [
   { q: "Do you cover NUMS, AKU or other tests?", a: "Yes. One account covers PMDC MDCAT, NUMS MDCAT and the AKU test, and you can also practise by FSc textbook chapter. Engineering and law tests come later." },
   { q: "Are you affiliated with PMDC?", a: `No. ${site.name} is independent and not affiliated with PMDC, NUMS or any university.` },
 ];
+
+export const metadata: Metadata = { alternates: { canonical: "/" } };
+
+/* The FAQ again in the form search engines read, so its questions can show under the result. */
+const faqData = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: faqs.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })),
+};
 
 /* Plan buttons go through sign-up and land on checkout with the plan picked. */
 const buy = (plan: string) => `/signup?next=${encodeURIComponent(`/checkout?plan=${plan}`)}`;
@@ -136,14 +147,16 @@ export default function Home() {
                   <li>100 free questions across every subject</li>
                   <li>One mini mock</li>
                   <li>Basic progress stats</li>
+                  <li>Every question explained</li>
+                  <li>No card needed</li>
                 </ul>
                 <a className="pill pill-light" href="/signup">Start free</a>
               </div>
               <div className="card plan best rv">
                 <span className="badge">Best for most</span>
-                <h3>MDCAT season pass</h3>
-                <div className="price"><small>Rs.</small><b>{prices.seasonPass}</b><span>per season</span></div>
-                <span className="early">Early bird Rs. {prices.earlyBird} until {prices.earlyBirdUntil}</span>
+                <h3>{plans.season.name}</h3>
+                <div className="price"><small>Rs.</small><b>{plans.season.price.toLocaleString("en-GB")}</b><span>{plans.season.per}</span></div>
+                {plans.season.was && <span className="early">Early bird until {prices.earlyBirdUntil}, then {money(plans.season.was)}</span>}
                 <ul>
                   <li className="plus">Everything in Free, plus</li>
                   <li>The full question bank, every chapter</li>
@@ -153,13 +166,13 @@ export default function Home() {
                   <li>Chapter-by-chapter dashboard</li>
                   <li>Bookmarks and "My mistakes"</li>
                 </ul>
-                <a className="pill" href={buy("season")}>Get the season pass</a>
+                <a className="pill" href={buy("season")}>Get the Season Pass</a>
               </div>
               <div className="card plan rv">
-                <h3>One month</h3>
-                <div className="price"><small>Rs.</small><b>{prices.monthly}</b><span>for 30 days</span></div>
+                <h3>{plans.monthly.name}</h3>
+                <div className="price"><small>Rs.</small><b>{plans.monthly.price.toLocaleString("en-GB")}</b><span>{plans.monthly.per}</span></div>
                 <ul>
-                  <li className="plus">Everything in the season pass</li>
+                  <li className="plus">Everything in the Season Pass</li>
                   <li>30 days of full access</li>
                   <li>No renewal</li>
                 </ul>
@@ -246,6 +259,7 @@ export default function Home() {
           <p className="legal">Not affiliated with PMDC, NUMS or any university. MDCAT is administered by PMDC. © {new Date().getFullYear()} {site.name}</p>
         </div>
       </footer>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqData).replace(/</g, "\\u003c") }} />
       <Ahead />
       <Reveal />
     </>

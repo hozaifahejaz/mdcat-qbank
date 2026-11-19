@@ -111,8 +111,10 @@ async function sendVerifyEmail(c: Ctx, userId: string, to: string, next: string)
 /* ---------- Routes ---------- */
 
 const routes: Record<string, (c: Ctx) => Promise<Response>> = {
+  /* The same for everyone and rarely changed, so browsers keep it for a few minutes instead of asking on every visit
+     to the sign-in page. */
   "GET /api/auth/config": async ({ env }) =>
-    json({
+    new Response(JSON.stringify({
       // Email + password always works. Confirmation emails and password reset switch on with email sending.
       email: true,
       emailVerification: mailConfigured(env),
@@ -121,7 +123,7 @@ const routes: Record<string, (c: Ctx) => Promise<Response>> = {
       google: googleConfigured(env),
       apple: appleConfigured(env),
       turnstileSiteKey: env.TURNSTILE_SECRET_KEY ? env.TURNSTILE_SITE_KEY ?? "" : "",
-    }),
+    }), { headers: { "content-type": "application/json; charset=utf-8", "cache-control": "public, max-age=300", "x-content-type-options": "nosniff" } }),
 
   "GET /api/auth/me": async ({ db, request }) => {
     const s = await getSession(db, request);

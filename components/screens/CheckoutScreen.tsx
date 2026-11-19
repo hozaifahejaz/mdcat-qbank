@@ -39,7 +39,7 @@ const methods: { id: Method; hint: string; brands: Brand[]; steps: string[] }[] 
   },
 ];
 
-const included = ["Every MDCAT question with explanations", "Full-length mocks and past papers", "Subject and chapter analytics"];
+const included = ["The full question bank, every chapter", "MDCAT, NUMS and AKU banks", "Full-length timed mocks and past papers"];
 
 const icon = {
   tick: <path d="m5 12.5 4.5 4.5L19 7.5" />,

@@ -1,8 +1,12 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Logo from "@/components/Logo";
 import PayLogo from "@/components/app/PayLogo";
 import ThemeToggle from "@/components/ThemeToggle";
 import { money, plans } from "@/lib/billing";
 import { prices, site } from "@/lib/site";
+import { lastUser } from "@/lib/user";
 
 const buy = (plan: string) => `/signup?next=${encodeURIComponent(`/checkout?plan=${plan}`)}`;
 
@@ -24,7 +28,7 @@ const cards = [
     price: plans.season.price,
     was: plans.season.was,
     per: plans.season.per,
-    items: ["Full question bank", "All full-length mocks", "Every past paper", "Subject and chapter analytics"],
+    items: ["The full question bank, every chapter", "MDCAT, NUMS and AKU banks", "Full-length timed mocks", "Past papers by year", "Chapter-by-chapter dashboard"],
     cta: { label: "Get the Season Pass", href: buy("season") },
     tone: "var(--lilac)",
     note: plans.season.was ? `Early-bird price until ${prices.earlyBirdUntil}` : plans.season.blurb,
@@ -42,6 +46,9 @@ const cards = [
 
 /* /pricing — public. Plans from the plan's pricing table; Bundle (MDCAT + NUMS) is added when NUMS questions are. */
 export default function PricingScreen() {
+  // A student who is already signed in (the account as this browser last saw it) gets a way back in, not "Sign in".
+  const [inside, setInside] = useState(false);
+  useEffect(() => { setInside(!!lastUser()); }, []);
   return (
     <div className="dash">
       <header className="dnav-wrap">
@@ -50,7 +57,7 @@ export default function PricingScreen() {
             <Logo href="/" />
             <div className="dnav-end">
               <ThemeToggle />
-              <a className="dpill light small" href="/signin">Sign in</a>
+              {inside ? <a className="dpill light small" href="/dashboard">Dashboard</a> : <a className="dpill light small" href="/signin">Sign in</a>}
             </div>
           </div>
         </div>
@@ -83,6 +90,7 @@ export default function PricingScreen() {
             {(["jazzcash", "easypaisa", "visa", "mastercard", "unionpay", "raast"] as const).map((b) => <PayLogo key={b} brand={b} />)}
           </section>
           <p className="muted small center">{site.name} · iOS and Android apps coming soon</p>
+          <p className="muted small center"><a className="link" href="/terms">Terms</a> · <a className="link" href="/refunds">Refunds</a> · <a className="link" href="/privacy">Privacy</a></p>
         </div>
       </main>
     </div>

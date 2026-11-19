@@ -21,5 +21,5 @@ function Progress({ user }: { user: AccountUser }) {
     fresh(bank ? `dashboard:${bank}` : "dashboard", () => getDashboard(user, bank), (d) => { if (live) setData(d); }, true).catch(() => {});
     return () => { live = false; };
   }, [user, bank]);
-  return data ? <Body data={data} progress onBank={setBank} onGoal={(n) => setData((d) => (d ? { ...d, dailyGoal: n } : d))} /> : <Skeleton />;
+  return data ? <Body data={data} free={user.plan === "free"} progress onBank={setBank} onGoal={(n) => setData((d) => (d ? { ...d, dailyGoal: n } : d))} /> : <Skeleton />;
 }
