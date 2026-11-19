@@ -55,7 +55,7 @@ function Mocks({ user }: { user: AccountUser }) {
   const nextMock = Array.from({ length: mocks }, (_, k) => k + 1).find((k) => !byTitle.has(`Full mock ${k}`)) ?? 1;
   return (
     <div className="dgrid">
-      <PageHead title="Full mocks" sub="180 MCQs in 3 hours, with the real paper's split and difficulty mix.">
+      <PageHead title="Full mocks" sub="180 MCQs in 3 hours, split by subject like the real paper.">
         {ready && paid && <a className="dpill dark" href={`/mocks/new?n=${nextMock}`}>Start the next mock</a>}
       </PageHead>
       <section className="dcard panel">

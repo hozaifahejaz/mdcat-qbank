@@ -6,7 +6,7 @@ import { uuid } from "./crypto";
 import { requireActiveSession } from "./devices";
 import { body, fail, json, str } from "./http";
 import { prefsStmt, readPrefs } from "./prefs";
-import { hit, overLimit, rateLimit, spend, usedOf, usedStmt } from "./ratelimit";
+import { hit, peeked, rateLimit, spend, usedOf, usedStmt } from "./ratelimit";
 import { note, requireSession } from "./session";
 import { effectivePlan } from "./users";
 
@@ -480,11 +480,13 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
       ...overdue(c.db, me.id, t0),
       c.db.prepare("SELECT id, title FROM attempts WHERE user_id = ? AND finished_at IS NULL AND mode != 'tutor' ORDER BY started_at DESC").bind(me.id),
       usedStmt(c.db, `given:${me.id}`),
-      ...(me.staff ? [] : [hit(c.db, `start:${me.id}`, HOUR)]),
+      usedStmt(c.db, `start:${me.id}`),
     ];
     const pre = await c.db.batch([...lead, ...picks]);
     const found = pre.slice(lead.length).map((r) => r.results);
-    if (!me.staff) overLimit(pre[4]!.results[0] as { count: number; window_start: number }, STARTS_PER_HOUR, HOUR);
+    // Only a test that actually starts is counted (with the test itself, below), so a selection with no questions
+    // in it, or a mock that isn't open to this plan, doesn't use up the hour's starts.
+    if (!me.staff) peeked(pre[4]!.results[0] as { count: number; window_start: number } | undefined, STARTS_PER_HOUR, HOUR);
     const expired = pre[0]!.results as AttemptRow[];
     const stale = pre[1]!.results as Stale[];
     // A test closed just now frees its questions, so a practice set is picked again without them shut out. Rare.
@@ -537,7 +539,7 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
       c.db.prepare("INSERT INTO answers (attempt_id, idx, user_id, question_id) SELECT ?1, key, ?2, value FROM json_each(?3)").bind(id, me.id, JSON.stringify(ids)),
       c.db.prepare("SELECT * FROM served WHERE id IN (SELECT value FROM json_each(?))").bind(JSON.stringify(ids)),
       c.db.prepare("SELECT question_id FROM bookmarks WHERE user_id = ?").bind(me.id),
-      ...(me.staff ? [] : [spend(c.db, `given:${me.id}`, ids.length, DAY)]),
+      ...(me.staff ? [] : [spend(c.db, `given:${me.id}`, ids.length, DAY), hit(c.db, `start:${me.id}`, HOUR)]),
     ]);
     const wanted = Number(b.count) || 0;
     const a: AttemptRow = { id, user_id: me.id, kind, mode, title, question_ids: "", mock_no: mockNo, paper: year, started_at: now, deadline_at: deadline, finished_at: null, seconds: null, score: null, total: ids.length };

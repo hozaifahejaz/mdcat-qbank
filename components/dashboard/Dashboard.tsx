@@ -86,7 +86,7 @@ export default function Dashboard() {
   const aside = narrow === false && user && data && coach ? <Coach data={data} onHide={() => toggleCoach(false)} /> : null;
   return (
     <Framed active="/dashboard" aside={aside}>
-      {user && data && narrow !== null && !fresher ? narrow ? <MobileHome data={data} /> : <Body data={data} name={user.name} coachHidden={!coach} onShowCoach={() => toggleCoach(true)} onBank={setBank} onGoal={setGoal} /> : <Skeleton />}
+      {user && data && narrow !== null && !fresher ? narrow ? <MobileHome data={data} /> : <Body data={data} name={user.name} free={user.plan === "free"} coachHidden={!coach} onShowCoach={() => toggleCoach(true)} onBank={setBank} onGoal={setGoal} /> : <Skeleton />}
     </Framed>
   );
 }
@@ -103,7 +103,7 @@ export function Skeleton() {
 
 /* The full dashboard on laptops. progress: the phone's Progress tab, which shows the same numbers under its own
    heading, without the exam header and the Up next strip. */
-export function Body({ data, name, coachHidden, onShowCoach, progress, onBank, onGoal }: { data: Data; name?: string; coachHidden?: boolean; onShowCoach?: () => void; progress?: boolean; onBank?: (bank: string) => void; onGoal?: (n: number) => void }) {
+export function Body({ data, name, free, coachHidden, onShowCoach, progress, onBank, onGoal }: { data: Data; name?: string; free?: boolean; coachHidden?: boolean; onShowCoach?: () => void; progress?: boolean; onBank?: (bank: string) => void; onGoal?: (n: number) => void }) {
   const totals = data.subjects.map(sumChapters).reduce((t, s) => ({ answered: t.answered + s.answered, available: t.available + s.available, correct: t.correct + s.correct }), { answered: 0, available: 0, correct: 0 });
   const month = data.daily.slice(-30).reduce((t, d) => ({ answered: t.answered + d.answered, correct: t.correct + d.correct }), { answered: 0, correct: 0 });
   const mocks = data.recent.filter((t) => t.kind === "mock").sort((a, b) => a.date.localeCompare(b.date));
@@ -170,7 +170,7 @@ export function Body({ data, name, coachHidden, onShowCoach, progress, onBank, o
         )}
       </section>
 
-      <Stand data={data} />
+      <Stand data={data} free={free} />
 
       {!progress && <CoachStrip data={data} />}
 

@@ -12,6 +12,9 @@ export const site = {
   /* False until a payment provider is connected. The public pages then say payments open soon, and checkout shows
      how paying will work without taking any money. */
   payments: false,
+  /* What the landing page says before /api/stats answers (and if it can't): the bank's size rounded down to a
+     hundred, and the past-paper years. Keep roughly in step with the bank so the line doesn't change as it loads. */
+  bank: { questions: 7200, papers: [2026] },
   season: "2027",
   examMonth: "August 2027",
   /* Expected date for the dashboard countdown. PMDC announces the real one; 2026 was 16 August. Update when it does. */

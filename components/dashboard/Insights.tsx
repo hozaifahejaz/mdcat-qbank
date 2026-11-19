@@ -64,7 +64,8 @@ export const FIRST_DAY_UNTIL = 20;
 export function FirstDay({ data }: { data: Dashboard }) {
   const answered = data.answeredEver ?? 0;
   const steps = [
-    { done: answered >= 10, title: "Answer your first 10 questions", text: "Every question explains why the answer is right and why the others are wrong.", href: testHref({ kind: "practice", bank: data.bank, count: 10, title: "Your first 10 questions" }), cta: "Start" },
+    { done: answered >= 10, title: "Answer your first 10 questions", text: "Every question explains why the answer is right and why the others are wrong.", // A set already under way is carried on with, not started a second time.
+      href: data.resume?.href ?? testHref({ kind: "practice", bank: data.bank, count: 10, title: "Your first 10 questions" }), cta: data.resume ? "Continue" : "Start" },
     { done: data.recent.some((t) => t.kind !== "practice"), title: "Try a timed test", text: "A minute a question, answers at the end, like the real paper.", href: "/practice?mode=timed", cta: "Set one up" },
     { done: data.daily.some((d) => d.answered >= data.dailyGoal), title: `Reach your daily goal of ${data.dailyGoal}`, text: "A little every day beats a lot once a week.", href: "/practice", cta: "Practise" },
   ];
@@ -91,7 +92,7 @@ export function FirstDay({ data }: { data: Dashboard }) {
 }
 
 /* Coverage of the bank, pace per question and (for MDCAT) a rough score out of 180. */
-export function Stand({ data }: { data: Dashboard }) {
+export function Stand({ data, free }: { data: Dashboard; free?: boolean }) {
   const t = totalsOf(data);
   const bank = banks.find((b) => b.id === (data.bank ?? "mdcat")) ?? banks.find((b) => b.id === "mdcat")!;
   const days = daysUntil(examDateFor(data.examYear));
@@ -106,7 +107,7 @@ export function Stand({ data }: { data: Dashboard }) {
         <h2>Bank covered</h2>
         <strong>{pct(t.answered, t.available)}<small>%</small></strong>
         <span className="meter" role="img" aria-label={`${pct(t.answered, t.available)}% of the ${bank.name} bank answered`}><i style={{ width: `${pct(t.answered, t.available)}%` }} /></span>
-        <p className="muted">{nf(t.answered)} of {nf(t.available)} {bank.short} questions.{left > 0 && days > 0 && <> About <b>{nf(perDay)} a day</b> finishes it by the exam.</>}</p>
+        <p className="muted">{nf(t.answered)} of {nf(t.available)} {free ? "free" : bank.short} questions.{free ? <> <a className="link" href="/pricing">A pass opens the whole bank.</a></> : left > 0 && days > 0 && <> About <b>{nf(perDay)} a day</b> finishes it by the exam.</>}</p>
       </div>
       <div className="st-cell">
         <h2>Time per question</h2>
