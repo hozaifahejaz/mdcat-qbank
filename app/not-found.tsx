@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Markhor } from "@/components/Logo";
 import { site } from "@/lib/site";
 
 export const metadata: Metadata = { title: `Page not found · ${site.name}`, robots: { index: false } };
@@ -12,10 +13,7 @@ export default function NotFound() {
   return (
     <main style={{ minHeight: "100dvh", display: "grid", placeContent: "center", justifyItems: "center", gap: 14, textAlign: "center", padding: "24px 16px" }}>
       <a href="/" style={{ display: "inline-flex", alignItems: "center", gap: 9, fontWeight: 700, fontSize: "1.0625rem", letterSpacing: "-0.02em", color: "var(--ink)", textDecoration: "none" }}>
-        <svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true">
-          <rect width="26" height="26" rx="8" fill="var(--blue)" />
-          <path d="m7.5 13.5 3.6 3.6L18.5 9" fill="none" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
+        <Markhor height={31} />
         {site.name}
       </a>
       <h1 style={{ fontSize: "clamp(2.25rem, 1.5rem + 3vw, 3.5rem)", fontWeight: 800, letterSpacing: "-0.05em", lineHeight: 1.1, margin: "18px 0 0" }}>Page not found</h1>
