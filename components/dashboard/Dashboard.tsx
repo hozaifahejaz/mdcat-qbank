@@ -7,7 +7,7 @@ import Icon from "@/components/app/Icon";
 import BarChart from "@/components/dashboard/BarChart";
 import MobileHome from "@/components/dashboard/MobileHome";
 import NextCard from "@/components/dashboard/NextCard";
-import { FIRST_DAY_UNTIL, FirstDay, GoalStrip, Stand, Subjects, daysUntil } from "@/components/dashboard/Insights";
+import { GoalStrip, Stand, Subjects, daysUntil } from "@/components/dashboard/Insights";
 import { go } from "@/components/Nav";
 import { BankButtons } from "@/components/screens/PracticeScreen";
 import { getDashboard, type Dashboard as Data, type SubjectStat } from "@/lib/dashboard-data";
@@ -112,8 +112,6 @@ export function Body({ data, name, free, coachHidden, onShowCoach, progress, onB
   const change = lastMock && prevMock ? lastMock.score - prevMock.score : null;
   const mockReady = useMockReady();
   const showMock = mockReady || !!lastMock;
-  // Until a student has answered a handful of questions the charts are empty: they get a short checklist instead.
-  const early = !progress && hasQuestions(data) && (data.answeredEver ?? FIRST_DAY_UNTIL) < FIRST_DAY_UNTIL;
   const examDate = examDateFor(data.examYear);
 
   return (
@@ -129,8 +127,7 @@ export function Body({ data, name, free, coachHidden, onShowCoach, progress, onB
       )}
 
       {!progress && hasQuestions(data) && data.resume && <NextCard data={data} />}
-      {hasQuestions(data) && <GoalStrip data={data} onGoal={onGoal} cta={!progress && !data.resume && !early} />}
-      {early && <FirstDay data={data} />}
+      {hasQuestions(data) && <GoalStrip data={data} onGoal={onGoal} cta={!progress && !data.resume} />}
 
       {!progress && (
         <section aria-labelledby="banks-h" className="home-banks">
@@ -141,7 +138,6 @@ export function Body({ data, name, free, coachHidden, onShowCoach, progress, onB
 
       {!hasQuestions(data) && <p className="demo"><i />Questions coming soon. Your stats fill in as you practise.</p>}
 
-      {!early && <>
       <section className="kpis" aria-label="Your numbers">
         <div className="kpi">
           <h2><span className="kpi-ic" style={{ color: "var(--blue)" }}><Icon name="practice" /></span>Answered</h2>
@@ -230,7 +226,6 @@ export function Body({ data, name, free, coachHidden, onShowCoach, progress, onB
         </div>
         </>}
       </section>
-      </>}
     </div>
   );
 }

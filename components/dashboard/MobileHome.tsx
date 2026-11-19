@@ -1,6 +1,5 @@
 "use client";
 
-import { FIRST_DAY_UNTIL, FirstDay } from "@/components/dashboard/Insights";
 import NextCard from "@/components/dashboard/NextCard";
 import { BankButtons } from "@/components/screens/PracticeScreen";
 import type { Dashboard } from "@/lib/dashboard-data";
@@ -18,7 +17,7 @@ export default function MobileHome({ data }: { data: Dashboard }) {
         <h1 id="mh-start" className="m-home-h">Start practising</h1>
         <BankButtons />
       </section>
-      {(data.answeredEver ?? FIRST_DAY_UNTIL) < FIRST_DAY_UNTIL && data.subjects.some((s) => s.chapters.some((c) => c.available > 0)) ? <FirstDay data={data} /> : <WeekCard data={data} />}
+      <WeekCard data={data} />
     </div>
   );
 }
