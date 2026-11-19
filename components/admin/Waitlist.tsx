@@ -7,7 +7,7 @@ import { friendlyError } from "@/lib/auth";
 import { type WaitlistEntry, getWaitlist, last } from "@/lib/admin";
 import { day } from "@/lib/format";
 
-/* /admin/waitlist — people who left an email or number on the landing page to hear when Examwise opens. */
+/* /admin/waitlist — people who left an email or number on the landing page to hear when Markhor Prep opens. */
 export default function Waitlist() {
   const [rows, setRows] = useState<WaitlistEntry[] | null>(() => last<WaitlistEntry[]>("waitlist"));
   const [err, setErr] = useState("");
@@ -17,7 +17,7 @@ export default function Waitlist() {
 
   return (
     <div className="dgrid">
-      <PageHead title="Waitlist" sub="People who asked to hear when Examwise opens.">
+      <PageHead title="Waitlist" sub="People who asked to hear when Markhor Prep opens.">
         {!!rows?.length && <a className="dpill light small" href="/api/admin/waitlist/export" download>Download CSV</a>}
         {!!rows?.length && <button type="button" className="dpill light small" onClick={copy}>Copy all</button>}
       </PageHead>

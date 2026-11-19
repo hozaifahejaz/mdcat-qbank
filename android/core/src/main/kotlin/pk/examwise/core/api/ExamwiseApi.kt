@@ -120,7 +120,7 @@ class ExamwiseApi(
         if (token != null) header("Authorization", "Bearer $token")
         header("X-Client", "android")
         header("X-App-Version", appVersion.toString())
-        header("User-Agent", "Examwise-Android/$appVersion")
+        header("User-Agent", "MarkhorPrep-Android/$appVersion")
         header("Accept", "application/json")
     }
 

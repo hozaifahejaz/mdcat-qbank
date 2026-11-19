@@ -1,6 +1,6 @@
 {
-  "name": "Examwise",
-  "short_name": "Examwise",
+  "name": "Markhor Prep",
+  "short_name": "Markhor Prep",
   "description": "MDCAT MCQs with full explanations, timed mocks and past papers.",
   "start_url": "/dashboard",
   "scope": "/",

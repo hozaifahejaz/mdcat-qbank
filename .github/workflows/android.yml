@@ -30,7 +30,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: examwise-debug-apk
+          name: markhor-prep-debug-apk
           path: android/app/build/outputs/apk/debug/*.apk
       - name: Screen images
         if: always()

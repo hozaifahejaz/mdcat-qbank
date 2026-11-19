@@ -36,7 +36,7 @@ jobs:
         run: ./gradlew :core:test :app:testReleaseUnitTest :app:bundleRelease :app:assembleRelease --stacktrace
       - uses: actions/upload-artifact@v4
         with:
-          name: examwise-release
+          name: markhor-prep-release
           path: |
             android/app/build/outputs/bundle/release/*.aab
             android/app/build/outputs/apk/release/*.apk
