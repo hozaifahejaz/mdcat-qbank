@@ -8,10 +8,9 @@ import { type ChapterStat, type Dashboard, ESTIMATE_AFTER, estimateScore, getDas
 import { band, pct } from "@/lib/format";
 import { examDateFor, goalChoices, savePrefs } from "@/lib/prefs";
 import { paper } from "@/lib/site";
-import { testHref } from "@/lib/study";
 
 /* The parts of the dashboard that tell a student where they stand and what to study next: today's goal and streak,
-   the first-day checklist, coverage and pace, and the subjects table that opens into chapters. */
+   coverage and pace, and the subjects table that opens into chapters. */
 
 const nf = (n: number) => n.toLocaleString("en-GB");
 export const daysUntil = (iso: string) => Math.max(0, Math.ceil((new Date(iso + "T09:00:00+05:00").getTime() - Date.now()) / 86_400_000));
@@ -55,38 +54,6 @@ export function GoalStrip({ data, onGoal, cta }: { data: Dashboard; onGoal?: (n:
         <button type="button" className="dpill light small" onClick={() => setEditing(true)}>Change goal</button>
       ))}
       {cta && <a className="dpill dark small" href="/practice">Create a test</a>}
-    </section>
-  );
-}
-
-/* A new student's dashboard: three things to do, ticked off from their own numbers, instead of empty charts. */
-export const FIRST_DAY_UNTIL = 20;
-export function FirstDay({ data }: { data: Dashboard }) {
-  const answered = data.answeredEver ?? 0;
-  const steps = [
-    { done: answered >= 10, title: "Answer your first 10 questions", text: "Every question explains why the answer is right and why the others are wrong.", // A set already under way is carried on with, not started a second time.
-      href: data.resume?.href ?? testHref({ kind: "practice", bank: data.bank, count: 10, title: "Your first 10 questions" }), cta: data.resume ? "Continue" : "Start" },
-    { done: data.recent.some((t) => t.kind !== "practice"), title: "Try a timed test", text: "A minute a question, answers at the end, like the real paper.", href: "/practice?mode=timed", cta: "Set one up" },
-    { done: data.daily.some((d) => d.answered >= data.dailyGoal), title: `Reach your daily goal of ${data.dailyGoal}`, text: "A little every day beats a lot once a week.", href: "/practice", cta: "Practise" },
-  ];
-  const next = steps.findIndex((s) => !s.done);
-  return (
-    <section className="box fd" aria-labelledby="fd-h">
-      <div className="panel-h">
-        <h2 id="fd-h">Getting started</h2>
-        <span className="muted">{steps.filter((s) => s.done).length} of {steps.length} done</span>
-      </div>
-      <ol className="fd-list">
-        {steps.map((s, i) => (
-          <li key={s.title} className={s.done ? "done" : i === next ? "next" : undefined}>
-            <span className="fd-mark" aria-hidden="true">{s.done ? <Icon name="check" size={16} /> : i + 1}</span>
-            <span className="fd-txt"><b>{s.title}</b><span className="muted">{s.text}</span></span>
-            {!s.done && <a className={`dpill ${i === next ? "dark" : "light"} small`} href={s.href}>{s.cta}</a>}
-            {s.done && <span className="muted small">Done</span>}
-          </li>
-        ))}
-      </ol>
-      <p className="muted small">Your charts and chapter numbers show here once you have answered {FIRST_DAY_UNTIL} questions.</p>
     </section>
   );
 }
