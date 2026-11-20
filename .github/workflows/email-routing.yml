@@ -20,8 +20,17 @@ jobs:
           api() { curl -sS -H "Authorization: Bearer $CF_TOKEN" -H "Content-Type: application/json" "$@"; }
           B=https://api.cloudflare.com/client/v4
           ZONE=$(api "$B/zones?name=$DOMAIN" | jq -r '.result[0].id')
-          echo "== dns records"; api "$B/zones/$ZONE/dns_records?per_page=100" | jq -c '.result[]? | {type, name, content, priority}'
-          echo "== routing settings"; api $B/zones/$ZONE/email/routing | jq -c '{success, errors, r: .result}'
-          echo "== routing dns"; api $B/zones/$ZONE/email/routing/dns | jq -c '{success, errors, r: .result}'
-          echo "== routing rules"; api $B/zones/$ZONE/email/routing/rules | jq -c '{success, errors, r: .result}'
-          echo "== destination addresses"; api $B/accounts/$ACCOUNT/email/routing/addresses | jq -c '{success, errors, r: [.result[]? | {email, verified}]}'
+          DEST=$(api $B/accounts/$ACCOUNT/email/routing/addresses | jq -r '[.result[]? | select(.verified != null)][0].email')
+          echo "== enable routing"; api -X POST $B/zones/$ZONE/email/routing/dns -d '{}' | jq -c '{success, errors, r: (.result | {enabled, status}?)}'
+          for U in contact support; do
+            BODY=$(jq -n --arg to "$U@$DOMAIN" --arg d "$DEST" '{name: ("Forward " + $to), enabled: true, matchers: [{type: "literal", field: "to", value: $to}], actions: [{type: "forward", value: [$d]}]}')
+            echo "== rule $U"; api -X POST $B/zones/$ZONE/email/routing/rules -d "$BODY" | jq -c '{success, errors, r: (.result | {name, enabled}?)}'
+          done
+          sleep 15
+          echo "== routing settings"; api $B/zones/$ZONE/email/routing | jq -c '{success, errors, r: (.result | {enabled, status})}'
+          echo "== dns records"; api "$B/zones/$ZONE/dns_records?per_page=100" | jq -c '.result[]? | {type, name, c: (.content|.[0:60]), priority}'
+          echo "== rules"; api $B/zones/$ZONE/email/routing/rules | jq -c '.result[]? | {name, enabled, m: .matchers, a: [.actions[].type]}'
+          for U in contact support; do
+            MAIL=$(jq -n --arg to "$U@$DOMAIN" --arg f "no-reply@$DOMAIN" --arg u "$U" '{to: $to, from: {address: $f, name: "Markhor Prep"}, subject: ("Test: " + $u + "@markhorprep.com forwarding"), text: ("If you can read this in Gmail, mail sent to " + $u + "@markhorprep.com reaches you.")}')
+            echo "== test send to $U"; api -X POST $B/accounts/$ACCOUNT/email/sending/send -d "$MAIL" | jq -c '{success, errors}'
+          done
