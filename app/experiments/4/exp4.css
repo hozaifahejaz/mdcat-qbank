@@ -178,9 +178,9 @@
 .x4-parts { font-size: .75rem; color: var(--x-mute); line-height: 1.5; margin-top: 6px; }
 
 /* Hero: the area's tests as a fan of cards */
-.x4-under { margin-top: 44px; display: grid; justify-items: center; gap: 34px; }
-.x4-fan { list-style: none; padding: 8px 0 0; margin: 0; display: flex; justify-content: center; flex-wrap: wrap; gap: 14px; max-width: 1080px; }
-.x4-fcard { width: 188px; padding: 16px; display: grid; gap: 2px; text-align: left; border-radius: 18px; transform: rotate(var(--r)); animation: x4-deal .5s cubic-bezier(.2,.8,.2,1) both; animation-delay: var(--d); transition: transform .2s; }
+.x4-under { margin-top: 44px; display: flex; flex-direction: column; align-items: center; gap: 34px; }
+.x4-fan { list-style: none; padding: 8px 0 0; margin: 0; display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; width: min(1240px, calc(100vw - 48px)); flex: none; }
+.x4-fcard { width: 164px; padding: 16px; display: grid; gap: 2px; text-align: left; border-radius: 18px; transform: rotate(var(--r)); animation: x4-deal .5s cubic-bezier(.2,.8,.2,1) both; animation-delay: var(--d); transition: transform .2s; }
 .x4-fcard:hover { transform: rotate(0deg) translateY(-6px); }
 .x4-fhead { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
 .x4-fcard b { font-size: 1.0625rem; letter-spacing: -0.02em; }
@@ -246,3 +246,10 @@
   .x4-ring { width: 88px; height: 88px; }
 }
 @media (prefers-reduced-motion: reduce) { .x4-pane, .x4-row u s { animation: none; } }
+
+/* Each test card in its own colour */
+.x4-fcard { --c: var(--x-blue); background: color-mix(in srgb, var(--c) 6%, var(--x-card)); box-shadow: var(--x-shadow), inset 0 0 0 1px color-mix(in srgb, var(--c) 18%, transparent); gap: 4px; }
+.x4-fcard .x4-tile { color: var(--c); background: color-mix(in srgb, var(--c) 14%, var(--x-card)); margin-bottom: 12px; }
+.x4-fcard b { color: color-mix(in srgb, var(--c) 70%, var(--x-ink)); }
+.x4-fbar { display: flex; gap: 3px; height: 6px; margin-top: 10px; }
+.x4-fbar i { border-radius: 3px; }

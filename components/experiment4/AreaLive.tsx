@@ -45,8 +45,6 @@ export function Inside({ area }: { area: Area }) {
               <button key={t} type="button" role="tab" aria-selected={t === tab} className={t === tab ? "on" : ""} onClick={() => pick(t)}>{t}</button>
             ))}
           </nav>
-          <small>Your tests</small>
-          <ul>{area.exams.slice(0, 5).map((e) => <li key={e.id}>{e.name}</li>)}</ul>
         </aside>
 
         <div className="x4-pane" key={tab + area.id}>

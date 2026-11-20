@@ -25,7 +25,6 @@ export const trackPages: Record<TrackId, TrackPage> = {
     price: { month: 799, three: 1999 },
     perks: ["PMDC MDCAT, NUMS and AKU banks", "FSc Part 1 and Part 2 chapters", "Full-length timed mocks", "Past papers", "My mistakes and bookmarks"],
     faqs: [
-      { q: "Which tests does it cover?", a: "PMDC MDCAT, NUMS MDCAT and the AKU test, plus FSc pre-medical chapter practice. ETEA medical comes next." },
       { q: "Does it follow the current syllabus?", a: "Yes. Questions are filed under the chapters of the PMDC MDCAT syllabus, with separate chapter lists for NUMS and AKU." },
     ],
   },
@@ -36,8 +35,7 @@ export const trackPages: Record<TrackId, TrackPage> = {
     price: { month: 799, three: 1999 },
     perks: ["ECAT, NUST NET, GIKI, FAST and PIEAS banks", "FSc pre-engineering and ICS chapters", "Timed mocks for each test", "My mistakes and bookmarks"],
     faqs: [
-      { q: "Which tests will it cover?", a: "ECAT, NUST NET, GIKI, FAST, PIEAS and ETEA engineering, plus FSc pre-engineering chapters. ICS students get Computer Science in place of Chemistry." },
-      { q: "Is Maths included?", a: "Yes. Maths is the biggest part of most engineering tests, so it gets the most questions, chapter by chapter from FSc." },
+      { q: "Is Maths included?", a: "Yes. Maths is the biggest part of most engineering tests, so it gets the most questions, chapter by chapter from FSc. ICS students get Computer Science in place of Chemistry." },
     ],
   },
   doctors: {
@@ -47,8 +45,7 @@ export const trackPages: Record<TrackId, TrackPage> = {
     price: { month: 1499, three: 3999 },
     perks: ["FCPS Part 1, JCAT, MD/MS and NLE banks", "Basic sciences by system", "Clinical cases for JCAT", "Timed mocks for each exam"],
     faqs: [
-      { q: "Which exams will it cover?", a: "FCPS Part 1, JCAT for MS, MD and MDS induction, university MD and MS tests, and the NLE. They share one basic sciences bank." },
-      { q: "Who checks the questions?", a: "Every question will be checked by doctors who have passed that exam before it goes live." },
+      { q: "Who checks the questions?", a: "Doctors who have passed that exam check every question before it goes live." },
     ],
   },
   law: {
@@ -58,7 +55,6 @@ export const trackPages: Record<TrackId, TrackPage> = {
     price: { month: 599, three: 1499 },
     perks: ["LAT, USAT and NAT banks", "Essay prompts with model answers", "Timed mocks for each test", "My mistakes and bookmarks"],
     faqs: [
-      { q: "Which tests will it cover?", a: "The HEC LAT for LLB, the HEC USAT and the NTS NAT for undergraduate admissions." },
       { q: "Does it help with the LAT essay?", a: "Yes. Essay prompts in the LAT style come with a model answer and what examiners look for." },
     ],
   },
@@ -69,8 +65,7 @@ export const trackPages: Record<TrackId, TrackPage> = {
     price: { month: 599, three: 1499 },
     perks: ["HAT and GAT General banks", "Verbal, analytical and quantitative sets", "Timed mocks for each test", "My mistakes and bookmarks"],
     faqs: [
-      { q: "Which tests will it cover?", a: "The HEC HAT and the NTS GAT General, the tests most universities ask for at MS, MPhil and PhD admission." },
-      { q: "Does it cover subject GAT?", a: "Not at first. The general sections come first because every applicant sits them." },
+      { q: "Is it only for HEC HAT?", a: "No. The verbal, analytical and quantitative sections follow both HAT and GAT General, the tests most universities ask for." },
     ],
   },
   jobs: {
@@ -80,7 +75,6 @@ export const trackPages: Record<TrackId, TrackPage> = {
     price: { month: 799, three: 2499 },
     perks: ["CSS MPT, PMS, FPSC and PPSC banks", "ISSB and forces initial tests", "Current affairs updated each month", "Timed mocks for each test"],
     faqs: [
-      { q: "Which tests will it cover?", a: "The CSS MPT, provincial PMS, FPSC and PPSC tests, ISSB, and the Army, Navy and PAF initial tests." },
       { q: "How do you keep current affairs fresh?", a: "Current affairs questions are added every month and older ones are retired when they go out of date." },
     ],
   },
@@ -91,8 +85,7 @@ export const trackPages: Record<TrackId, TrackPage> = {
     price: { month: 899, three: 2499 },
     perks: ["O Level and AS and A Level subjects", "Questions by syllabus topic", "Timed multiple-choice papers", "My mistakes and bookmarks"],
     faqs: [
-      { q: "Which subjects will it cover?", a: "The multiple-choice papers of O Level and AS and A Level sciences, Maths and Economics first." },
-      { q: "Is it the Cambridge past papers?", a: "No. Every question is written for this bank in the same style, sorted by syllabus topic." },
+      { q: "Is it Cambridge past papers?", a: "No. Every question is written for this bank in the same style, sorted by syllabus topic." },
     ],
   },
   abroad: {
@@ -102,7 +95,6 @@ export const trackPages: Record<TrackId, TrackPage> = {
     price: { month: 999, three: 2999 },
     perks: ["SAT Reading, Writing and Maths", "IELTS Reading and Listening", "Timed section tests", "My mistakes and bookmarks"],
     faqs: [
-      { q: "Which tests will it cover?", a: "The digital SAT and IELTS Academic, starting with the parts you can practice as questions: SAT sections, IELTS Reading and Listening." },
       { q: "Is it the official test?", a: "No. It's practice in the same style. You still register and sit the official test with College Board or IELTS." },
     ],
   },
