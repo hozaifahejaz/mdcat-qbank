@@ -43,7 +43,7 @@
   --bg: #fafafa; --card: #ffffff; --ink: #0f1115; --muted: #6b6f76; --line: #ececec;
   --blue: #2f55f0; --blue-soft: #e9edff; --cta: #2f55f0; --on-cta: #ffffff;
   --shadow: 0 1px 2px rgba(15,17,21,.04), 0 10px 30px -10px rgba(15,17,21,.12);
-  --r-lg: 22px; --r-md: 14px;
+  --r-lg: 22px; --r-md: 14px; --r-btn: 12px;
 }
 :root[data-look="new"][data-theme="dark"] {
   --bg: #0c0d0f; --card: #16171a; --ink: #f2f2f0; --muted: #9a9ca3; --line: #26272c;

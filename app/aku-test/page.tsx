@@ -39,7 +39,7 @@ export default function Aku() {
       {bank.subjects.map((s) => (
         <section key={s.name}>
           <h2 className="with-mark"><PubMark subject={s.name} size="sm" />{s.name}: {s.chapters.length} chapters</h2>
-          <div className="pub-grid">{s.chapters.map((c) => <div key={c} className="tile"><b>{c}</b></div>)}</div>
+          <ol className="pub-grid">{s.chapters.map((c, i) => <li key={c} className="tile plain"><b><span className="num">{i + 1}.</span>{c}</b></li>)}</ol>
         </section>
       ))}
 

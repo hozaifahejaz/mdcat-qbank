@@ -7,18 +7,21 @@
 .pub .crumbs [aria-current] { color: var(--x-ink); }
 
 .pub-head { display: grid; gap: 14px; margin-bottom: 36px; max-width: 880px; }
-.pub-head h1 { font-size: clamp(2rem, 1.3rem + 2.6vw, 3.25rem); font-weight: 800; letter-spacing: -0.04em; line-height: 1.06; }
-.pub-head .lede { font-size: 1.125rem; line-height: 1.6; color: var(--x-mute); }
+.pub-head h1 { font-size: clamp(2rem, 1.3rem + 2.6vw, 3.25rem); font-weight: 800; letter-spacing: -0.04em; line-height: 1.06; text-wrap: balance; }
+.pub-head .lede { font-size: 1.125rem; line-height: 1.6; color: var(--x-mute); max-width: 68ch; }
 .pub-head .lede b { color: var(--x-ink); font-weight: 600; }
 .pub-head .asof { font-size: .8125rem; color: var(--x-mute); }
 .pub-acts { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 6px; }
 .pub .x3-line { background: var(--x-card); color: var(--x-ink); box-shadow: inset 0 0 0 1px var(--x-line); }
 
-.pub h2 { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.03em; margin: 48px 0 16px; }
-.pub h2:first-child { margin-top: 0; }
-.pub .prose { max-width: 760px; display: grid; gap: 14px; font-size: 1rem; line-height: 1.7; }
-.pub .prose h2 { margin: 26px 0 0; }
-.pub .prose h3 { font-size: 1.0625rem; margin-top: 8px; }
+.pub h2 { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.03em; line-height: 1.25; margin: 48px 0 16px; text-wrap: pretty; }
+/* A heading that opens a column sits level with its neighbour; one that opens a section keeps its space above. */
+.pub-cols > * > h2:first-child { margin-top: 0; }
+.pub .prose { max-width: 720px; display: grid; gap: 14px; font-size: 1.0625rem; line-height: 1.75; }
+.pub .prose h2 { margin: 30px 0 0; }
+.pub .prose h2:first-child { margin-top: 0; }
+.pub .prose h3 { font-size: 1.125rem; line-height: 1.35; margin-top: 10px; }
+.pub .prose li::marker { color: var(--x-mute); }
 .pub .prose ul, .pub .prose ol { display: grid; gap: 8px; padding-left: 22px; }
 .pub .prose ul { list-style: disc; }
 .pub .prose ol { list-style: decimal; }
@@ -39,10 +42,15 @@
 @media (max-width: 600px) { .pub-grid, .pub-grid.two { grid-template-columns: minmax(0, 1fr); } }
 .pub .tile { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 16px 18px; border-radius: 16px; background: var(--x-card); box-shadow: var(--x-shadow); min-height: 64px; transition: transform .15s; }
 .pub a.tile:hover { transform: translateY(-1px); }
-.pub .tile b { font-weight: 600; letter-spacing: -0.01em; }
-.pub .tile small { display: block; font-size: .8125rem; color: var(--x-mute); margin-top: 2px; font-weight: 400; }
+.pub .tile b { font-weight: 600; letter-spacing: -0.01em; line-height: 1.35; }
+.pub .tile small { display: block; font-size: .8125rem; line-height: 1.5; color: var(--x-mute); margin-top: 3px; font-weight: 400; }
 .pub .tile em { font-style: normal; font-size: .8125rem; color: var(--x-mute); white-space: nowrap; }
-.pub .tile.big { align-items: flex-start; flex-direction: column; padding: 22px; }
+.pub .tile.big { align-items: flex-start; flex-direction: column; justify-content: flex-start; gap: 12px; padding: 22px; }
+.pub .tile.big small { margin-top: -6px; }
+/* A list that only names things (no link) reads as a list, not as buttons */
+.pub .tile.plain { box-shadow: inset 0 0 0 1px var(--x-line); background: transparent; min-height: 52px; padding-block: 12px; }
+.pub .tile.plain b { font-weight: 500; }
+.pub .tile .num { color: var(--x-mute); font-variant-numeric: tabular-nums; margin-right: 6px; font-weight: 500; }
 .pub .tile.big b { font-size: 1.1875rem; }
 
 /* Tables */
@@ -57,20 +65,20 @@
 @media (max-width: 860px) { .pub-cols { grid-template-columns: minmax(0, 1fr); } }
 
 /* A sample question */
-.pub-qs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; }
-@media (max-width: 960px) { .pub-qs { grid-template-columns: minmax(0, 1fr); } }
+/* One question under another, at a width that reads easily: side by side they ended at different heights. */
+.pub-qs { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; max-width: 760px; }
 .pq { padding: 22px; display: grid; gap: 14px; }
-.pub .pq h3 { font-size: 1rem; font-weight: 600; line-height: 1.5; letter-spacing: 0; }
-.pq h3 span { display: inline-block; margin-right: 8px; font-size: .75rem; font-weight: 700; color: var(--x-blue); }
+.pub .pq h3 { display: flex; gap: 10px; align-items: baseline; font-size: 1.0625rem; font-weight: 600; line-height: 1.5; letter-spacing: -0.005em; }
+.pq h3 span { flex: none; font-size: .8125rem; font-weight: 700; color: var(--x-blue); font-variant-numeric: tabular-nums; }
 .pub .pq ol { display: grid; gap: 8px; }
-.pq ol li { display: flex; gap: 12px; padding: 10px 14px; border-radius: 12px; box-shadow: inset 0 0 0 1px var(--x-line); font-size: .9375rem; line-height: 1.5; }
-.pq ol li b { color: var(--x-mute); font-weight: 600; }
+.pq ol li { display: flex; gap: 12px; align-items: baseline; padding: 11px 14px; border-radius: 12px; box-shadow: inset 0 0 0 1px var(--x-line); font-size: 1rem; line-height: 1.5; }
+.pq ol li b { flex: none; width: 1ch; color: var(--x-mute); font-weight: 600; }
 .pq details { border-top: 1px solid var(--x-line); padding-top: 12px; }
 .pq summary { cursor: pointer; font-weight: 600; font-size: .9375rem; color: var(--x-blue); min-height: 32px; display: flex; align-items: center; list-style: none; }
 .pq summary::-webkit-details-marker { display: none; }
 .pq summary::after { content: "+"; margin-left: auto; font-size: 1.25rem; font-weight: 400; }
 .pq details[open] summary::after { content: "\2212"; }
-.pq details p { font-size: .9375rem; line-height: 1.65; margin-top: 10px; }
+.pq details p { font-size: 1rem; line-height: 1.7; margin-top: 10px; }
 .pq details .ans { color: #11804a; }
 :root[data-theme="dark"] .pq details .ans { color: #4ec98a; }
 .pub .pq details ul { display: grid; gap: 8px; margin-top: 12px; font-size: .875rem; line-height: 1.6; color: var(--x-mute); }
@@ -79,9 +87,12 @@
 /* FAQ and the closing invitation */
 .pub-faq { display: grid; gap: 10px; max-width: 760px; }
 .pub-faq details { padding: 16px 20px; border-radius: 16px; background: var(--x-card); box-shadow: var(--x-shadow); }
-.pub-faq summary { cursor: pointer; font-weight: 600; }
+.pub-faq summary { cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 12px; list-style: none; }
+.pub-faq summary::-webkit-details-marker { display: none; }
+.pub-faq summary::after { content: "+"; margin-left: auto; font-size: 1.25rem; font-weight: 400; color: var(--x-mute); }
+.pub-faq details[open] summary::after { content: "\2212"; }
 .pub-faq p { margin-top: 10px; color: var(--x-mute); line-height: 1.65; font-size: .9375rem; }
-.pub-cta { margin-top: 64px; padding: 28px 32px; display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+.pub-cta { margin-top: 72px; padding: 28px 32px; display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
 .pub .pub-cta h2 { margin: 0 0 6px; }
 .pub-cta p { color: var(--x-mute); }
 
@@ -112,3 +123,21 @@
 .pub-mark.lg { width: 56px; height: 56px; border-radius: 16px; }
 .pub .tile .tl { display: flex; align-items: center; gap: 12px; min-width: 0; }
 .pub h2.with-mark { display: flex; align-items: center; gap: 10px; }
+
+/* Article pages (guides, about): the heading and the text share one readable column. */
+.pub-article .pub-main > * { max-width: 720px; margin-inline: auto; }
+.pub-article .pub-head .lede { max-width: none; }
+.pub-article .pub-head h1 { font-size: clamp(2rem, 1.4rem + 2vw, 2.75rem); line-height: 1.1; }
+.pub-article .pub-stats { margin-bottom: 40px; }
+.pub-article .pub-grid.two { grid-template-columns: minmax(0, 1fr); }
+.pub-article .pub-cta { max-width: 720px; }
+
+/* /pricing and the legal pages: the same bar and footer as the study pages in the new look; the classic look keeps
+   its own header (Admin > Site theme). */
+.x3.x3-part { min-height: 0; background: transparent; }
+:root[data-look="classic"] .look-new { display: none; }
+:root:not([data-look="classic"]) .look-classic { display: none; }
+.pub ol.pub-grid { list-style: none; margin: 0; padding: 0; }
+/* The page above the shared footer ends with its own space, and the footer closes the page (no gap under it). */
+.dash:has(> .look-new .x3-foot) { padding-bottom: 0; }
+:root:not([data-look="classic"]) .dash:has(> .look-new .x3-foot) > main { padding-bottom: 72px; }

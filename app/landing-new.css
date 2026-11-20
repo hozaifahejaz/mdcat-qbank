@@ -254,7 +254,7 @@
 .x3-footin ul { display: grid; gap: 10px; font-size: .875rem; color: var(--x-mute); align-content: start; }
 .x3-footin ul b { color: var(--x-ink); }
 .x3-footin ul a:hover { color: var(--x-ink); }
-.x3-foot .legal { margin-top: 44px; font-size: .75rem; color: var(--x-mute); }
+.x3-foot .x3-fine { margin-top: 44px; font-size: .75rem; color: var(--x-mute); }
 @media (max-width: 600px) { .x3-footin { grid-template-columns: 1fr 1fr; gap: 32px; } .x3-footin > div { grid-column: 1 / -1; } }
 
 @media (prefers-reduced-motion: reduce) {

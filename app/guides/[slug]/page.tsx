@@ -33,7 +33,7 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
     publisher: { "@type": "Organization", name: site.name, logo: { "@type": "ImageObject", url: abs("/icons/icon-512.png") } },
   };
   return (
-    <Shell trail={trail}>
+    <Shell trail={trail} article>
       <header className="pub-head">
         <h1>{g.title}</h1>
         <p className="lede"><b>In short:</b> {g.answer}</p>

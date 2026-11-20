@@ -2,7 +2,7 @@ import { ExamMark, SubjectMark } from "@/components/Marks";
 import { toneOf } from "@/lib/banks";
 
 const examTone: Record<string, { tone: string; solid: string }> = {
-  mdcat: { tone: "var(--cta)", solid: "var(--on-cta)" },
+  mdcat: { tone: "var(--cta, var(--blue))", solid: "var(--on-cta, #fff)" },
   nums: { tone: "var(--peach)", solid: "var(--warn)" },
   aku: { tone: "var(--lilac)", solid: "#8a63ff" },
 };

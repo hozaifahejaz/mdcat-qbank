@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Logo from "@/components/Logo";
 import PayLogo from "@/components/app/PayLogo";
+import { PublicFooter, PublicNav } from "@/components/public/Shell";
 import ThemeToggle from "@/components/ThemeToggle";
 import { money, plans } from "@/lib/billing";
 import { prices, site } from "@/lib/site";
@@ -51,7 +52,8 @@ export default function PricingScreen() {
   useEffect(() => { setInside(!!lastUser()); }, []);
   return (
     <div className="dash">
-      <header className="dnav-wrap">
+      <div className="x3 x3-part look-new"><PublicNav inside={inside} /></div>
+      <header className="dnav-wrap look-classic">
         <div className="dwrap">
           <div className="dnav">
             <Logo href="/" />
@@ -90,9 +92,10 @@ export default function PricingScreen() {
             {(["jazzcash", "easypaisa", "visa", "mastercard", "unionpay", "raast"] as const).map((b) => <PayLogo key={b} brand={b} />)}
           </section>
           <p className="muted small center">{site.name} · iOS and Android apps coming soon</p>
-          <p className="muted small center"><a className="link" href="/terms">Terms</a> · <a className="link" href="/refunds">Refunds</a> · <a className="link" href="/privacy">Privacy</a></p>
+          <p className="muted small center look-classic"><a className="link" href="/terms">Terms</a> · <a className="link" href="/refunds">Refunds</a> · <a className="link" href="/privacy">Privacy</a></p>
         </div>
       </main>
+      <div className="x3 x3-part look-new"><PublicFooter /></div>
     </div>
   );
 }
