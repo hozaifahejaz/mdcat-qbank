@@ -13,4 +13,4 @@ Disallow: /test
 Disallow: /account
 Disallow: /checkout
 
-Sitemap: https://mdcat-qbank.pages.dev/sitemap.xml
+Sitemap: https://markhorprep.com/sitemap.xml
