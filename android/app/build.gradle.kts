@@ -15,15 +15,15 @@ val productionApi = "https://markhorprep.com"
 val debugApi = (findProperty("apiBase") as String?) ?: local.getProperty("apiBase") ?: productionApi
 
 // Upload key for release builds, only from environment variables (GitHub secrets), never from the repo.
-val keystorePath: String? = System.getenv("EXAMWISE_KEYSTORE")
+val keystorePath: String? = System.getenv("MARKHORPREP_KEYSTORE")
 
 
 android {
-    namespace = "pk.examwise.app"
+    namespace = "com.markhorprep.app"
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "pk.examwise.app"
+        applicationId = "com.markhorprep.app"
         minSdk = 26
         targetSdk = 36
         versionCode = 1
@@ -34,9 +34,9 @@ android {
         if (keystorePath != null) {
             create("upload") {
                 storeFile = file(keystorePath)
-                storePassword = System.getenv("EXAMWISE_KEYSTORE_PASSWORD")
-                keyAlias = System.getenv("EXAMWISE_KEY_ALIAS")
-                keyPassword = System.getenv("EXAMWISE_KEY_PASSWORD")
+                storePassword = System.getenv("MARKHORPREP_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("MARKHORPREP_KEY_ALIAS")
+                keyPassword = System.getenv("MARKHORPREP_KEY_PASSWORD")
             }
         }
     }

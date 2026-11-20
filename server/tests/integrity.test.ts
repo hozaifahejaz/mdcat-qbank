@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { type Verdict, checkIntegrity, judge, requestHash } from "../integrity";
 import type { Env } from "../env";
 
-const PKG = "pk.examwise.app";
+const PKG = "com.markhorprep.app";
 const KEY = "0f8fad5b-d9cb-469f-a165-70867728950e";
 
 async function verdict(over: Partial<Verdict> = {}): Promise<Verdict> {

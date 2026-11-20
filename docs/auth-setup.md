@@ -79,9 +79,9 @@ When you switch this on, accounts made before then are unconfirmed. They'll be a
 
 | Build | Package name | SHA-1 |
 | --- | --- | --- |
-| Test builds made on your Mac | `pk.examwise.app.debug` | from `keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android` |
-| Release (upload key) | `pk.examwise.app` | from `keytool -list -v -keystore upload.jks -alias <key alias>` |
-| Play Store installs | `pk.examwise.app` | Play Console > Test and release > App integrity > App signing key certificate |
+| Test builds made on your Mac | `com.markhorprep.app.debug` | from `keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android` |
+| Release (upload key) | `com.markhorprep.app` | from `keytool -list -v -keystore upload.jks -alias <key alias>` |
+| Play Store installs | `com.markhorprep.app` | Play Console > Test and release > App integrity > App signing key certificate |
 
 A debug APK built on another computer (or by GitHub Actions) has a different SHA-1, so Google sign-in won't work in it until that SHA-1 is added too.
 

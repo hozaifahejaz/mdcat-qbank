@@ -14,5 +14,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "examwise"
+rootProject.name = "markhorprep"
 include(":core", ":app")
