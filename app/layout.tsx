@@ -8,17 +8,17 @@ const font = Plus_Jakarta_Sans({ subsets: ["latin"], weight: ["400", "500", "600
 
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
-  title: `MDCAT MCQs with full explanations · ${site.name}`,
-  description: "Practice PMDC MDCAT MCQs by chapter, with a full explanation on every question, full-length timed mocks and past papers. One Season Pass, no renewal.",
+  title: `${site.name} | MDCAT, NUMS and AKU Question Bank`,
+  description: "Practice MCQs for PMDC MDCAT, NUMS and the AKU test by chapter, with a full explanation on every question, timed mocks and past papers. Start free.",
   icons: { icon: "/favicon.svg", apple: "/icons/apple-touch-icon.png" },
   manifest: "/manifest.webmanifest",
   openGraph: {
     type: "website",
     siteName: site.name,
-    title: `MDCAT MCQs with full explanations · ${site.name}`,
+    title: `${site.name} | MDCAT, NUMS and AKU Question Bank`,
     description: "Chapter-wise MDCAT practice, timed 180-question mocks and an explanation on every question.",
     url: "/",
-    images: [{ url: "/og.png", width: 1200, height: 630, alt: `${site.name}: MDCAT MCQs with full explanations` }],
+    images: [{ url: "/og.png", width: 1200, height: 630, alt: `${site.name}: MDCAT, NUMS and AKU question bank` }],
   },
   twitter: { card: "summary_large_image" },
 };
