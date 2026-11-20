@@ -1,4 +1,4 @@
-import { MESSAGE_MAX, MESSAGE_MIN, type PublicTicket, type TicketDetail, type TicketMessage, type TicketRow, type TicketStatus, isTopic, topicLabel } from "../lib/support";
+import { MESSAGE_MAX, MESSAGE_MIN, TICKET_EMAILS, type PublicTicket, type TicketDetail, type TicketMessage, type TicketRow, type TicketStatus, isTopic, topicLabel } from "../lib/support";
 import { site } from "../lib/site";
 import { randomToken } from "./crypto";
 import type { Env } from "./env";
@@ -9,9 +9,9 @@ import { getSession } from "./session";
 import { checkCaptcha } from "./turnstile";
 import { requireRole } from "./admin";
 
-/* Support tickets. Anyone can write in from /contact; each message starts a ticket, emailed back to them with a private
-   link where they can read the conversation and add to it. Admins answer from /admin/tickets, and each answer is
-   emailed from the support address. Every message, both ways, is kept in ticket_messages. */
+/* Support tickets. Anyone can write in from /contact; each message starts a ticket, with a private link (shown after
+   sending) where they can read the conversation and add to it. Admins answer from /admin/tickets. Every message, both
+   ways, is kept in ticket_messages. No email is sent unless TICKET_EMAILS (lib/support.ts) is switched on. */
 
 type Ctx = { env: Env; request: Request; db: D1Database; ip: string; origin: string };
 
@@ -59,6 +59,7 @@ async function ownTicket(c: Ctx, t: unknown, id: unknown): Promise<Row> {
 
 /* Tells the support inbox about a new message, so it shows up in Gmail too. Best effort: the ticket is saved either way. */
 async function tellInbox(c: Ctx, t: { id: number; name: string; email: string; topic: string }, text: string, isNew: boolean) {
+  if (!TICKET_EMAILS) return;
   const url = `${c.origin}/admin/tickets?id=${t.id}`;
   const heading = `${isNew ? "New ticket" : "New reply on ticket"} #${t.id} from ${t.name}`;
   const m = messageEmail(heading, `${topicLabel(t.topic)} · ${t.email}\n\n${text}`, "Open in the admin panel", url, "Answer from the admin panel so the whole conversation stays in one place.");
@@ -92,17 +93,9 @@ const publicRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
     const id = made!.id;
     await c.db.prepare("INSERT INTO ticket_messages (ticket_id, from_staff, author_id, body, created_at) VALUES (?, 0, ?, ?, ?)").bind(id, s?.user_id ?? null, text, now).run();
 
-    const link = ticketUrl(c.origin, token);
-    const ack = messageEmail(
-      `We got your message, ${name.split(" ")[0]}`,
-      `Thanks for writing to ${site.name}. Your ticket number is #${id}, and we usually reply within one working day.\n\nWhat you wrote:\n\n${text}`,
-      "See your ticket", link,
-      "You can add to the conversation from the link above at any time.",
-    );
-    await Promise.all([
-      sendMail(c.env, email, subjectOf(id), ack.text, ack.html, { from: support(c.env), replyTo: support(c.env).address }).catch((e) => console.error("ticket receipt failed", e)),
-      tellInbox(c, { id, name, email, topic }, text, true),
-    ]);
+    // No receipt email to the sender (it would cost a send for every ticket): the page shows the ticket link instead,
+    // and the first answer emails it to them.
+    await tellInbox(c, { id, name, email, topic }, text, true);
     return json({ ok: true, id, link: `/contact/ticket?t=${encodeURIComponent(token)}` });
   },
 
@@ -142,6 +135,17 @@ const publicRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
     return json({ tickets: results.map((r) => ({ id: r.id, topic: r.topic, status: r.status, answered: r.last_from === "staff", createdAt: r.created_at, updatedAt: r.updated_at })) });
   },
 };
+
+/* An answer emailed to the person from the support address (only when TICKET_EMAILS is on). */
+async function emailAnswer(c: Ctx, t: Row, text: string, close: boolean) {
+  const m = messageEmail(
+    `Re: ${topicLabel(t.topic)} (ticket #${t.id})`,
+    `Hi ${t.name.split(" ")[0]},\n\n${text}`,
+    "See the whole conversation", ticketUrl(c.origin, t.token),
+    close ? "We've marked this ticket as solved. If you still need help, reply from the link above and it opens again." : "To answer, reply from the link above.",
+  );
+  await sendMail(c.env, t.email, subjectOf(t.id), m.text, m.html, { from: support(c.env), replyTo: support(c.env).address });
+}
 
 /* ---------- Admin ---------- */
 
@@ -209,7 +213,7 @@ const adminRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
     return json(out);
   },
 
-  /* An answer: emailed to the person from the support address first, and kept only once it has gone. */
+  /* An answer, shown on the person's ticket page. With TICKET_EMAILS on it is emailed first, and kept only once it has gone. */
   "POST /api/admin/tickets/reply": async (c) => {
     const me = await admin(c);
     const b = await body(c.request);
@@ -217,13 +221,7 @@ const adminRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
     const t = await getRow(c.db, id);
     const text = message(b.message);
     const close = b.close === true;
-    const m = messageEmail(
-      `Re: ${topicLabel(t.topic)} (ticket #${id})`,
-      `Hi ${t.name.split(" ")[0]},\n\n${text}`,
-      "See the whole conversation", ticketUrl(c.origin, t.token),
-      close ? "We've marked this ticket as solved. If you still need help, reply from the link above and it opens again." : "To answer, reply from the link above.",
-    );
-    await sendMail(c.env, t.email, subjectOf(id), m.text, m.html, { from: support(c.env), replyTo: support(c.env).address });
+    if (TICKET_EMAILS) await emailAnswer(c, t, text, close);
     const now = Date.now();
     await c.db.batch([
       c.db.prepare("INSERT INTO ticket_messages (ticket_id, from_staff, author_id, body, created_at) VALUES (?, 1, ?, ?, ?)").bind(id, me.id, text, now),
@@ -232,7 +230,6 @@ const adminRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
     ]);
     return json({ ok: true });
   },
-
   "POST /api/admin/tickets/status": async (c) => {
     const me = await admin(c);
     const b = await body(c.request);
