@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { type AuthConfig, getAuthConfig } from "@/lib/api";
+import { type AuthConfig, getAuthConfig, lastAuthConfig } from "@/lib/api";
+import { site } from "@/lib/site";
 import { type Entered, readNext, signInError } from "@/lib/auth";
 import { inAppPath, whenShown } from "@/lib/paths";
 import { getCurrentUser } from "@/lib/user";
@@ -25,8 +26,9 @@ const copy = {
    Only the methods that are switched on (docs/auth-setup.md) show, so nobody meets a button that does nothing. */
 export default function AuthPage({ mode }: { mode: Mode }) {
   const [next, setNext] = useState("/dashboard");
-  const [config, setConfig] = useState<AuthConfig | null | undefined>(undefined);
-  const [method, setMethod] = useState<Method>("phone");
+  // Drawn at once from the settings the site was built with, then from the server's answer (lib/api.ts).
+  const [config, setConfig] = useState<AuthConfig | null>(site.signIn);
+  const [method, setMethod] = useState<Method>(site.signIn.phone ? "phone" : "email");
   const [entered, setEntered] = useState<Entered | null>(null);
   const router = useRouter();
   const [error, setError] = useState("");
@@ -39,10 +41,12 @@ export default function AuthPage({ mode }: { mode: Mode }) {
     if (inAppPath(to)) router.prefetch(to);
     const params = new URLSearchParams(window.location.search);
     if (params.get("error")) setError(signInError(params.get("error")!));
-    getAuthConfig().then((cfg) => {
+    const use = (cfg: AuthConfig | null) => {
       setConfig(cfg);
-      if (cfg && (params.get("method") === "email" || !cfg.phone) && cfg.email) setMethod("email");
-    });
+      if (cfg) setMethod((params.get("method") === "email" || !cfg.phone) && cfg.email ? "email" : "phone");
+    };
+    use(lastAuthConfig());
+    getAuthConfig().then(use);
     // Already signed in: straight on to the page, which makes this the active device, so only once really opened.
     whenShown(() => getCurrentUser().then((u) => { if (u) setEntered((e) => e ?? { user: u }); }));
   }, [router]);
@@ -56,7 +60,7 @@ export default function AuthPage({ mode }: { mode: Mode }) {
   const siteKey = config?.turnstileSiteKey ?? "";
   return (
     <AuthFrame side top={top}>
-      <div className="card auth-card" aria-busy={!config}>
+      <div className="card auth-card">
         <div>
           <h1>{c.title}</h1>
           <p className="lede">{c.lede}</p>

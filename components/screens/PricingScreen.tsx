@@ -1,10 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Logo from "@/components/Logo";
 import PayLogo from "@/components/app/PayLogo";
-import { PublicFooter, PublicNav } from "@/components/public/Shell";
-import ThemeToggle from "@/components/ThemeToggle";
+import { PublicFooter, PublicNav } from "@/components/public/Frame";
 import { money, plans } from "@/lib/billing";
 import { prices, site } from "@/lib/site";
 import { lastUser } from "@/lib/user";
@@ -52,18 +50,7 @@ export default function PricingScreen() {
   useEffect(() => { setInside(!!lastUser()); }, []);
   return (
     <div className="dash">
-      <div className="x3 x3-part look-new"><PublicNav inside={inside} /></div>
-      <header className="dnav-wrap look-classic">
-        <div className="dwrap">
-          <div className="dnav">
-            <Logo href="/" />
-            <div className="dnav-end">
-              <ThemeToggle />
-              {inside ? <a className="dpill light small" href="/dashboard">Dashboard</a> : <a className="dpill light small" href="/signin">Sign in</a>}
-            </div>
-          </div>
-        </div>
-      </header>
+      <div className="x3 x3-part"><PublicNav inside={inside} /></div>
       <main className="dwrap">
         <div className="dgrid">
           <section className="price-head">
@@ -92,10 +79,9 @@ export default function PricingScreen() {
             {(["jazzcash", "easypaisa", "visa", "mastercard", "unionpay", "raast"] as const).map((b) => <PayLogo key={b} brand={b} />)}
           </section>
           <p className="muted small center">{site.name} · iOS and Android apps coming soon</p>
-          <p className="muted small center look-classic"><a className="link" href="/terms">Terms</a> · <a className="link" href="/refunds">Refunds</a> · <a className="link" href="/privacy">Privacy</a></p>
         </div>
       </main>
-      <div className="x3 x3-part look-new"><PublicFooter /></div>
+      <div className="x3 x3-part"><PublicFooter /></div>
     </div>
   );
 }

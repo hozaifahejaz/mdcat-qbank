@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Logo, { Markhor } from "@/components/Logo";
 import ThemeToggle from "@/components/ThemeToggle";
-import { PublicFooter } from "@/components/public/Shell";
+import { PublicFooter } from "@/components/public/Frame";
 import Experience from "@/components/experiment4/Experience";
 import Climb from "@/components/experiment4/Climb";
 import Tracks from "@/components/experiment4/Tracks";

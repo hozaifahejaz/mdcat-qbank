@@ -30,14 +30,13 @@ export const viewport: Viewport = {
   themeColor: "#f4f4f1",
 };
 
-/* Set the theme before first paint: a saved choice wins, otherwise follow the device. Also the site's look
-   (lib/look.ts): public pages come marked by the server, and that mark is remembered for the pages that aren't. Also marks a browser that was
+/* Set the theme before first paint: a saved choice wins, otherwise follow the device. Also marks a browser that was
    let into the app before (lib/cache.ts keeps that), so its pages show their frame at once (app/auth.css). */
-const themeScript = `(function(){try{var t=localStorage.getItem("theme");if(t!=="light"&&t!=="dark")t=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";document.documentElement.setAttribute("data-theme",t);var c=t==="dark"?"#0f1012":"#f4f4f1",s=function(){var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",c)};s();document.addEventListener("DOMContentLoaded",s)}catch(e){}try{var h=document.documentElement,l=h.getAttribute("data-look");if(l)localStorage.setItem("look",l);else h.setAttribute("data-look",localStorage.getItem("look")==="classic"?"classic":"new")}catch(e){document.documentElement.setAttribute("data-look","new")}try{if(JSON.parse(localStorage.getItem("seen:let-in")).v===true&&localStorage.getItem("seen:me"))document.documentElement.setAttribute("data-in","1")}catch(e){}})();`;
+const themeScript = `(function(){try{var t=localStorage.getItem("theme");if(t!=="light"&&t!=="dark")t=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";document.documentElement.setAttribute("data-theme",t);var c=t==="dark"?"#0f1012":"#f4f4f1",s=function(){var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",c)};s();document.addEventListener("DOMContentLoaded",s)}catch(e){}try{if(JSON.parse(localStorage.getItem("seen:let-in")).v===true&&localStorage.getItem("seen:me"))document.documentElement.setAttribute("data-in","1")}catch(e){}})();`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={font.variable} suppressHydrationWarning>
+    <html lang="en" data-look="new" className={font.variable} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>

@@ -132,12 +132,9 @@
 .pub-article .pub-grid.two { grid-template-columns: minmax(0, 1fr); }
 .pub-article .pub-cta { max-width: 720px; }
 
-/* /pricing and the legal pages: the same bar and footer as the study pages in the new look; the classic look keeps
-   its own header (Admin > Site theme). */
+/* /pricing and the legal pages: the same bar and footer as the study pages. */
 .x3.x3-part { min-height: 0; background: transparent; }
-:root[data-look="classic"] .look-new { display: none; }
-:root:not([data-look="classic"]) .look-classic { display: none; }
 .pub ol.pub-grid { list-style: none; margin: 0; padding: 0; }
 /* The page above the shared footer ends with its own space, and the footer closes the page (no gap under it). */
-.dash:has(> .look-new .x3-foot) { padding-bottom: 0; }
-:root:not([data-look="classic"]) .dash:has(> .look-new .x3-foot) > main { padding-bottom: 72px; }
+.dash:has(> .x3-part .x3-foot) { padding-bottom: 0; }
+.dash:has(> .x3-part .x3-foot) > main { padding-bottom: 72px; }

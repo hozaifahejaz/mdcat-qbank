@@ -14,6 +14,9 @@ export const site = {
   /* What the landing page says before /api/stats answers (and if it can't): the bank's size rounded down to a
      hundred, and the past-paper years. Keep roughly in step with the bank so the line doesn't change as it loads. */
   bank: { questions: 7200, papers: [2026] },
+  /* The sign-in methods switched on in the live site (docs/auth-setup.md). Sign-in pages draw from this at once
+     and correct themselves when the server answers, so keep it in step when a method is switched on or off. */
+  signIn: { email: true, emailVerification: true, passwordReset: true, phone: false, google: true, apple: false, turnstileSiteKey: "" },
   season: "2027",
   examMonth: "August 2027",
   /* Expected date for the dashboard countdown. PMDC announces the real one; 2026 was set for 16 August and held on 20 September. Update when it does. */
