@@ -253,3 +253,23 @@
 .x4-fcard b { color: color-mix(in srgb, var(--c) 70%, var(--x-ink)); }
 .x4-fbar { display: flex; gap: 3px; height: 6px; margin-top: 10px; }
 .x4-fbar i { border-radius: 3px; }
+
+/* Hero tests as admit tickets */
+.x4-ticket { --c: var(--x-blue); position: relative; width: 160px; display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 0 1fr auto; text-align: left; border-radius: 16px; background: var(--x-card); box-shadow: var(--x-shadow), inset 0 0 0 1px color-mix(in srgb, var(--c) 22%, var(--x-line)); overflow: hidden; transform: rotate(var(--r)); animation: x4-deal .5s cubic-bezier(.2,.8,.2,1) both; animation-delay: var(--d); transition: transform .2s, box-shadow .2s; }
+.x4-ticket:hover { transform: rotate(0deg) translateY(-8px); box-shadow: var(--x-shadow-lg), inset 0 0 0 1.5px var(--c); }
+.x4-tk-top { padding: 14px 14px 16px; background: color-mix(in srgb, var(--c) 10%, var(--x-card)); display: grid; gap: 10px; align-content: start; min-height: 104px; }
+.x4-tk-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.x4-tk-row small { font-size: .6875rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: color-mix(in srgb, var(--c) 75%, var(--x-mute)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.x4-tk-mark { flex: none; width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; color: var(--c); background: var(--x-card); }
+.x4-ticket b { font-size: 1.125rem; line-height: 1.2; letter-spacing: -0.02em; color: color-mix(in srgb, var(--c) 65%, var(--x-ink)); }
+.x4-tk-cut { position: relative; border-top: 2px dashed color-mix(in srgb, var(--c) 30%, var(--x-line)); }
+.x4-tk-cut::before, .x4-tk-cut::after { content: ""; position: absolute; top: -9px; width: 16px; height: 16px; border-radius: 50%; background: var(--x-bg); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 22%, var(--x-line)); }
+.x4-tk-cut::before { left: -9px; }
+.x4-tk-cut::after { right: -9px; }
+.x4-tk-facts { margin: 0; padding: 12px 14px 14px; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 10px; }
+.x4-tk-facts div { display: grid; gap: 2px; min-width: 0; }
+.x4-tk-facts dt { font-size: .625rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--x-mute); }
+.x4-tk-facts dd { margin: 0; font-size: .8125rem; font-weight: 600; line-height: 1.3; color: var(--x-ink); }
+.x4-tk-band { display: flex; gap: 2px; height: 6px; }
+@media (max-width: 640px) { .x4-ticket { flex: none; width: 172px; scroll-snap-align: start; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .x4-ticket { animation: none; transition: none; } }

@@ -64,10 +64,19 @@ function Picker({ current, onPick, onClose }: { current: string; onPick: (id: Tr
   );
 }
 
-/* The area's tests as a fan of cards, each in its own colour, with its paper in one line and a thin bar of its parts.
+/* The area's tests as a fan of admit tickets, each in its own colour: a number and its name above the tear line,
+   the paper and the clock (or who sets it) below it, and a band along the bottom split by the paper's parts.
    Then one call to action with the main hero's proof line. */
 const palette = ["#11804a", "#2445ff", "#b06a00", "#8a63ff", "#d4483b", "#0f9fb5", "#c9a400"];
 const marks = new Set(["mdcat", "nums", "aku", "ecat", "net", "lat"]);
+
+/* The two facts printed on a ticket: the paper and the clock when we know the pattern, otherwise who sets it. */
+type AnyExam = Area["exams"][number];
+const facts = (e: AnyExam): [string, string][] => {
+  if (!e.pattern) return [["Set by", e.body]];
+  const [paper, time] = e.pattern.summary.split(" · ");
+  return time ? [["Paper", paper], ["Time", time]] : [["Paper", paper]];
+};
 
 function AreaCard({ area }: { area: Area }) {
   const n = area.exams.length;
@@ -78,15 +87,23 @@ function AreaCard({ area }: { area: Area }) {
         {area.exams.map((e, i) => {
           const c = palette[(start + i) % palette.length];
           return (
-            <li key={e.id} className="x3-card x4-fcard" style={{ ["--r" as string]: n > 5 ? `${i % 2 ? 1.5 : -1.5}deg` : `${(i - (n - 1) / 2) * 3}deg`, ["--d" as string]: `${i * 60}ms`, ["--c" as string]: c }}>
-              <span className="x4-tile">{marks.has(e.id) ? <ExamMark id={e.id} size={20} /> : <TrackMark id={area.id} size={20} />}</span>
-              <b>{e.name}</b>
-              <small>{e.pattern ? e.pattern.summary : e.body}</small>
-              {e.pattern && (
-                <span className="x4-fbar" aria-hidden="true">
-                  {e.pattern.parts.map((p, j) => <i key={p.name} style={{ flexGrow: p.n, background: `color-mix(in srgb, var(--c) ${100 - j * 15}%, var(--x-card))` }} />)}
+            <li key={e.id} className="x4-ticket" style={{ ["--r" as string]: n > 5 ? `${i % 2 ? 1.5 : -1.5}deg` : `${(i - (n - 1) / 2) * 3}deg`, ["--d" as string]: `${i * 60}ms`, ["--c" as string]: c }}>
+              <div className="x4-tk-top">
+                <span className="x4-tk-row">
+                  <small>No. {String(i + 1).padStart(2, "0")}</small>
+                  <span className="x4-tk-mark">{marks.has(e.id) ? <ExamMark id={e.id} size={18} /> : <TrackMark id={area.id} size={18} />}</span>
                 </span>
-              )}
+                <b>{e.name}</b>
+              </div>
+              <div className="x4-tk-cut" aria-hidden="true" />
+              <dl className="x4-tk-facts">
+                {facts(e).map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}
+              </dl>
+              <span className="x4-tk-band" aria-hidden="true">
+                {e.pattern
+                  ? e.pattern.parts.map((p, j) => <i key={p.name} style={{ flexGrow: p.n, background: `color-mix(in srgb, var(--c) ${100 - j * 16}%, var(--x-card))` }} />)
+                  : <i style={{ flexGrow: 1, background: "var(--c)" }} />}
+              </span>
             </li>
           );
         })}
