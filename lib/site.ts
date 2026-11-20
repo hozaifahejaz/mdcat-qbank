@@ -1,7 +1,7 @@
 /* Site-wide names and numbers. The brand lives here and nowhere else. Prices follow the plan's pricing table. */
 export const site = {
   name: "Markhor Prep",
-  /* The live address. www.markhorprep.com redirects here; mdcat-qbank.pages.dev still serves the same site. */
+  /* The live address. www.markhorprep.com and mdcat-qbank.pages.dev redirect here. */
   url: "https://markhorprep.com",
   supportEmail: "support@markhorprep.com",
   /* WhatsApp support in international form without the +, e.g. "923001234567". Empty hides the WhatsApp links. */
