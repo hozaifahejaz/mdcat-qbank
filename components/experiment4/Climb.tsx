@@ -2,30 +2,26 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Markhor } from "@/components/Logo";
-import { useExam } from "./ExamState";
+import { useArea, type Area } from "./ExamState";
 
 /* "The climb": how the site works, told as a markhor climbing to the summit. As the visitor scrolls through the steps,
    the markhor walks up the path and each step lights up. Transform and colour only, no fades; with reduced motion the
    markhor waits at the summit and every step is lit. */
 
-type AnyExam = ReturnType<typeof useExam>["chosen"];
 const list = (xs: string[]) => xs.length < 2 ? xs.join("") : `${xs.slice(0, -1).join(", ")} and ${xs[xs.length - 1]}`;
-const stepsFor = (e: AnyExam) => {
-  const parts = e.pattern?.parts.map((p) => p.name) ?? [];
-  return [
-    { h: `Pick ${e.name}`, p: `Your account shows ${e.track.name.toLowerCase()} and nothing else.` },
-    { h: "Practice by chapter", p: parts.length ? `${list(parts)}, chapter by chapter, every option explained.` : "Every option explained, so you learn why, not just what." },
-    { h: "Sit the real paper", p: e.pattern ? `Timed mocks of ${e.pattern.summary.replace(" · ", " in ")}, like the real ${e.name}.` : `Timed mocks in the ${e.name} pattern, with the same clock.` },
-    { h: "Fix your mistakes", p: "Every wrong answer waits in My mistakes for another try." },
-    { h: `${e.name} day`, p: "Walk in having seen it all before." },
-  ];
-};
+const stepsFor = (a: Area) => [
+  { h: "Pick your area", p: `Your account shows ${a.name.toLowerCase()} and nothing else.` },
+  { h: "Practice by chapter", p: `${list(a.page.subjects.slice(0, 4).map((s) => s.name))}, chapter by chapter, every option explained.` },
+  { h: "Sit the real paper", p: a.page.mock.line },
+  { h: "Fix your mistakes", p: "Every wrong answer waits in My mistakes for another try." },
+  { h: "Exam day", p: "Walk in having seen it all before." },
+];
 const ROUTE = "M80 660 C 240 650 450 620 480 560 S 200 470 230 400 S 400 330 360 250 S 290 130 300 62";
 const stops = [0.04, 0.3, 0.55, 0.8, 1];
 
 export default function Climb() {
-  const { chosen } = useExam();
-  const steps = stepsFor(chosen);
+  const { area } = useArea();
+  const steps = stepsFor(area);
   const box = useRef<HTMLDivElement>(null);
   const route = useRef<SVGPathElement>(null);
   const [p, setP] = useState(0);
@@ -59,15 +55,15 @@ export default function Climb() {
   const reached = (i: number) => p >= stops[i] - 0.02;
 
   return (
-    <section id="how" className="x3-sec x4-climb" style={{ ["--x4-c" as string]: chosen.track.colour }}>
+    <section id="how" className="x3-sec x4-climb" style={{ ["--x4-c" as string]: area.colour }}>
       <div className="x3-wrap">
         <div className="x3-head">
           <span className="x3-tag">How it works</span>
-          <h2>{chosen.name} is a climb.<br /><span className="mute">We mark the path.</span></h2>
+          <h2>Every exam is a climb.<br /><span className="mute">We mark the path.</span></h2>
         </div>
         <div className="x4-climbin" ref={box}>
           <div className="x4-mount">
-            <svg viewBox="0 0 600 700" role="img" aria-label={`A mountain path from practice to ${chosen.name} day`}>
+            <svg viewBox="0 0 600 700" role="img" aria-label="A mountain path from practice to exam day">
               <path className="x4-ridge back" d="M0 700 L90 430 L170 500 L300 60 L420 300 L480 250 L600 470 L600 700 Z" />
               <path className="x4-ridge" d="M0 700 L0 600 L120 500 L210 560 L330 380 L400 430 L500 330 L600 520 L600 700 Z" />
               <path className="x4-snow" d="M300 60 L270 160 L285 150 L300 168 L318 150 L350 160 Z" />

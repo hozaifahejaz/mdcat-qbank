@@ -1,17 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { allExams, tracks } from "@/lib/catalogue";
-import { useExam } from "./ExamState";
+import { useEffect, useRef, useState } from "react";
+import { tracks, type TrackId } from "@/lib/catalogue";
+import { useArea, type Area } from "./ExamState";
 import TrackMark from "./TrackMark";
 
-/* The heart of experiment 4: "I'm preparing for ___". Until the visitor touches it, the blank turns through a few exams
-   so they can see the page adapt. Picking an exam changes the card under it (paper pattern, start or get notified)
-   and every section below, which read the same choice from ExamState. */
+/* The heart of experiment 4: "I'm preparing for ___". The blank is an area (medical college, engineering university,
+   residency...). Until the visitor touches it, it turns through the areas so they can see the page adapt. Picking one
+   changes the card under it and every section below, which read the same choice from ExamState. */
 
 export default function Experience() {
-  const { exam, touched, open, setOpen, choose } = useExam();
-  const track = exam.track;
+  const { shown, touched, open, setOpen, choose } = useArea();
 
   return (
     <header className="x4-hero">
@@ -20,27 +19,26 @@ export default function Experience() {
         <h1>
           I&apos;m preparing for
           <span className="x4-pickwrap">
-            <button type="button" className="x4-pick" style={{ color: track.colour }} aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(!open)}>
-              <span key={exam.id} className="x4-word">{exam.name}</span>
+            <button type="button" className="x4-pick" style={{ color: shown.colour }} aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(!open)}>
+              <span key={shown.id} className="x4-word">{shown.page.phrase}</span>
               <svg className="x4-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
             </button>
-            {open && <Picker current={exam.id} onPick={choose} onClose={() => setOpen(false)} />}
+            {open && <Picker current={shown.id} onPick={choose} onClose={() => setOpen(false)} />}
           </span>
         </h1>
-        {!touched && <p className="x4-hint">Tap the exam to choose yours</p>}
-        <ExamCard key={exam.id} exam={exam} />
+        {!touched && <p className="x4-hint">Tap to choose yours</p>}
+        <AreaCard key={shown.id} area={shown} />
       </div>
     </header>
   );
 }
 
-function Picker({ current, onPick, onClose }: { current: string; onPick: (id: string) => void; onClose: () => void }) {
-  const [q, setQ] = useState("");
+function Picker({ current, onPick, onClose }: { current: string; onPick: (id: TrackId) => void; onClose: () => void }) {
   const box = useRef<HTMLDivElement>(null);
-  const input = useRef<HTMLInputElement>(null);
+  const first = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    input.current?.focus({ preventScroll: true });
+    first.current?.focus({ preventScroll: true });
     const key = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     const click = (e: MouseEvent) => {
       const t = e.target as HTMLElement;
@@ -51,78 +49,61 @@ function Picker({ current, onPick, onClose }: { current: string; onPick: (id: st
     return () => { document.removeEventListener("keydown", key); document.removeEventListener("mousedown", click); };
   }, [onClose]);
 
-  const needle = q.trim().toLowerCase();
-  const groups = useMemo(() => tracks
-    .map((t) => ({ ...t, exams: t.exams.filter((e) => !needle || `${e.name} ${e.body} ${t.name}`.toLowerCase().includes(needle)) }))
-    .filter((t) => t.exams.length), [needle]);
-
   return (
-    <div className="x4-picker x3-card" ref={box} role="dialog" aria-label="Choose your exam">
-      <label className="x4-search">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
-        <input ref={input} type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search, e.g. ECAT or FCPS" aria-label="Search exams" />
-      </label>
-      <div className="x4-pgroups">
-        {groups.map((t) => (
-          <div key={t.id} className="x4-pgroup">
-            <small><i style={{ background: t.colour }} />{t.name}</small>
-            <div>
-              {t.exams.map((e) => (
-                <button key={e.id} type="button" className={e.id === current ? "on" : ""} onClick={() => onPick(e.id)}>
-                  {e.name}{e.live && <em>Live</em>}
-                </button>
-              ))}
-            </div>
-          </div>
+    <div className="x4-picker x3-card" ref={box} role="dialog" aria-label="Choose what you're preparing for">
+      <div className="x4-areas">
+        {tracks.map((t, i) => (
+          <button key={t.id} ref={i === 0 ? first : undefined} type="button" className={t.id === current ? "on" : ""} onClick={() => onPick(t.id)}>
+            <span className="x4-tile" style={{ color: t.colour }}><TrackMark id={t.id} size={20} /></span>
+            <span><b>{t.name}</b><small>{t.exams.slice(0, 3).map((e) => e.name).join(", ")}{t.exams.length > 3 ? "…" : ""}</small></span>
+          </button>
         ))}
-        {groups.length === 0 && <p className="x4-none">Not on our list yet. Tell us at the contact page.</p>}
       </div>
     </div>
   );
 }
 
-type AnyExam = (typeof allExams)[number];
-
-function ExamCard({ exam }: { exam: AnyExam }) {
-  const t = exam.track;
-  const total = exam.pattern?.parts.reduce((s, p) => s + p.n, 0) ?? 0;
+function AreaCard({ area }: { area: Area }) {
+  const lead = area.exams.find((e) => e.pattern) ?? area.exams[0];
   return (
     <div className="x4-card x3-card">
       <div className="x4-cardhead">
-        <span className="x4-tile" style={{ color: t.colour }}><TrackMark id={t.id} size={22} /></span>
+        <span className="x4-tile" style={{ color: area.colour }}><TrackMark id={area.id} size={22} /></span>
         <div>
-          <b>{exam.name}</b>
-          <small>{t.name} · {exam.body}</small>
+          <b>{area.name}</b>
+          <small>{area.who}</small>
         </div>
-        <em className={exam.live ? "x4-status live" : "x4-status"}>{exam.live ? "Live now" : "Opening soon"}</em>
+        <em className={area.live ? "x4-status live" : "x4-status"}>{area.live ? "Live now" : "Opening soon"}</em>
       </div>
 
-      {exam.pattern ? (
+      <ul className="x4-chips" aria-label={`Exams in ${area.name}`}>
+        {area.exams.map((e) => <li key={e.id} className={e.live ? "live" : ""}>{e.name}</li>)}
+      </ul>
+
+      {lead.pattern && (
         <div className="x4-paper">
-          <p>The paper: <b>{exam.pattern.summary}</b></p>
+          <p>{lead.name}: <b>{lead.pattern.summary}</b></p>
           <div className="x4-bar" aria-hidden="true">
-            {exam.pattern.parts.map((p, i) => (
-              <span key={p.name} style={{ flexGrow: p.n, background: `color-mix(in srgb, ${t.colour} ${100 - i * 15}%, var(--x-card))` }} />
+            {lead.pattern.parts.map((p, i) => (
+              <span key={p.name} style={{ flexGrow: p.n, background: `color-mix(in srgb, ${area.colour} ${100 - i * 15}%, var(--x-card))` }} />
             ))}
           </div>
           <ul className="x4-legend">
-            {exam.pattern.parts.map((p, i) => (
-              <li key={p.name}><i style={{ background: `color-mix(in srgb, ${t.colour} ${100 - i * 15}%, var(--x-card))` }} />{p.name} <b>{p.n}</b></li>
+            {lead.pattern.parts.map((p, i) => (
+              <li key={p.name}><i style={{ background: `color-mix(in srgb, ${area.colour} ${100 - i * 15}%, var(--x-card))` }} />{p.name} <b>{p.n}</b></li>
             ))}
           </ul>
-          <span className="x4-sr">{exam.pattern.parts.map((p) => `${p.name} ${p.n}`).join(", ")} of {total}</span>
+          <span className="x4-sr">{lead.pattern.parts.map((p) => `${p.name} ${p.n}`).join(", ")}</span>
         </div>
-      ) : (
-        <p className="x4-paper x4-mute">{exam.live ? "Chapter-wise practice, timed tests and mocks in its own pattern." : `We'll add ${exam.name} in its own pattern, chapter by chapter, when it opens.`}</p>
       )}
 
-      {exam.live ? (
+      {area.live ? (
         <div className="x4-ctas">
-          <a className="x3-btn x3-blue x3-big" href="/signup">Start {exam.name} free</a>
-          <a className="x4-link" href="#try">Try a question first</a>
+          <a className="x3-btn x3-blue x3-big" href="/signup">Start free</a>
+          <a className="x4-link" href="#features">See what&apos;s inside</a>
         </div>
       ) : (
-        <Notify name={exam.name} />
+        <Notify name={area.name.toLowerCase()} />
       )}
     </div>
   );
@@ -153,45 +134,5 @@ export function Notify({ name }: { name: string }) {
       <button className="x3-btn x3-dark" disabled={state === "busy"}>Tell me when it opens</button>
       {state === "error" && <small role="alert">{msg}</small>}
     </form>
-  );
-}
-
-export function Try() {
-  const { chosen } = useExam();
-  const t = chosen.track;
-  const s = t.sample;
-  const [picked, setPicked] = useState<number | null>(null);
-  useEffect(() => setPicked(null), [t.id]);
-  return (
-    <section id="try" className="x3-sec x4-try">
-      <div className="x3-wrap">
-        <div className="x3-head">
-          <span className="x3-tag">Try one</span>
-          <h2>One {chosen.name} question.<br /><span className="mute">Every option explained.</span></h2>
-        </div>
-        <div className="x4-q x3-card">
-          <small className="x4-qtag" style={{ color: t.colour }}>{s.tag}</small>
-          <p className="x4-stem">{s.stem}</p>
-          <div className="x4-opts">
-            {s.options.map((o, i) => {
-              const state = picked === null ? "" : i === s.answer ? "ok" : i === picked ? "no" : "dim";
-              return (
-                <button key={o} type="button" className={state} disabled={picked !== null} onClick={() => setPicked(i)}>
-                  <i>{"ABCD"[i]}</i>
-                  <span>{o}</span>
-                  {picked !== null && <small>{i === s.answer ? s.why : s.wrong[i]}</small>}
-                </button>
-              );
-            })}
-          </div>
-          {picked !== null && (
-            <div className="x4-after">
-              <b>{picked === s.answer ? "Correct." : "Not quite."}</b> {chosen.live ? `That's how every ${chosen.name} question is explained.` : `Every ${chosen.name} question will be explained like this.`}
-              <button type="button" className="x4-link" onClick={() => setPicked(null)}>Try again</button>
-            </div>
-          )}
-        </div>
-      </div>
-    </section>
   );
 }
