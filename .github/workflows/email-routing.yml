@@ -1,0 +1,24 @@
+name: Email routing check (one-off)
+
+on:
+  push:
+    branches: [claude/project-thread-yryvug]
+    paths: [".github/workflows/email-routing.yml"]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN || vars.CLOUDFLARE_API_TOKEN }}
+      DOMAIN: markhorprep.com
+    steps:
+      - name: Run
+        run: |
+          api() { curl -sS -H "Authorization: Bearer $CF_TOKEN" -H "Content-Type: application/json" "$@"; }
+          B=https://api.cloudflare.com/client/v4
+          ZONE=$(api "$B/zones?name=$DOMAIN" | jq -r '.result[0].id')
+          SINCE=$(date -u -d '-40 min' +%Y-%m-%dT%H:%M:%SZ)
+          Q=$(jq -n --arg z "$ZONE" --arg s "$SINCE" '{query: "query($z: String!, $s: Time!) { viewer { zones(filter: {zoneTag: $z}) { emailRoutingAdaptive(limit: 20, filter: {datetime_gt: $s}, orderBy: [datetime_DESC]) { datetime from to subject status action spf dkim dmarc errorDetail } } } }", variables: {z: $z, s: $s}}')
+          api -X POST $B/graphql -d "$Q" | jq -c '.errors, (.data.viewer.zones[0].emailRoutingAdaptive[]? | {datetime, to, subject, status, spf, dkim, dmarc, errorDetail})'
