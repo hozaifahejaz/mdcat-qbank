@@ -13,8 +13,9 @@ export const onRequest: PagesFunction<Env> = async ({ request, env }) => {
     for (const k of ["T_WEUR", "T_EEUR"] as const) {
       const db = (env as unknown as Record<string, D1Database>)[k];
       const t: number[] = [];
-      for (let i = 0; i < 6; i++) { const a = Date.now(); await db.prepare("SELECT 1").first(); t.push(Date.now() - a); }
-      out[k] = t;
+      let where: unknown = "";
+      for (let i = 0; i < 6; i++) { const a = Date.now(); const r = await db.prepare("SELECT 1").all(); where = (r.meta as Record<string, unknown>).served_by_colo ?? (r.meta as Record<string, unknown>).served_by_region; t.push(Date.now() - a); }
+      out[k] = t; out[k + "_at"] = where;
     }
     out.colo = (request as unknown as { cf?: { colo?: string } }).cf?.colo;
     return new Response(JSON.stringify(out), { headers: { "content-type": "application/json", "cache-control": "no-store" } });

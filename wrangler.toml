@@ -20,3 +20,6 @@ database_id = "aba1eecf-f1a2-4382-9df2-cd7dc246dee2"
 binding = "T_EEUR"
 database_name = "latency-test-eeur"
 database_id = "466c1133-d44c-4ac4-998f-0f85676a2003"
+
+[placement]
+region = "aws:eu-central-1"
