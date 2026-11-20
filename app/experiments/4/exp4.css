@@ -1,53 +1,25 @@
-/* Landing experiment 4 (app/experiments/4). Builds on the live landing's .x3 look; everything new is scoped under .x4. */
+/* Landing experiment 4 (app/experiments/4). Builds on the live landing's .x3 look; everything new is scoped under .x4.
+   Kept short on purpose: a hero, the tracks in one row, three points. */
 
 /* Hero */
-.x4-hero { padding: 72px 0 40px; text-align: center; }
-.x4-hero .x3-tag { margin-bottom: 22px; }
+.x4-hero { padding: 120px 0 64px; text-align: center; }
 .x4-hero h1 { font-size: clamp(2.4rem, 1.2rem + 4.6vw, 4.6rem); font-weight: 800; letter-spacing: -0.045em; line-height: 1.02; }
-.x4-hero h1 span { display: block; color: var(--x-faint); }
-.x4-hero > .x3-wrap > p { max-width: 560px; margin: 20px auto 0; color: var(--x-mute); font-size: 1.0625rem; line-height: 1.55; }
-@media (max-width: 520px) { .x4-hero { padding-top: 48px; } }
+.x4-hero h1 span { display: block; color: var(--x-mute); }
+.x4-hero p { max-width: 520px; margin: 22px auto 32px; color: var(--x-mute); font-size: 1.125rem; line-height: 1.55; }
+.x4-proof { display: block; margin-top: 14px; color: var(--x-mute); font-size: .875rem; }
+@media (max-width: 520px) { .x4-hero { padding: 72px 0 48px; } }
 
-/* Track buttons */
-.x4-tracks { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-top: 44px; text-align: left; scroll-margin-top: 90px; }
-@media (max-width: 960px) { .x4-tracks { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 420px) { .x4-tracks { gap: 10px; } }
-.x4-track { display: flex; flex-direction: column; gap: 4px; padding: 18px; border-radius: 18px; transition: transform .15s, box-shadow .15s; }
-.x4-track:hover { transform: translateY(-2px); box-shadow: var(--x-shadow-lg); }
-.x4-track b { font-size: 1rem; letter-spacing: -0.01em; margin-top: 10px; }
-.x4-track small { color: var(--x-mute); font-size: .8125rem; line-height: 1.4; }
-.x4-track em, .x4-group li em { align-self: flex-start; margin-top: 8px; font-style: normal; font-size: .75rem; font-weight: 600; padding: 3px 9px; border-radius: 999px; color: var(--x-mute); background: var(--x-bg); box-shadow: inset 0 0 0 1px var(--x-line); }
-.x4-track em.live, .x4-group li em.live { color: #11804a; background: var(--x-mint); box-shadow: none; }
-:root[data-theme="dark"] .x4-track em.live, :root[data-theme="dark"] .x4-group li em.live { color: #5fd49a; }
-.x4-tile { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; background: color-mix(in srgb, currentColor 12%, var(--x-card)); }
+/* Tracks: one quiet row of names with their marks */
+.x4-band { padding-bottom: 72px; }
+.x4-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px 28px; }
+.x4-row li { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: .9375rem; }
+.x4-tile { width: 38px; height: 38px; border-radius: 11px; display: grid; place-items: center; background: color-mix(in srgb, currentColor 12%, var(--x-card)); }
+@media (max-width: 520px) { .x4-row { justify-content: flex-start; display: grid; grid-template-columns: 1fr 1fr; } }
 
-/* Finder */
-.x4-find { scroll-margin-top: 60px; }
-.x4-tools { display: grid; gap: 14px; justify-items: center; margin-bottom: 28px; }
-.x4-search { display: flex; align-items: center; gap: 10px; width: min(520px, 100%); height: 50px; padding-inline: 16px; border-radius: 14px; background: var(--x-card); box-shadow: inset 0 0 0 1px var(--x-line), var(--x-shadow); color: var(--x-mute); }
-.x4-search input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--x-ink); font: inherit; font-size: 1rem; }
-.x4-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
-.x4-chips button { border: 0; cursor: pointer; font: inherit; font-size: .875rem; font-weight: 500; height: 36px; padding-inline: 14px; border-radius: 999px; color: var(--x-mute); background: var(--x-card); box-shadow: inset 0 0 0 1px var(--x-line); }
-.x4-chips button:hover { color: var(--x-ink); }
-.x4-chips button.on { color: #fff; background: var(--x-ink); box-shadow: none; }
-:root[data-theme="dark"] .x4-chips button.on { color: var(--x-bg); }
-.x4-none { text-align: center; color: var(--x-mute); }
-.x4-groups { columns: 2 340px; column-gap: 16px; }
-.x4-group { break-inside: avoid; margin-bottom: 16px; padding: 20px; display: block; }
-.x4-group header { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
-.x4-group h3 { font-size: 1.0625rem; letter-spacing: -0.01em; }
-.x4-group header small { color: var(--x-mute); font-size: .8125rem; }
-.x4-group li > a, .x4-group li > div { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 4px; border-top: 1px solid var(--x-line); }
-.x4-group li > a:hover b { color: var(--x-blue); }
-.x4-group li span { display: grid; gap: 1px; min-width: 0; }
-.x4-group li b { font-size: .9375rem; font-weight: 600; }
-.x4-group li small { color: var(--x-mute); font-size: .8125rem; }
-.x4-group li em { margin-top: 0; flex: none; }
-
-/* How it works and pricing */
-.x4-step { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 10px; font-weight: 700; color: var(--x-blue); background: color-mix(in srgb, var(--x-blue) 12%, var(--x-card)); margin-bottom: 10px; }
-.x4 .x3-cards .x3-card h3 { font-size: 1.125rem; }
-.x4 .x3-cards .x3-card p { color: var(--x-mute); line-height: 1.5; }
-.x4 .x4-from small { margin-right: 6px; }
-
-@media (prefers-reduced-motion: reduce) { .x4-track { transition: none; } .x4-track:hover { transform: none; } }
+/* Three points */
+.x4-points { padding: 72px 0 120px; border-top: 1px solid var(--x-line); }
+.x4-points ul { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 40px; }
+.x4-points b { display: block; font-size: 1.125rem; letter-spacing: -0.01em; margin-bottom: 6px; }
+.x4-points li p { color: var(--x-mute); line-height: 1.55; }
+.x4 .x4-apps { margin-top: 56px; text-align: center; color: var(--x-mute); font-size: .9375rem; }
+@media (max-width: 760px) { .x4-points ul { grid-template-columns: minmax(0, 1fr); gap: 28px; } .x4-points { padding: 56px 0 80px; } }
