@@ -1,3 +1,4 @@
+import { site } from "@/lib/site";
 import { outdated } from "@/lib/cache";
 
 /* The browser side of the sign-in API (functions/api, server/). Cookies carry the session, so there is no
@@ -40,6 +41,20 @@ export type AuthConfig = {
    which serves pages only; use `npm run preview` for the full site). */
 let configPromise: Promise<AuthConfig | null> | null = null;
 export function getAuthConfig(): Promise<AuthConfig | null> {
-  configPromise ??= api<AuthConfig>("/api/auth/config").catch(() => null);
+  configPromise ??= api<AuthConfig>("/api/auth/config").then((c) => {
+    try { localStorage.setItem(CONFIG_KEY, JSON.stringify(c)); } catch {}
+    return c;
+  }, () => null);
   return configPromise;
+}
+
+/* What to draw before the server answers: its last answer in this browser, otherwise the settings the site was
+   built with (lib/site.ts). The form is on the page at once instead of after a round trip. */
+const CONFIG_KEY = "auth:config";
+export function lastAuthConfig(): AuthConfig {
+  try {
+    const c = JSON.parse(localStorage.getItem(CONFIG_KEY) ?? "null");
+    if (c && typeof c.email === "boolean" && typeof c.turnstileSiteKey === "string") return { ...site.signIn, ...c };
+  } catch {}
+  return site.signIn;
 }

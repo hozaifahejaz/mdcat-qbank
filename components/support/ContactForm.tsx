@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Turnstile from "@/components/auth/Turnstile";
-import { api, getAuthConfig } from "@/lib/api";
+import { api, getAuthConfig, lastAuthConfig } from "@/lib/api";
 import { friendlyError } from "@/lib/auth";
 import { MESSAGE_MAX, MESSAGE_MIN, TICKET_EMAILS, type TopicId, topicLabel, topics } from "@/lib/support";
 import { getCurrentUser, lastUser } from "@/lib/user";
@@ -44,7 +44,7 @@ export default function ContactForm() {
       fill(u);
       if (u) api<{ tickets: Mine[] }>("/api/support/mine").then((r) => setMine(r.tickets), () => {});
       // Signed in, the account is the check; signed out, the same check as sign-up.
-      else getAuthConfig().then((c) => setSiteKey(c?.turnstileSiteKey ?? ""));
+      else { setSiteKey(lastAuthConfig().turnstileSiteKey); getAuthConfig().then((c) => setSiteKey(c?.turnstileSiteKey ?? "")); }
     });
   }, []);
 

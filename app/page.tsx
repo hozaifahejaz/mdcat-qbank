@@ -5,7 +5,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 import { BuildTest, MockLog, NoteTyping } from "@/components/landing/Live";
 import { ExamMark, SubjectMark } from "@/components/Marks";
 import { money, plans } from "@/lib/billing";
-import { PublicFooter } from "@/components/public/Shell";
+import { PublicFooter } from "@/components/public/Frame";
 import { abs, bankSize, faqData, ld, subjects as subjectPages } from "@/lib/public";
 import { prices, site } from "@/lib/site";
 import "./landing-new.css";

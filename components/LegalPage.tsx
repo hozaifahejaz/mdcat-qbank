@@ -1,6 +1,4 @@
-import Logo from "@/components/Logo";
-import { PublicFooter, PublicNav } from "@/components/public/Shell";
-import ThemeToggle from "@/components/ThemeToggle";
+import { PublicFooter, PublicNav } from "@/components/public/Frame";
 import { site } from "@/lib/site";
 
 /* The frame for /terms, /privacy and /refunds: the public bar and footer, a readable column, and links between the three. */

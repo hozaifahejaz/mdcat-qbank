@@ -1,6 +1,4 @@
-import Logo from "@/components/Logo";
-import { PublicFooter, PublicNav } from "@/components/public/Shell";
-import ThemeToggle from "@/components/ThemeToggle";
+import { PublicFooter, PublicNav } from "@/components/public/Frame";
 
 /* The frame for /contact and the ticket page: the public bar and footer (the same
    arrangement as the legal pages), and one readable card in the middle. */

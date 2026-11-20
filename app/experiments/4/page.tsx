@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Logo from "@/components/Logo";
 import ThemeToggle from "@/components/ThemeToggle";
-import { PublicFooter } from "@/components/public/Shell";
+import { PublicFooter } from "@/components/public/Frame";
 import TrackMark from "@/components/experiment4/TrackMark";
 import { tracks } from "@/lib/catalogue";
 import { site } from "@/lib/site";

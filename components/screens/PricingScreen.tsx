@@ -1,10 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Logo from "@/components/Logo";
 import PayLogo from "@/components/app/PayLogo";
-import { PublicFooter, PublicNav } from "@/components/public/Shell";
-import ThemeToggle from "@/components/ThemeToggle";
+import { PublicFooter, PublicNav } from "@/components/public/Frame";
 import { money, plans } from "@/lib/billing";
 import { prices, site } from "@/lib/site";
 import { lastUser } from "@/lib/user";
