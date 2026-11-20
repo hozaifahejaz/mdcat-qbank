@@ -23,7 +23,7 @@ const faqs = [
 export default function Calculator() {
   const trail = [{ name: "Home", href: "/" }, { name: "MDCAT", href: "/mdcat" }, { name: "Aggregate calculator", href: "/mdcat/aggregate-calculator" }];
   return (
-    <Shell trail={trail}>
+    <Shell trail={trail} plain={false}>
       <header className="pub-head">
         <h1>MDCAT aggregate calculator</h1>
         <p className="lede">

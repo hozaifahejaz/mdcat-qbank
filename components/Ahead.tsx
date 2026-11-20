@@ -11,3 +11,12 @@ const rules = {
 export default function Ahead() {
   return <script type="speculationrules" dangerouslySetInnerHTML={{ __html: JSON.stringify(rules) }} />;
 }
+
+/* The same for the study pages, which are plain pages: any public page a visitor points at or presses is built in
+   the background, so moving from chapter to chapter, or on to sign-up, shows at once. */
+const reading = ["/", "/mdcat", "/mdcat/*", "/guides", "/guides/*", "/nums-mdcat", "/aku-test", "/about", "/pricing", "/signup", "/signin"];
+const readingRules = { prerender: [{ where: { href_matches: reading }, eagerness: "moderate" }] };
+
+export function AheadReading() {
+  return <script type="speculationrules" dangerouslySetInnerHTML={{ __html: JSON.stringify(readingRules) }} />;
+}

@@ -1,13 +1,15 @@
+import { AheadReading } from "@/components/Ahead";
 import { PublicFooter, PublicNav } from "@/components/public/Frame";
 import { type Crumb, crumbData, ld } from "@/lib/public";
 
 export { PublicFooter, PublicNav };
 
 /* The frame of a public study page: the landing page's bar, a trail of links, the page, a closing invitation and
-   the shared footer. Plain HTML with no script of its own, so it reads the same to a person and a crawler. */
-export default function Shell({ trail, children, cta = true, article = false }: { trail: Crumb[]; children: React.ReactNode; cta?: boolean; article?: boolean }) {
+   the shared footer. Plain HTML with no script of its own, so it reads the same to a person and a crawler; the build
+   then ships it without the framework's script (scripts/build-light.mjs). A page with a live part passes plain={false}. */
+export default function Shell({ trail, children, cta = true, article = false, plain = true }: { trail: Crumb[]; children: React.ReactNode; cta?: boolean; article?: boolean; plain?: boolean }) {
   return (
-    <div className={`x3 pub${article ? " pub-article" : ""}`} id="top">
+    <div className={`x3 pub${article ? " pub-article" : ""}`} id="top" data-plain={plain ? "1" : undefined}>
       <PublicNav />
       <main className="x3-wrap pub-main">
         {trail.length > 1 && (
@@ -27,6 +29,7 @@ export default function Shell({ trail, children, cta = true, article = false }: 
         )}
       </main>
       <PublicFooter />
+      <AheadReading />
       {trail.length > 1 && <script type="application/ld+json" dangerouslySetInnerHTML={ld(crumbData(trail))} />}
     </div>
   );
