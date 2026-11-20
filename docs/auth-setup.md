@@ -75,6 +75,16 @@ When you switch this on, accounts made before then are unconfirmed. They'll be a
    - Authorised redirect URI: `https://markhorprep.com/api/auth/oauth/google/callback`
 3. Add the secrets `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`.
 
+**Google in the Android app.** The app uses the same web client: it asks the phone's Google account picker for a token made out to `GOOGLE_CLIENT_ID`, and the server checks it (`POST /api/auth/google/native`). Google only hands out that token to an app it knows, so add one **Android** OAuth client per build in the same project (**Google Auth Platform > Clients > Create client > Android**). Nothing goes into Cloudflare or the app for these.
+
+| Build | Package name | SHA-1 |
+| --- | --- | --- |
+| Test builds made on your Mac | `pk.examwise.app.debug` | from `keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android` |
+| Release (upload key) | `pk.examwise.app` | from `keytool -list -v -keystore upload.jks -alias <key alias>` |
+| Play Store installs | `pk.examwise.app` | Play Console > Test and release > App integrity > App signing key certificate |
+
+A debug APK built on another computer (or by GitHub Actions) has a different SHA-1, so Google sign-in won't work in it until that SHA-1 is added too.
+
 ### 5. Apple
 
 You need an [Apple Developer](https://developer.apple.com) membership, which costs USD 99 a year.

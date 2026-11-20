@@ -81,12 +81,32 @@ private fun rememberAuthConfig(container: AppContainer): AuthConfig? {
     return cfg
 }
 
+/* "Continue with Google": the phone's own account picker, then the server checks the token Google gave us. Shown when
+   the server has Google switched on and has told the app its client ID. Works for new and existing accounts alike. */
+@Composable
+private fun GoogleButton(container: AppContainer, nav: NavHostController, busy: Boolean, setBusy: (Boolean) -> Unit, onError: (String?) -> Unit) {
+    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+    val webClientId = container.config.config.value?.google?.webClientId
+    if (webClientId.isNullOrBlank()) return
+    PillButton("Continue with Google", dark = false, modifier = Modifier.fillMaxWidth(), busy = busy, onClick = {
+        setBusy(true); onError(null)
+        scope.launch {
+            try {
+                when (val r = GoogleSignIn.pick(context, webClientId)) {
+                    is GoogleSignIn.Result.Token -> { container.account.google(r.idToken); afterSignIn(container, nav) }
+                    GoogleSignIn.Result.Cancelled -> Unit
+                    is GoogleSignIn.Result.Failed -> onError(r.message)
+                }
+            } catch (e: ApiError) { onError(e.message) } finally { setBusy(false) }
+        }
+    })
+}
+
 @Composable
 fun SignInScreen(container: AppContainer, nav: NavHostController) {
     val scope = rememberCoroutineScope()
-    val context = LocalContext.current
     val cfg = rememberAuthConfig(container)
-    val webClientId = container.config.config.value?.google?.webClientId
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
@@ -122,20 +142,7 @@ fun SignInScreen(container: AppContainer, nav: NavHostController) {
                 } finally { busy = false }
             }
         })
-        if (cfg?.google == true && !webClientId.isNullOrBlank()) {
-            PillButton("Continue with Google", dark = false, modifier = Modifier.fillMaxWidth(), busy = busy, onClick = {
-                busy = true; error = null
-                scope.launch {
-                    try {
-                        when (val r = GoogleSignIn.pick(context, webClientId)) {
-                            is GoogleSignIn.Result.Token -> { container.account.google(r.idToken); afterSignIn(container, nav) }
-                            GoogleSignIn.Result.Cancelled -> Unit
-                            is GoogleSignIn.Result.Failed -> error = r.message
-                        }
-                    } catch (e: ApiError) { error = e.message } finally { busy = false }
-                }
-            })
-        }
+        if (cfg?.google == true) GoogleButton(container, nav, busy, { busy = it }, { error = it; info = null })
         if (cfg?.phone == true) PillButton("Use phone number", { nav.navigate(R.PHONE) }, dark = false, modifier = Modifier.fillMaxWidth())
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             LinkButton("Create an account", { nav.navigate(R.SIGNUP) })
@@ -189,6 +196,7 @@ fun SignUpScreen(container: AppContainer, nav: NavHostController) {
                 } catch (e: ApiError) { autofill?.cancel(); error = e.message } finally { busy = false }
             }
         })
+        rememberAuthConfig(container)?.takeIf { it.google }?.let { GoogleButton(container, nav, busy, { busy = it }, { error = it }) }
         LinkButton("I already have an account", { nav.popBackStack() })
     }
 }

@@ -6,6 +6,8 @@ import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.exceptions.GetCredentialCancellationException
 import androidx.credentials.exceptions.GetCredentialException
+import androidx.credentials.exceptions.NoCredentialException
+import android.util.Log
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 
@@ -32,7 +34,11 @@ object GoogleSignIn {
             } else Result.Failed("Google sign-in didn't work. Try email instead.")
         } catch (e: GetCredentialCancellationException) {
             Result.Cancelled
+        } catch (e: NoCredentialException) {
+            Result.Failed("Add a Google account to this phone in Settings first, or use your email instead.")
         } catch (e: GetCredentialException) {
+            // Most often the app's Google set-up (package name and signing key) doesn't match this build.
+            Log.w("GoogleSignIn", "getCredential failed: ${e.type} ${e.message}")
             Result.Failed("Google sign-in didn't work on this phone. Try email instead.")
         }
     }
