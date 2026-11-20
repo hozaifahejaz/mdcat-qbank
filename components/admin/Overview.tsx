@@ -39,6 +39,7 @@ export default function Overview({ user }: { user: AccountUser }) {
 
   const total = Object.values(d.byStage).reduce((a, b) => a + b, 0);
   const todo = [
+    (d.tickets ?? 0) > 0 && { n: d.tickets!, text: "support tickets waiting for your answer", href: "/admin/tickets" },
     d.openReports > 0 && { n: d.openReports, text: "questions reported by students", href: "/admin/reports" },
     d.sentBackToMe > 0 && { n: d.sentBackToMe, text: "of your questions were sent back to you", href: "/admin/questions?stage=draft" },
     d.waitingBlind > 0 && { n: d.waitingBlind, text: "waiting for a blind solve", href: "/admin/questions?stage=blind" },
@@ -57,7 +58,7 @@ export default function Overview({ user }: { user: AccountUser }) {
         <div className="panel-h"><h2>To do</h2></div>
         {todo.length ? (
           <ul className="todo">
-            {todo.map((t) => <li key={t.href}><a href={t.href}><b>{t.n}</b> {t.n === 1 ? t.text.replace("questions were", "question was").replace("questions reported", "question reported") : t.text}</a></li>)}
+            {todo.map((t) => <li key={t.href}><a href={t.href}><b>{t.n}</b> {t.n === 1 ? t.text.replace("questions were", "question was").replace("questions reported", "question reported").replace("tickets waiting", "ticket waiting") : t.text}</a></li>)}
           </ul>
         ) : <p className="muted">Nothing waiting on you.</p>}
       </section>
