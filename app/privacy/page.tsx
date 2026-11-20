@@ -20,7 +20,7 @@ export default function Page() {
         <li><b>Your sign-ins:</b> the devices and browsers you sign in from and when, so you can see them on your Account page and keep your account safe.</li>
         <li><b>Your practice:</b> the tests you take, your answers, bookmarks and reports, so we can show your results, mistakes and progress.</li>
         <li><b>Payments:</b> which pass you bought, when, and the amount. Card and wallet details are handled by the payment provider; we never see or store your card number or PIN.</li>
-        <li><b>Visits:</b> we count page visits without cookies and without storing your IP address. We keep only the page, the site you came from, your rough location (country and city) and your type of device and browser. Each dayEach day&apos;s count can&apos;t be linked to the next day&apos;s or to you.apos;s count canEach day&apos;s count can&apos;t be linked to the next day&apos;s or to you.apos;t be linked to the next dayEach day&apos;s count can&apos;t be linked to the next day&apos;s or to you.apos;s or to you.</li>
+        <li><b>Visits:</b> we count page visits without cookies and without storing your IP address. We keep only the page, the site you came from, your rough location (country and city) and your type of device and browser. Each day&apos;s count can&apos;t be linked to the next day&apos;s or to you.</li>
       </ul>
 
       <h2>How we use it</h2>
