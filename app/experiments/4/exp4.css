@@ -87,20 +87,20 @@
 /* The climb */
 .x4-climbin { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 48px; align-items: start; }
 .x4-mount { position: sticky; top: 90px; }
-.x4-mount svg { width: 100%; height: auto; max-height: calc(100vh - 120px); display: block; margin-inline: auto; border-radius: 28px; background: color-mix(in srgb, var(--x-blue) 6%, var(--x-card)); box-shadow: var(--x-shadow); }
-.x4-ridge { fill: color-mix(in srgb, var(--x-blue) 22%, var(--x-card)); }
-.x4-ridge.back { fill: color-mix(in srgb, var(--x-blue) 13%, var(--x-card)); }
+.x4-mount svg { width: 100%; height: auto; max-height: calc(100vh - 120px); display: block; margin-inline: auto; border-radius: 28px; background: color-mix(in srgb, var(--x4-c, var(--x-blue)) 6%, var(--x-card)); box-shadow: var(--x-shadow); }
+.x4-ridge { fill: color-mix(in srgb, var(--x4-c, var(--x-blue)) 22%, var(--x-card)); }
+.x4-ridge.back { fill: color-mix(in srgb, var(--x4-c, var(--x-blue)) 13%, var(--x-card)); }
 .x4-snow { fill: var(--x-card); }
 .x4-route { fill: none; stroke: var(--x-faint); stroke-width: 3; stroke-dasharray: 2 9; stroke-linecap: round; }
-.x4-route.done { stroke: var(--x-blue); stroke-width: 4; }
+.x4-route.done { stroke: var(--x4-c, var(--x-blue)); stroke-width: 4; }
 .x4-stop circle { fill: var(--x-card); stroke: var(--x-faint); stroke-width: 2.5; transition: fill .3s, stroke .3s; }
 .x4-stop text { font-size: 11px; font-weight: 700; fill: var(--x-mute); }
-.x4-stop.on circle { fill: var(--x-blue); stroke: var(--x-blue); }
+.x4-stop.on circle { fill: var(--x4-c, var(--x-blue)); stroke: var(--x4-c, var(--x-blue)); }
 .x4-stop.on text { fill: #fff; }
 .x4-steps { display: grid; gap: 0; padding-block: 8vh 30vh; }
 .x4-steps li { display: flex; gap: 16px; min-height: 34vh; align-items: flex-start; }
 .x4-steps li > span { flex: none; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: .875rem; color: var(--x-mute); background: var(--x-card); box-shadow: inset 0 0 0 2px var(--x-line); transition: background .3s, color .3s, transform .3s; }
-.x4-steps li.on > span { background: var(--x-blue); color: #fff; box-shadow: none; transform: scale(1.08); }
+.x4-steps li.on > span { background: var(--x4-c, var(--x-blue)); color: #fff; box-shadow: none; transform: scale(1.08); }
 .x4-steps h3 { font-size: clamp(1.5rem, 1rem + 1.6vw, 2.25rem); font-weight: 800; letter-spacing: -0.035em; line-height: 1.1; color: var(--x-faint); transition: color .3s; }
 .x4-steps li.on h3 { color: var(--x-ink); }
 .x4-steps p { margin-top: 8px !important; color: var(--x-mute); font-size: 1.0625rem; line-height: 1.5; max-width: 380px; }
@@ -114,9 +114,15 @@
 }
 
 /* Tracks */
-.x4-tracks { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
-@media (max-width: 960px) { .x4-tracks { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 420px) { .x4-tracks { gap: 10px; } }
+.x4-related { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; max-width: 1000px; margin-inline: auto; }
+@media (max-width: 520px) { .x4-related { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } }
+.x4-track { min-height: 150px; }
+.x4-track.on em { color: var(--x-ink); background: var(--x-bg); }
+.x4-soon { max-width: 640px; margin-inline: auto; padding: 28px; border-radius: 24px; display: grid; gap: 18px; text-align: center; }
+.x4-soon p { color: var(--x-mute); line-height: 1.6; }
+.x4-soon p b { color: var(--x-ink); }
+.x4-soon .x4-notify { justify-content: center; }
+.x3-note .x4-link, .x4-end .x4-link { font-size: inherit; }
 .x4-track { cursor: pointer; border: 0; text-align: left; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 18px; border-radius: 18px; transition: transform .15s, box-shadow .15s; }
 .x4-track:hover { transform: translateY(-3px); box-shadow: var(--x-shadow-lg); }
 .x4-track b { font-size: 1rem; margin-top: 10px; }
