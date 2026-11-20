@@ -6,8 +6,7 @@ import Experience from "@/components/experiment4/Experience";
 import { ExamProvider } from "@/components/experiment4/ExamState";
 import Climb from "@/components/experiment4/Climb";
 import { Features, Orbit, Exams, Pricing, Faq, End } from "@/components/experiment4/Sections";
-import { plans } from "@/lib/billing";
-import { prices, site } from "@/lib/site";
+import { site } from "@/lib/site";
 import "../../landing-new.css";
 import "./exp4.css";
 
@@ -24,7 +23,7 @@ export default function Experiment4() {
         <div className="x3-wrap x3-navin">
           <Logo href="#top" size={22} />
           <ul>
-            <li><a href="#features">Features</a></li>
+            <li><a href="#features">Inside</a></li>
             <li><a href="#how">How it works</a></li>
             <li><a href="#exams">Tests</a></li>
             <li><a href="#pricing">Pricing</a></li>
@@ -43,7 +42,7 @@ export default function Experiment4() {
           <Orbit />
           <Climb />
           <Exams />
-          <Pricing real={{ season: plans.season.price, monthly: plans.monthly.price, was: plans.season.was, earlyBird: prices.earlyBirdUntil, payments: site.payments }} />
+          <Pricing payments={site.payments} />
           <Faq />
           <End />
         </main>

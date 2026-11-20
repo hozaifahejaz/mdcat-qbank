@@ -63,47 +63,34 @@ function Picker({ current, onPick, onClose }: { current: string; onPick: (id: Tr
   );
 }
 
+/* The area's tests as a fan of cards (the main landing's test cards), then one call to action with the same proof
+   line as the main hero. */
 function AreaCard({ area }: { area: Area }) {
-  const lead = area.exams.find((e) => e.pattern) ?? area.exams[0];
+  const n = area.exams.length;
   return (
-    <div className="x4-card x3-card">
-      <div className="x4-cardhead">
-        <span className="x4-tile" style={{ color: area.colour }}><TrackMark id={area.id} size={22} /></span>
-        <div>
-          <b>{area.name}</b>
-          <small>{area.who}</small>
-        </div>
-        <em className={area.live ? "x4-status live" : "x4-status"}>{area.live ? "Live now" : "Opening soon"}</em>
-      </div>
-
-      <ul className="x4-chips" aria-label={`Exams in ${area.name}`}>
-        {area.exams.map((e) => <li key={e.id} className={e.live ? "live" : ""}>{e.name}</li>)}
+    <div className="x4-under">
+      <ul className="x4-fan" aria-label={`Tests in ${area.name}`}>
+        {area.exams.map((e, i) => (
+          <li key={e.id} className="x3-card x4-fcard" style={{ ["--r" as string]: `${(i - (n - 1) / 2) * 3}deg`, ["--d" as string]: `${i * 60}ms` }}>
+            <span className="x4-fhead">
+              <span className="x4-tile" style={{ color: area.colour }}><TrackMark id={area.id} size={20} /></span>
+              <em className={e.live ? "x4-status live" : "x4-status"}>{e.live ? "Live" : "Soon"}</em>
+            </span>
+            <b>{e.name}</b>
+            <small>{e.pattern ? e.pattern.summary : e.body}</small>
+          </li>
+        ))}
       </ul>
-
-      {lead.pattern && (
-        <div className="x4-paper">
-          <p>{lead.name}: <b>{lead.pattern.summary}</b></p>
-          <div className="x4-bar" aria-hidden="true">
-            {lead.pattern.parts.map((p, i) => (
-              <span key={p.name} style={{ flexGrow: p.n, background: `color-mix(in srgb, ${area.colour} ${100 - i * 15}%, var(--x-card))` }} />
-            ))}
-          </div>
-          <ul className="x4-legend">
-            {lead.pattern.parts.map((p, i) => (
-              <li key={p.name}><i style={{ background: `color-mix(in srgb, ${area.colour} ${100 - i * 15}%, var(--x-card))` }} />{p.name} <b>{p.n}</b></li>
-            ))}
-          </ul>
-          <span className="x4-sr">{lead.pattern.parts.map((p) => `${p.name} ${p.n}`).join(", ")}</span>
-        </div>
-      )}
-
       {area.live ? (
-        <div className="x4-ctas">
+        <div className="x4-go">
           <a className="x3-btn x3-blue x3-big" href="/signup">Start free</a>
-          <a className="x4-link" href="#features">See what&apos;s inside</a>
+          <small className="x3-proof">100 questions free. No card needed.</small>
         </div>
       ) : (
-        <Notify name={area.name.toLowerCase()} />
+        <div className="x4-go">
+          <Notify name={area.name.toLowerCase()} />
+          <small className="x3-proof">{area.name} opens soon. We&apos;ll tell you the day it does.</small>
+        </div>
       )}
     </div>
   );

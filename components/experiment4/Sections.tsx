@@ -2,7 +2,7 @@
 
 import { Markhor } from "@/components/Logo";
 import { SubjectMark } from "@/components/Marks";
-import { BuildTest, MockLog, Mistakes } from "./AreaLive";
+import { Inside } from "./AreaLive";
 import { useArea, ChangeArea } from "./ExamState";
 import TrackMark from "./TrackMark";
 
@@ -15,31 +15,14 @@ const Check = () => (
 
 export function Features() {
   const { area } = useArea();
-  const p = area.page;
   return (
     <section id="features" className="x3-sec">
       <div className="x3-wrap">
         <div className="x3-head">
-          <span className="x3-tag">{area.name}</span>
-          <h2>Practice the way <span className="hl">your paper asks.</span></h2>
+          <span className="x3-tag">Inside</span>
+          <h2>Your {area.name.toLowerCase()} account.<br /><span className="mute">Nothing else in it.</span></h2>
         </div>
-        <div className="x3-cards" key={area.id}>
-          <article className="x3-card">
-            <h3>Build a test</h3>
-            <p>Try it: turn subjects on or off.</p>
-            <BuildTest pool={p.subjects} />
-          </article>
-          <article className="x3-card">
-            <h3>Timed mocks</h3>
-            <p>{p.mock.line}</p>
-            <MockLog pool={p.subjects} secs={p.mock.secs} />
-          </article>
-          <article className="x3-card">
-            <h3>My mistakes</h3>
-            <p>Every wrong answer waits for another try.</p>
-            <Mistakes pool={p.subjects} />
-          </article>
-        </div>
+        <Inside area={area} />
       </div>
     </section>
   );
@@ -87,7 +70,7 @@ export function Exams() {
       <div className="x3-wrap">
         <div className="x3-head">
           <span className="x3-tag">Tests</span>
-          <h2>{n} {n === 1 ? "test" : "tests"}, one pass.<br /><span className="mute">{live ? `${live} live now.` : "Opening soon."}</span></h2>
+          <h2>{n} {n === 1 ? "test" : "tests"}, one account.<br /><span className="mute">{live ? `${live} live now.` : "Opening soon."}</span></h2>
         </div>
         <div className="x4-exams" key={area.id}>
           {area.exams.map((e) => (
@@ -115,18 +98,14 @@ export function Exams() {
   );
 }
 
-type Real = { season: number; monthly: number; was?: number; earlyBird?: string; payments: boolean };
 const buy = (plan: string) => `/signup?next=${encodeURIComponent(`/checkout?plan=${plan}`)}`;
 
-export function Pricing({ real }: { real: Real }) {
+export function Pricing({ payments }: { payments: boolean }) {
   const { area } = useArea();
-  const own = area.page.price;
-  const season = own?.season ?? real.season;
-  const monthly = own?.monthly ?? real.monthly;
-  const was = own ? undefined : real.was;
+  const { month, three } = area.page.price;
+  const save = Math.round((1 - three / (month * 3)) * 100);
   const open = area.live;
-  const cta = (label: string, plan: string, cls: string) =>
-    open ? <a className={`x3-btn ${cls}`} href={buy(plan)}>{label}</a> : <a className={`x3-btn ${cls}`} href="#top">Tell me when it opens</a>;
+  const later = <a className="x3-btn x3-blue" href="#top">Tell me when it opens</a>;
   return (
     <section id="pricing" className="x3-sec">
       <div className="x3-wrap">
@@ -139,38 +118,39 @@ export function Pricing({ real }: { real: Real }) {
             <h3>Free</h3>
             <p>Try it first.</p>
             <div className="price"><small>Rs.</small>0</div>
-            {open ? <a className="x3-btn x3-blue" href="/signup">Start free</a> : <a className="x3-btn x3-blue" href="#top">Tell me when it opens</a>}
+            {open ? <a className="x3-btn x3-blue" href="/signup">Start free</a> : later}
             <ul>
               <li><Check />100 free questions</li>
               <li><Check />One mini mock</li>
               <li><Check />Every answer explained</li>
             </ul>
           </div>
-          <div className="x3-card plan best">
-            <span className="bolt" aria-hidden="true"><Markhor height={22} /></span>
-            <h3>{area.name} Pass</h3>
-            <p>The whole season, one payment.</p>
-            <div className="price"><small>Rs.</small>{season.toLocaleString("en-GB")}</div>
-            {was && real.earlyBird && <span className="early">Early bird until {real.earlyBird}, then Rs. {was.toLocaleString("en-GB")}</span>}
-            {cta(`Get the ${area.name} Pass`, "season", "x3-white")}
+          <div className="x3-card plan">
+            <h3>1 month</h3>
+            <p>A focused push before the paper.</p>
+            <div className="price"><small>Rs.</small>{month.toLocaleString("en-GB")}</div>
+            {open ? <a className="x3-btn x3-blue" href={buy("monthly")}>Get 1 month</a> : later}
             <ul>
               {area.page.perks.map((p) => <li key={p}><Check />{p}</li>)}
             </ul>
           </div>
-          <div className="x3-card plan">
-            <h3>One month</h3>
-            <p>30 days of full access.</p>
-            <div className="price"><small>Rs.</small>{monthly.toLocaleString("en-GB")}</div>
-            {cta("Get one month", "monthly", "x3-blue")}
+          <div className="x3-card plan best">
+            <span className="bolt" aria-hidden="true"><Markhor height={22} /></span>
+            <h3>3 months</h3>
+            <p>Time to cover the whole syllabus.</p>
+            <div className="price"><small>Rs.</small>{three.toLocaleString("en-GB")}</div>
+            {save > 0 && <span className="early">Save {save}% on 3 single months</span>}
+            {open ? <a className="x3-btn x3-white" href="/signup">Get 3 months</a> : <a className="x3-btn x3-white" href="#top">Tell me when it opens</a>}
             <ul>
-              <li><Check />Everything in the {area.name} Pass</li>
-              <li><Check />No renewal</li>
+              <li><Check />Everything in 1 month</li>
+              <li><Check />90 days of full access</li>
+              <li><Check />One payment, no renewal</li>
             </ul>
           </div>
         </div>
         <p className="x3-note">
-          {open ? (real.payments ? "" : "Payments open soon. The free questions are open now. ") : `${area.name} opens soon; these are the prices it will open at. `}
-          Each area has its own pass, so you never pay for exams you won&apos;t sit.
+          {open ? (payments ? "" : "Payments open soon. The free questions are open now. ") : `${area.name} opens soon; these are the prices it will open at. `}
+          Each area is priced on its own, so you never pay for exams you won&apos;t sit.
         </p>
       </div>
     </section>
@@ -181,7 +161,7 @@ export function Faq() {
   const { area } = useArea();
   const faqs = [
     ...area.page.faqs,
-    { q: "Will I see other areas?", a: `No. Your account shows ${area.name.toLowerCase()} and nothing else. If you later need another area, it gets its own pass.` },
+    { q: "Will I see other areas?", a: `No. Your account shows ${area.name.toLowerCase()} and nothing else. If you later need another area, you buy it on its own.` },
     { q: "Where do the questions come from?", a: "Every question is written for this bank from the official syllabus and checked against the textbook before it goes live." },
     { q: "Does it work on a phone?", a: "Yes, in any browser. iOS and Android apps are coming soon." },
   ];
