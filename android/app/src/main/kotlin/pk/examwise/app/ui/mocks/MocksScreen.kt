@@ -117,7 +117,7 @@ fun MocksContent(
             if (needsPass) PassLine()
             openTest?.let { id -> PillButton("Resume that test", { onResume(id) }, dark = false, modifier = Modifier.fillMaxWidth()) }
         }
-        Text("180 MCQs in 3 hours, with the real paper's split and difficulty mix.", style = MaterialTheme.typography.bodyMedium, color = c.muted)
+        Text("180 MCQs in 3 hours, split by subject like the real paper.", style = MaterialTheme.typography.bodyMedium, color = c.muted)
 
         if (!paid) Panel {
             Text("Your free mini mock", style = MaterialTheme.typography.titleMedium, color = c.ink)
