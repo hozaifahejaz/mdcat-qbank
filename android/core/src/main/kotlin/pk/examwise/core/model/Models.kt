@@ -274,7 +274,14 @@ data class StartResult(val id: String, val count: Int, val short: Boolean = fals
 data class CheckAnswerResult(val answer: Int, val reveal: FullQuestion, val stats: Stats? = null)
 
 @Serializable
-data class FinishResult(val id: String, val empty: Boolean = false)
+data class FinishResult(val id: String, val empty: Boolean = false, val review: Review? = null)
+
+/* The key and explanation of the practice question on screen, read while the student thinks (GET /api/study/peek). */
+@Serializable
+data class Peek(val reveal: FullQuestion, val stats: Stats? = null)
+
+@Serializable
+data class QuietCheck(val answer: Int)
 
 @Serializable
 data class TestResult(

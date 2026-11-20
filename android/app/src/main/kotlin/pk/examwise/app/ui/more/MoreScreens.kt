@@ -45,12 +45,13 @@ import pk.examwise.app.ui.theme.Ex
 import pk.examwise.core.api.ApiError
 import pk.examwise.core.model.User
 
+/* The same names as the website (lib/format.ts planNames). */
 fun planName(u: User): String = when {
     u.role != "student" -> "Staff"
-    u.plan == "free" -> "Free"
-    u.plan == "monthly" -> "Monthly pass"
-    u.plan == "season" -> "Season pass"
-    u.plan == "bundle" -> "Bundle pass"
+    u.plan == "free" -> "Free plan"
+    u.plan == "monthly" -> "One-month pass"
+    u.plan == "season" -> "MDCAT Season Pass"
+    u.plan == "bundle" -> "MDCAT + NUMS Bundle"
     else -> u.plan.replaceFirstChar { it.uppercase() }
 }
 
@@ -60,7 +61,7 @@ fun MoreScreen(container: AppContainer, nav: NavHostController) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val support = container.config.config.value?.support
-    val site = support?.site ?: "https://mdcat-qbank.pages.dev"
+    val site = support?.site ?: "https://markhorprep.com"
     val offlineOn = container.config.config.value?.offline?.enabled == true && user?.isFree == false
     var askSignOut by remember { mutableStateOf(false) }
     var unsent by remember { mutableIntStateOf(0) }
@@ -87,8 +88,8 @@ fun MoreScreen(container: AppContainer, nav: NavHostController) {
                 if (offlineOn) { Divider(); RowItem("Downloads", onClick = { nav.navigate(R.DOWNLOADS) }) }
             }
             Panel(padding = 0.dp) {
-                support?.whatsapp?.let { w -> RowItem("Help on WhatsApp", onClick = { open("https://wa.me/${w.filter(Char::isDigit)}") }) ; Divider() }
-                support?.email?.let { e -> RowItem("Email us", e, onClick = { open("mailto:$e") }); Divider() }
+                support?.whatsapp?.takeIf { w -> w.any(Char::isDigit) }?.let { w -> RowItem("Help on WhatsApp", onClick = { open("https://wa.me/${w.filter(Char::isDigit)}") }) ; Divider() }
+                support?.email?.takeIf { it.isNotBlank() }?.let { e -> RowItem("Email us", e, onClick = { open("mailto:$e") }); Divider() }
                 RowItem("Privacy policy", onClick = { open("$site/privacy") })
                 Divider(); RowItem("Terms", onClick = { open("$site/terms") })
             }

@@ -41,7 +41,7 @@ Rate limits are stored in D1. Phone codes are limited to 1 a minute and 5 an hou
 
 Every value below goes in the Cloudflare dashboard: **Workers & Pages > mdcat-qbank > Settings > Variables and Secrets > Add**, type **Secret**, environment **Production** (add them to **Preview** too if you want branch previews to work). Redeploy afterwards: re-run the latest GitHub Actions deploy, or push.
 
-Wherever a step asks for the site address, use `https://mdcat-qbank.pages.dev` until there's a real domain, then add the domain as well.
+Wherever a step asks for the site address, use `https://markhorprep.com` (www.markhorprep.com redirects to it).
 
 ### 1. Let the deploy run database migrations
 
@@ -65,14 +65,14 @@ When you switch this on, accounts made before then are unconfirmed. They'll be a
 
 1. Add your domain to Cloudflare, then go to **Compute > Email Service > Email Sending > Onboard Domain**.
 2. Create an API token with **Account > Email Sending > Edit**.
-3. Add the secrets `CF_ACCOUNT_ID` (your account id), `CF_EMAIL_API_TOKEN` (that token) and `EMAIL_FROM`, e.g. `Markhor Prep <no-reply@yourdomain.com>`.
+3. Add the secrets `CF_ACCOUNT_ID` (your account id), `CF_EMAIL_API_TOKEN` (that token) and `EMAIL_FROM`, e.g. `Markhor Prep <no-reply@markhorprep.com>`.
 
 ### 4. Google
 
 1. In the [Google Cloud console](https://console.cloud.google.com), create a project. Then go to **Google Auth Platform > Branding** and add the app name, support email, logo, and the site's domain under authorised domains. Set the audience to **External** and publish.
 2. **Clients > Create client > Web application**:
-   - Authorised JavaScript origins: `https://mdcat-qbank.pages.dev`
-   - Authorised redirect URI: `https://mdcat-qbank.pages.dev/api/auth/oauth/google/callback`
+   - Authorised JavaScript origins: `https://markhorprep.com`
+   - Authorised redirect URI: `https://markhorprep.com/api/auth/oauth/google/callback`
 3. Add the secrets `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`.
 
 ### 5. Apple
@@ -80,7 +80,7 @@ When you switch this on, accounts made before then are unconfirmed. They'll be a
 You need an [Apple Developer](https://developer.apple.com) membership, which costs USD 99 a year.
 
 1. **Certificates, Identifiers & Profiles > Identifiers**: create an **App ID** with "Sign in with Apple" ticked.
-2. Create a **Services ID**, e.g. `com.yourbrand.web`, and enable Sign in with Apple on it. Configure it with the domain `mdcat-qbank.pages.dev` and the return URL `https://mdcat-qbank.pages.dev/api/auth/oauth/apple/callback`. Apple wants a real domain you control, so this step may have to wait for the custom domain.
+2. Create a **Services ID**, e.g. `com.yourbrand.web`, and enable Sign in with Apple on it. Configure it with the domain `markhorprep.com` and the return URL `https://markhorprep.com/api/auth/oauth/apple/callback`.
 3. **Keys**: create a key with Sign in with Apple enabled and download the `.p8` file. You can only download it once.
 4. Add the secrets `APPLE_SERVICES_ID` (the Services ID), `APPLE_TEAM_ID`, `APPLE_KEY_ID` and `APPLE_PRIVATE_KEY` (paste the whole contents of the `.p8` file).
 
@@ -88,7 +88,7 @@ You need an [Apple Developer](https://developer.apple.com) membership, which cos
 
 Bots requesting codes for random numbers ("SMS pumping") is the usual way an SMS bill gets run up.
 
-1. Go to Cloudflare dashboard > **Turnstile** and add a widget for `mdcat-qbank.pages.dev`.
+1. Go to Cloudflare dashboard > **Turnstile** and add a widget for `markhorprep.com`.
 2. Add the secrets `TURNSTILE_SITE_KEY` and `TURNSTILE_SECRET_KEY`. The pages pick the widget up automatically.
 
 ## Running it locally

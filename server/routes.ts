@@ -7,6 +7,7 @@ import { type Provider, appleConfigured, clearStateCookie, finishOAuth, googleCo
 import { hit, overLimit, peeked, rateLimit, usedStmt } from "./ratelimit";
 import { type NewSession, type Session, appVersion, bearer, clearSessionCookie, createSession, forgetReusedSessions, getSession, isApp, newSession, note, requireSession, reuseSession, rotateSession } from "./session";
 import { adminRoutes } from "./admin";
+import { lookRoutes } from "./look";
 import { visitRoutes } from "./visits";
 import { studyRoutes } from "./study";
 import { prefRoutes } from "./prefs";
@@ -435,7 +436,7 @@ async function answer(request: Request, env: Env, db: D1Database): Promise<Respo
       throw fail(426, "update_required", "Please update Markhor Prep to keep going.");
     }
     const key = `${request.method} ${url.pathname}`;
-    const route = routes[key] ?? adminRoutes[key] ?? visitRoutes[key] ?? studyRoutes[key] ?? prefRoutes[key] ?? insightRoutes[key] ?? appRoutes[key] ?? offlineRoutes[key];
+    const route = routes[key] ?? adminRoutes[key] ?? lookRoutes[key] ?? visitRoutes[key] ?? studyRoutes[key] ?? prefRoutes[key] ?? insightRoutes[key] ?? appRoutes[key] ?? offlineRoutes[key];
     if (!route) throw fail(404, "not_found", "Not found.");
     // Cookies are sent by the browser on their own, so a cookie request must come from our own pages. The app sends no
     // cookies, and marks its requests with headers (X-Client, Authorization) that another site's page can't add without

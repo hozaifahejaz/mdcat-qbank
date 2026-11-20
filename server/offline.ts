@@ -10,7 +10,7 @@ import { type AttemptRow, type Served, DAILY_QUESTIONS, IN_OPEN_TEST, finish, fu
 import { effectivePlan } from "./users";
 
 /* Offline packs for the Android app. A pack is a set of questions, keys and explanations included, that one phone may
-   keep for a few days so a student with a pass can practise without a connection. Limits:
+   keep for a few days so a student with a pass can practice without a connection. Limits:
    - app only, on a registered Android device of the account, for accounts with a pass;
    - at most OFFLINE_MAX questions in live packs per account (all its phones together);
    - a pack lasts OFFLINE_LEASE_DAYS and is extended whenever the phone checks in (renew);

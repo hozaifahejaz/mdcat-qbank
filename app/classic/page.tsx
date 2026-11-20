@@ -1,0 +1,270 @@
+import Ahead from "@/components/Ahead";
+import Logo from "@/components/Logo";
+import Reveal from "@/components/Reveal";
+import SampleQuestion from "@/components/SampleQuestion";
+import ThemeToggle from "@/components/ThemeToggle";
+import BankSize from "@/components/BankSize";
+import type { Metadata } from "next";
+import { money, plans } from "@/lib/billing";
+import { paper, prices, site } from "@/lib/site";
+import "../landing.css";
+
+/* The classic landing page, kept so the admin panel can switch back to it (Admin > Site theme). While it is the
+   chosen look, functions/index.ts serves this page at /, which is why its canonical address is /. */
+
+/* Every test on the roadmap (docs/plan.md, "Phased roadmap"). The three medical tests have their own banks
+   (lib/banks.ts); the rest are labelled coming soon. */
+const tests = [
+  { name: "PMDC MDCAT", field: "Medical", live: true },
+  { name: "NUMS MDCAT", field: "Medical", live: true },
+  { name: "AKU test", field: "Medical", live: true },
+  { name: "ECAT", field: "Engineering" },
+  { name: "NUST NET", field: "Engineering" },
+  { name: "LAT", field: "Law" },
+];
+
+const faqs = [
+  { q: "Is this a coaching course?", a: "No. It's a practice tool: MCQs, explanations, timed mocks and past papers. Most students use it alongside their academy or self-study, and it costs a fraction of a course." },
+  { q: "Where do the questions come from?", a: "Every question is written for this bank from the PMDC syllabus and the textbooks it's based on, then checked against the textbook. Past-paper questions are rebuilt in our own words with our own explanations. Nothing is copied from academy books or other apps." },
+  { q: "What if I find a mistake?", a: "Tap \"Report\" on the question. A reviewer checks every report, and if we were wrong we fix the question for everyone." },
+  { q: "How do I pay?", a: site.payments ? "JazzCash, Easypaisa, debit or credit card, or bank transfer. It's a one-time payment for the season, with no renewal." : "Payments open soon: JazzCash, Easypaisa, debit or credit card, or bank transfer, as a one-time payment with no renewal. The free questions are open now." },
+  { q: "Do you cover NUMS, AKU or other tests?", a: "Yes. One account covers PMDC MDCAT, NUMS MDCAT and the AKU test, and you can also practice by FSc textbook chapter. Engineering and law tests come later." },
+  { q: "Are you affiliated with PMDC?", a: `No. ${site.name} is independent and not affiliated with PMDC, NUMS or any university.` },
+];
+
+export const metadata: Metadata = { alternates: { canonical: "/" } };
+
+/* The FAQ again in the form search engines read, so its questions can show under the result. */
+const faqData = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: faqs.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })),
+};
+
+/* Plan buttons go through sign-up and land on checkout with the plan picked. */
+const buy = (plan: string) => `/signup?next=${encodeURIComponent(`/checkout?plan=${plan}`)}`;
+
+export default function ClassicHome() {
+  const total = paper.reduce((n, p) => n + p.count, 0);
+  return (
+    <>
+      <nav>
+        <div className="wrap">
+          <div className="navbar">
+            <Logo />
+            <ul>
+              <li><a href="#how">How it works</a></li>
+              <li><a href="#pricing">Pricing</a></li>
+              <li><a href="#faq">FAQ</a></li>
+            </ul>
+            <div className="nav-end">
+              <ThemeToggle />
+              <a className="signin" href="/signin">Sign in</a>
+              <a className="pill pill-dark" href="/signup">Start free</a>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      <main id="top">
+        <div className="wrap">
+          <header className="hero">
+            <div className="hero-copy">
+              <span className="tag"><i />PMDC MDCAT · {site.season} season</span>
+              <h1>Practice the MCQs that <span>decide your seat.</span></h1>
+              <p className="sub muted">
+                Chapter-wise MDCAT questions, every one explained, and timed mocks built like the real paper.
+              </p>
+              <div className="ctas">
+                <a className="pill pill-dark" href="/signup">Start free</a>
+                <a className="pill pill-light" href="#try">Try a question</a>
+              </div>
+              <BankSize />
+              <div className="who" aria-label="Questions per subject on the paper">
+                <span className="who-h muted">On the paper</span>
+                {paper.map((p) => (
+                  <span key={p.subject} style={{ background: p.tone }}><b>{p.count}</b>{p.subject}</span>
+                ))}
+              </div>
+            </div>
+            <SampleQuestion />
+          </header>
+
+          <section className="tests" aria-labelledby="tests-h">
+            <p className="tests-h muted" id="tests-h">Three medical tests now. More every season.</p>
+            <div className="marquee">
+              <ul className="marquee-track">
+                {[0, 1].map((copy) => tests.map((t) => (
+                  <li key={copy + t.name} aria-hidden={copy === 1 || undefined} data-field={t.field}>
+                    <b>{t.name}</b>
+                    <span>{t.field}</span>
+                    <em className={t.live ? "is-live" : undefined}>{t.live ? "Live" : "Coming soon"}</em>
+                  </li>
+                )))}
+              </ul>
+            </div>
+          </section>
+
+          <section id="how">
+            <div className="center rv">
+              <h2>Practice, test, fix. Repeat until August.</h2>
+            </div>
+            <div className="steps">
+              <div className="step rv" style={{ background: "var(--sky)" }}>
+                <span className="n">1</span>
+                <h3>Practice by chapter</h3>
+                <p>Pick a subject or chapter and get the explanation after every question.</p>
+              </div>
+              <div className="step rv" style={{ background: "var(--mint)" }}>
+                <span className="n">2</span>
+                <h3>Sit full-length mocks</h3>
+                <p>180 MCQs in 3 hours, split by subject like the real paper.</p>
+              </div>
+              <div className="step rv" style={{ background: "var(--lemon)" }}>
+                <span className="n">3</span>
+                <h3>Fix your weak chapters</h3>
+                <p>See your score by subject and retry every question you got wrong.</p>
+              </div>
+            </div>
+            <div className="card split rv">
+              <div className="split-head"><b>Mocks match the real paper</b><span>{total} MCQs · 3 hours · no negative marking</span></div>
+              <div className="split-bar" aria-hidden="true">
+                {paper.map((p) => <i key={p.subject} style={{ flexGrow: p.count, background: p.solid }} />)}
+              </div>
+              <div className="split-key">
+                {paper.map((p) => <span key={p.subject} style={{ ["--c" as string]: p.solid }}>{p.subject} <b>{p.count}</b></span>)}
+              </div>
+            </div>
+          </section>
+
+          <section id="pricing">
+            <div className="center rv">
+              <h2>One payment. The whole season.</h2>
+              <p className="muted">No subscription. A season pass lasts until the {site.examMonth} MDCAT.{!site.payments && " Payments open soon."}</p>
+            </div>
+            <div className="plans">
+              <div className="card plan rv">
+                <h3>Free</h3>
+                <div className="price"><small>Rs.</small><b>0</b></div>
+                <ul>
+                  <li>100 free questions across every subject</li>
+                  <li>One mini mock</li>
+                  <li>Basic progress stats</li>
+                  <li>Every question explained</li>
+                  <li>No card needed</li>
+                </ul>
+                <a className="pill pill-light" href="/signup">Start free</a>
+              </div>
+              <div className="card plan best rv">
+                <span className="badge">Best for most</span>
+                <h3>{plans.season.name}</h3>
+                <div className="price"><small>Rs.</small><b>{plans.season.price.toLocaleString("en-GB")}</b><span>{plans.season.per}</span></div>
+                {plans.season.was && <span className="early">Early bird until {prices.earlyBirdUntil}, then {money(plans.season.was)}</span>}
+                <ul>
+                  <li className="plus">Everything in Free, plus</li>
+                  <li>The full question bank, every chapter</li>
+                  <li>MDCAT, NUMS and AKU banks</li>
+                  <li>Full-length timed mocks</li>
+                  <li>Past papers by year</li>
+                  <li>Chapter-by-chapter dashboard</li>
+                  <li>Bookmarks and "My mistakes"</li>
+                </ul>
+                <a className="pill" href={buy("season")}>Get the Season Pass</a>
+              </div>
+              <div className="card plan rv">
+                <h3>{plans.monthly.name}</h3>
+                <div className="price"><small>Rs.</small><b>{plans.monthly.price.toLocaleString("en-GB")}</b><span>{plans.monthly.per}</span></div>
+                <ul>
+                  <li className="plus">Everything in the Season Pass</li>
+                  <li>30 days of full access</li>
+                  <li>No renewal</li>
+                </ul>
+                <a className="pill pill-dark" href={buy("monthly")}>Get one month</a>
+              </div>
+            </div>
+            <div className="price-notes rv">
+              <span>JazzCash, Easypaisa or card</span>
+              <span>No subscriptions, no renewals</span>
+              <span>Free questions, no card needed</span>
+            </div>
+          </section>
+
+          <section id="devices" aria-labelledby="devices-h">
+            <div className="card apps rv">
+              <div className="apps-copy">
+                <h2 id="devices-h">Your pass, on your phone and laptop.</h2>
+                <ul>
+                  <li>Your progress stays in sync</li>
+                  <li>Unfinished tests pick up where you left off</li>
+                </ul>
+                <span className="tag"><i />iOS and Android apps coming soon</span>
+              </div>
+              <div className="devices" aria-hidden="true">
+                <div className="laptop">
+                  <div className="lt-screen">
+                    <div className="lt-sketch">
+                      <span className="lt-bar" />
+                      <span className="ph-q"><i /><i /><i /></span>
+                      <span className="lt-opts"><i /><i /><i /><i /></span>
+                    </div>
+                  </div>
+                  <span className="lt-base" />
+                </div>
+                <div className="phone">
+                  <span className="notch" />
+                  <span className="lt-bar" />
+                  <span className="ph-q"><i /><i /><i /></span>
+                  <span className="ph-opt"><i /></span>
+                  <span className="ph-opt"><i /></span>
+                  <span className="ph-opt on"><i /></span>
+                  <span className="ph-opt"><i /></span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section id="faq">
+            <div className="center rv"><h2>Questions, answered.</h2></div>
+            <div className="faq">
+              {faqs.map((f, i) => (
+                <details className="rv" key={f.q} open={i === 0}>
+                  <summary>{f.q}</summary>
+                  <p>{f.a}</p>
+                </details>
+              ))}
+            </div>
+          </section>
+
+          <div className="final rv" id="join">
+            <h2>Start practicing before MDCAT {site.season}.</h2>
+            <p>Make a free account and try the questions.</p>
+            <div className="ctas">
+              <a className="pill pill-dark" href="/signup">Start free</a>
+              <a className="pill pill-light" href="#try">Try a question</a>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <footer>
+        <div className="wrap">
+          <div className="foot">
+            <Logo size={22} />
+            <ul>
+              <li><a href="#how">How it works</a></li>
+              <li><a href="#pricing">Pricing</a></li>
+              <li><a href="#faq">FAQ</a></li>
+              <li><a href="/privacy">Privacy</a></li>
+              <li><a href="/terms">Terms</a></li>
+              <li><a href="/refunds">Refunds</a></li>
+            </ul>
+          </div>
+          <p className="legal">Not affiliated with PMDC, NUMS or any university. MDCAT is administered by PMDC. © {new Date().getFullYear()} {site.name}</p>
+        </div>
+      </footer>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqData).replace(/</g, "\\u003c") }} />
+      <Ahead />
+      <Reveal />
+    </>
+  );
+}

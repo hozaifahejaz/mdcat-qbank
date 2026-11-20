@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
 import DeviceGate from "@/components/auth/DeviceGate";
 import Icon from "@/components/app/Icon";
-import Logo from "@/components/Logo";
+import Logo, { Markhor } from "@/components/Logo";
 import { usePageTurn } from "@/components/Nav";
 import ThemeToggle from "@/components/ThemeToggle";
 import { signOut } from "@/lib/auth";
@@ -14,7 +14,7 @@ import { isStaff, roleNames } from "@/lib/qc";
 import { site, supportHref } from "@/lib/site";
 import { type AccountUser, getCurrentUser, lastUser } from "@/lib/user";
 
-/* The sidebar, grouped like the study loop: practise, then review what went wrong. */
+/* The sidebar, grouped like the study loop: practice, then review what went wrong. */
 /* short is the label under a phone tab, when the full one is too long. */
 /* phoneOnly links show in the phone tab bar but not in the sidebar, where the dashboard already covers them. */
 /* inAccount links are reached from the name at the foot of the sidebar; on phones they sit in the More sheet. */
@@ -141,7 +141,7 @@ export function AppFrame({ active, title, user, aside, nav = studentNav, bare, h
             <b>{title ?? here?.label ?? "Study"}</b>
           </p>
           <a className="m-brand" href={nav.home} aria-label={`${site.name} home`}>
-            <svg width="28" height="28" viewBox="0 0 26 26" aria-hidden="true"><rect width="26" height="26" rx="8" fill="var(--blue)" /><path d="m7.5 13.5 3.6 3.6L18.5 9" fill="none" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+            <Markhor height={32} />
           </a>
           <h1 className="m-title">{title ?? here?.label ?? "Study"}</h1>
           <div className="topbar-end">

@@ -46,6 +46,8 @@ import pk.examwise.core.model.ClaimResult
 import pk.examwise.core.model.Dashboard
 import pk.examwise.core.model.Device
 import pk.examwise.core.model.FinishResult
+import pk.examwise.core.model.Peek
+import pk.examwise.core.model.QuietCheck
 import pk.examwise.core.model.FullQuestion
 import pk.examwise.core.model.HistoryResponse
 import pk.examwise.core.model.MeResponse
@@ -259,6 +261,12 @@ class ExamwiseApi(
 
     suspend fun check(id: String, idx: Int, answer: Int, seconds: Int?): CheckAnswerResult =
         post("/api/study/check", buildJsonObject { put("id", id); put("idx", idx); put("answer", answer); seconds?.let { put("seconds", it) } })
+
+    /* Practice only: the key and explanation of question idx before it is answered, so Submit shows them at once. The
+       answer is then locked in with checkQuiet, which sends nothing back but the saved answer. */
+    suspend fun peek(id: String, idx: Int): Peek = get("/api/study/peek" + q("id" to id, "idx" to idx.toString()))
+    suspend fun checkQuiet(id: String, idx: Int, answer: Int, seconds: Int?): Int =
+        post<QuietCheck>("/api/study/check", buildJsonObject { put("id", id); put("idx", idx); put("answer", answer); put("quiet", true); seconds?.let { put("seconds", it) } }).answer
 
     suspend fun finish(id: String): FinishResult = post("/api/study/finish", buildJsonObject { put("id", id) })
     suspend fun review(id: String): Review = get("/api/study/review" + q("id" to id))

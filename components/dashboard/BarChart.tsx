@@ -8,7 +8,7 @@ type Range = "daily" | "weekly";
 
 const fmt = (iso: string, o: Intl.DateTimeFormatOptions) => new Date(iso + "T12:00:00").toLocaleDateString("en-GB", o);
 
-/* Questions practised over time as bars. Daily shows the last 30 days (14 on phones), weekly the last 12 weeks.
+/* Questions practiced over time as bars. Daily shows the last 30 days (14 on phones), weekly the last 12 weeks.
    Hover or tab to a bar for its numbers; a hidden table carries the same data. */
 export default function BarChart({ daily }: { daily: DayActivity[] }) {
   const [metric, setMetric] = useState<Metric>("answered");
