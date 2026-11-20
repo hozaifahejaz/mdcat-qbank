@@ -3,6 +3,8 @@
    switched off, and /api/auth/config tells the pages which ones are on. */
 export interface Env {
   DB: D1Database;
+  /* The static site (out/), for pages served through a function (functions/index.ts). */
+  ASSETS: Fetcher;
 
   /* Local development only (.dev.vars): prints SMS codes and emails to the terminal instead of sending them. */
   DEV_MODE?: string;

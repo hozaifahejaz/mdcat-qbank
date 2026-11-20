@@ -46,6 +46,16 @@ function SidePanel() {
         <div className="lap"><i /><i /><i style={{ width: "60%" }} /></div>
         <div className="ph"><i /><i style={{ width: "70%" }} /></div>
       </div>
+      {/* The new look's version of the sketch: a few product cards floating, like the landing page (app/auth.css). */}
+      <div className="side-new" aria-hidden="true">
+        <div className="sn-note">Revise Krebs cycle</div>
+        <div className="sn-card sn-today">
+          <b>Today&apos;s chapters</b>
+          <span>Cell structure<em>65%</em></span><u><s style={{ width: "65%" }} /></u>
+          <span>Chemical bonding<em>84%</em></span><u><s style={{ width: "84%" }} /></u>
+        </div>
+        <div className="sn-card sn-mock"><b>Next mock</b><small>Saturday · 180 MCQs</small></div>
+      </div>
     </aside>
   );
 }
