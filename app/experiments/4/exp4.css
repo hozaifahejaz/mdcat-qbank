@@ -138,3 +138,41 @@
   .x4-track, .x4-opts button, .x4-steps li > span { transition: none; }
   .x4-track:hover, .x4-opts button:not(:disabled):hover { transform: none; }
 }
+
+/* Area picker */
+.x4-areas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+@media (max-width: 560px) { .x4-areas { grid-template-columns: minmax(0, 1fr); } }
+.x4-areas button { cursor: pointer; border: 0; display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 14px; background: var(--x-bg); box-shadow: inset 0 0 0 1px var(--x-line); text-align: left; color: var(--x-ink); font: inherit; }
+.x4-areas button:hover { box-shadow: inset 0 0 0 1.5px var(--x-ink); }
+.x4-areas button.on { box-shadow: inset 0 0 0 2px var(--x-blue); }
+.x4-areas button > span:last-child { display: grid; min-width: 0; }
+.x4-areas b { font-size: .9375rem; }
+.x4-areas small { color: var(--x-mute); font-size: .8125rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.x4-picker { padding: 12px; }
+
+/* Area card chips */
+.x4-chips { list-style: none; display: flex; flex-wrap: wrap; gap: 6px; margin-top: 18px; padding: 0; }
+.x4-chips li { font-size: .8125rem; font-weight: 500; padding: 5px 10px; border-radius: 8px; background: var(--x-bg); box-shadow: inset 0 0 0 1px var(--x-line); color: var(--x-mute); }
+.x4-chips li.live { color: #11804a; background: var(--x-mint); box-shadow: none; font-weight: 600; }
+:root[data-theme="dark"] .x4-chips li.live { color: #5fd49a; }
+
+/* My mistakes widget */
+.x4-miss { display: grid; gap: 8px; margin-top: auto; }
+.x4-miss > div { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; background: var(--x-bg); box-shadow: inset 0 0 0 1px var(--x-line); }
+.x4-miss i { flex: none; width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; color: #fff; font-style: normal; font-size: .75rem; font-weight: 700; }
+.x4-miss span { flex: 1; min-width: 0; display: grid; }
+.x4-miss b { font-size: .8125rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.x4-miss small { font-size: .75rem; color: var(--x-mute); }
+.x4-miss button { cursor: pointer; border: 0; height: 30px; padding-inline: 12px; border-radius: 8px; background: var(--x-ink); color: var(--x-bg); font-size: .75rem; font-weight: 600; }
+.x4-miss button:disabled { background: var(--x-mint); color: #11804a; cursor: default; }
+
+/* Tests in the area */
+.x4-exams { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+@media (max-width: 520px) { .x4-exams { grid-template-columns: minmax(0, 1fr); } }
+.x4-exam { padding: 22px; display: flex; flex-direction: column; gap: 4px; border-radius: 22px; }
+.x4-examhead { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.x4-exam > b { font-size: 1.25rem; letter-spacing: -0.02em; }
+.x4-exam > small { color: var(--x-mute); font-size: .8125rem; }
+.x4-exam > p { margin-top: 12px; font-size: .875rem; font-weight: 600; }
+.x4-bar.thin { height: 8px; margin-top: 8px; }
+.x4-parts { font-size: .75rem; color: var(--x-mute); line-height: 1.5; margin-top: 6px; }
