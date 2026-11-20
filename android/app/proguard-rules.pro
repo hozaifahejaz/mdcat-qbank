@@ -1,15 +1,15 @@
 # Models are read and written by kotlinx.serialization: keep their generated serializers.
 -keepattributes *Annotation*, InnerClasses, Signature, Exceptions
 -dontnote kotlinx.serialization.**
--keepclassmembers @kotlinx.serialization.Serializable class pk.examwise.** {
+-keepclassmembers @kotlinx.serialization.Serializable class com.markhorprep.** {
     *** Companion;
     *** INSTANCE;
     kotlinx.serialization.KSerializer serializer(...);
 }
--keepclasseswithmembers class pk.examwise.** {
+-keepclasseswithmembers class com.markhorprep.** {
     kotlinx.serialization.KSerializer serializer(...);
 }
--keep,includedescriptorclasses class pk.examwise.**$$serializer { *; }
+-keep,includedescriptorclasses class com.markhorprep.**$$serializer { *; }
 
 # Ktor and OkHttp pull in optional classes that aren't on Android.
 -dontwarn org.slf4j.**
