@@ -15,6 +15,7 @@ import pk.examwise.core.model.ClaimResult
 import pk.examwise.core.model.Dashboard
 import pk.examwise.core.model.Device
 import pk.examwise.core.model.RemoveResult
+import pk.examwise.core.model.Review
 import pk.examwise.core.model.SignInResult
 import pk.examwise.core.model.Sitting
 import pk.examwise.core.model.StartRequest
@@ -132,8 +133,14 @@ class StudyRepository(private val api: ExamwiseApi, private val cache: Cache) {
 
     suspend fun attempt(id: String) = api.attempt(id)
     suspend fun check(id: String, idx: Int, answer: Int, seconds: Int?) = api.check(id, idx, answer, seconds)
-    suspend fun finish(id: String) = api.finish(id)
-    suspend fun review(id: String) = api.review(id)
+    suspend fun peek(id: String, idx: Int) = api.peek(id, idx)
+    suspend fun checkQuiet(id: String, idx: Int, answer: Int, seconds: Int?) = api.checkQuiet(id, idx, answer, seconds)
+
+    /* Submitting returns the results too, so the review screen opens without asking again. */
+    private var finished: Review? = null
+    suspend fun finish(id: String) = api.finish(id).also { finished = it.review }
+    fun takeFinished(id: String): Review? = finished?.takeIf { it.attempt.id == id }.also { finished = null }
+    suspend fun review(id: String) = takeFinished(id) ?: api.review(id)
     suspend fun mistakes() = api.mistakes()
     suspend fun bookmarks() = api.bookmarks()
 }

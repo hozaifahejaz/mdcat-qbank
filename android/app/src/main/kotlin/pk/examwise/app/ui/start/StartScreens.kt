@@ -12,9 +12,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -28,8 +25,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -46,9 +42,8 @@ import pk.examwise.core.api.ApiError
 
 @Composable
 fun Logo(size: Int = 56) {
-    Box(Modifier.size(size.dp).clip(RoundedCornerShape((size * 0.3f).dp)).background(Ex.c.blue), contentAlignment = Alignment.Center) {
-        Icon(Icons.Filled.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size((size * 0.6f).dp))
-    }
+    // The website's markhor, in the theme's blue (lighter in dark mode, as on the site). No tile behind it.
+    Icon(painterResource(pk.examwise.app.R.drawable.ic_logo), contentDescription = null, tint = Ex.c.blue, modifier = Modifier.size(size.dp))
 }
 
 /* Start-up: app settings, then the stored session, then the device gate. Offline with a known account goes to Home,

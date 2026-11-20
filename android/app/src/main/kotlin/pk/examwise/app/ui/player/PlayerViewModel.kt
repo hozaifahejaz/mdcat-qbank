@@ -18,6 +18,7 @@ import pk.examwise.core.api.ApiError
 import pk.examwise.core.api.ExamwiseApi
 import pk.examwise.core.model.AttemptResult
 import pk.examwise.core.model.CheckAnswerResult
+import pk.examwise.core.model.Peek
 import pk.examwise.core.model.FullQuestion
 import pk.examwise.core.model.Question
 import pk.examwise.core.model.Stats
@@ -70,6 +71,10 @@ interface PlayerSource {
     val offline: Boolean
     suspend fun load(): Loaded
     suspend fun check(item: PItem, answer: Int, seconds: Int): CheckAnswerResult
+    /* Practice: the key and explanation fetched ahead, then the answer locked in without them. Null where the source
+       can't (offline packs check on the phone anyway). */
+    suspend fun peek(item: PItem): Peek? = null
+    suspend fun checkQuiet(item: PItem, answer: Int, seconds: Int): Int = check(item, answer, seconds).answer
     suspend fun save(item: PItem)
     suspend fun bookmark(questionId: String, on: Boolean)
     suspend fun report(questionId: String, reason: String, details: String)
@@ -93,6 +98,8 @@ class OnlineSource(private val c: AppContainer, private val id: String) : Player
     }
 
     override suspend fun check(item: PItem, answer: Int, seconds: Int) = c.study.check(id, item.idx, answer, seconds)
+    override suspend fun peek(item: PItem): Peek = c.study.peek(id, item.idx)
+    override suspend fun checkQuiet(item: PItem, answer: Int, seconds: Int) = c.study.checkQuiet(id, item.idx, answer, seconds)
 
     override suspend fun save(item: PItem) {
         c.outbox.add("answer", "/api/study/answer", ExamwiseApi.answerBody(id, item.idx, item.answer, item.flagged, item.seconds))
@@ -162,6 +169,10 @@ class PlayerViewModel(private val source: PlayerSource, private val now: () -> L
     val state: StateFlow<PlayerState> = _state.asStateFlow()
     private var shownAt = now()
     private var clock: Job? = null
+    /* Practice questions' keys and explanations, read while the student reads the question (the website does the same),
+       so Submit shows the result at once. Kept by question number; only ever shown once the answer is locked in. */
+    private val peeks = mutableMapOf<Int, Peek>()
+    private val peeking = mutableSetOf<Int>()
 
     init { load() }
 
@@ -180,6 +191,7 @@ class PlayerViewModel(private val source: PlayerSource, private val now: () -> L
                 }
                 shownAt = now()
                 startClock()
+                prefetch()
             } catch (e: ApiError) {
                 _state.update { it.copy(loading = false, error = e.message) }
             }
@@ -218,6 +230,19 @@ class PlayerViewModel(private val source: PlayerSource, private val now: () -> L
         if (i !in _state.value.items.indices) return
         tally()
         _state.update { it.copy(index = i, message = null) }
+        prefetch()
+    }
+
+    /* Reads ahead the key for the practice question on screen and the next one. Failures are quiet: Submit then asks. */
+    private fun prefetch() {
+        val s = _state.value
+        if (!s.tutor || source.offline) return
+        listOf(s.index, s.index + 1).mapNotNull { s.items.getOrNull(it) }.filter { !it.checked && it.idx !in peeks && it.idx !in peeking }.forEach { item ->
+            peeking += item.idx
+            viewModelScope.launch {
+                try { source.peek(item)?.let { peeks[item.idx] = it } } catch (_: ApiError) {} finally { peeking -= item.idx }
+            }
+        }
     }
 
     fun next() = go(_state.value.index + 1)
@@ -251,6 +276,24 @@ class PlayerViewModel(private val source: PlayerSource, private val now: () -> L
         if (cur.checked || _state.value.busy) return
         tally()
         val seconds = _state.value.current?.seconds ?: cur.seconds
+        val ahead = peeks[cur.idx]
+        if (ahead != null) {
+            // Show the result now and lock the answer in behind it. If that fails, the answer goes back to unlocked.
+            updateItem(cur.idx) { it.copy(answer = pick, checked = true, reveal = ahead.reveal, stats = ahead.stats, picked = null) }
+            viewModelScope.launch {
+                try {
+                    val saved = source.checkQuiet(cur, pick, seconds)
+                    if (saved != pick) updateItem(cur.idx) { it.copy(answer = saved) }
+                } catch (e: ApiError) {
+                    if (e.code == "time_up" || e.code == "finished") { finishNow(); return@launch }
+                    if (e.code != "locked") {
+                        updateItem(cur.idx) { it.copy(answer = null, checked = false, reveal = null, stats = null, picked = pick) }
+                        _state.update { it.copy(message = e.message) }
+                    }
+                }
+            }
+            return
+        }
         _state.update { it.copy(busy = true, message = null) }
         viewModelScope.launch {
             try {

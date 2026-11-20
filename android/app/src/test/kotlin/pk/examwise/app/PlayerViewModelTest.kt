@@ -19,6 +19,8 @@ import pk.examwise.app.ui.player.PlayerSource
 import pk.examwise.app.ui.player.PlayerViewModel
 import pk.examwise.core.api.ApiError
 import pk.examwise.core.model.CheckAnswerResult
+import pk.examwise.core.model.Peek
+import kotlinx.coroutines.CompletableDeferred
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class PlayerViewModelTest {
@@ -56,6 +58,55 @@ class PlayerViewModelTest {
         assertEquals(42, cur.seconds)
         vm.choose(0) // locked once checked
         assertNull(vm.state.value.current!!.picked)
+    }
+
+    /* Practice reads the key ahead, so Submit shows the result before the server has locked the answer in. */
+    private class Ahead : PlayerSource {
+        override val offline = false
+        val peeked = mutableListOf<Int>()
+        val lock = CompletableDeferred<Int>()
+        var fullChecks = 0
+        override suspend fun load() = PlayerSource.Loaded("Chemistry", "tutor", (0 until 3).map { PItem(it, Samples.question.asked().copy(id = "Q$it")) }, null, 1_000_000)
+        override suspend fun peek(item: PItem): Peek { peeked += item.idx; return Peek(Samples.question, Samples.stats) }
+        override suspend fun checkQuiet(item: PItem, answer: Int, seconds: Int) = lock.await()
+        override suspend fun check(item: PItem, answer: Int, seconds: Int): CheckAnswerResult { fullChecks++; return CheckAnswerResult(answer, Samples.question) }
+        override suspend fun save(item: PItem) = Unit
+        override suspend fun bookmark(questionId: String, on: Boolean) = Unit
+        override suspend fun report(questionId: String, reason: String, details: String) = Unit
+        override suspend fun finish(): Done = Done.Review("t1")
+    }
+
+    @Test fun practiceShowsTheResultAtOnce() = runTest(dispatcher) {
+        val fake = Ahead()
+        val vm = PlayerViewModel(fake) { 1_000_000 }
+        runCurrent()
+        assertEquals(listOf(0, 1), fake.peeked)
+        vm.choose(1)
+        vm.check()
+        // Still waiting on the server, but the explanation is up.
+        val cur = vm.state.value.current!!
+        assertTrue(cur.checked)
+        assertEquals(1, cur.answer)
+        assertEquals(Samples.question, cur.reveal)
+        assertEquals(0, fake.fullChecks)
+        fake.lock.complete(1)
+        runCurrent()
+        assertTrue(vm.state.value.current!!.checked)
+    }
+
+    @Test fun practiceUnlocksAgainWhenTheSaveFails() = runTest(dispatcher) {
+        val fake = Ahead()
+        val vm = PlayerViewModel(fake) { 1_000_000 }
+        runCurrent()
+        vm.choose(2)
+        vm.check()
+        fake.lock.completeExceptionally(ApiError(409, "not_saved", "That answer didn't save. Please try again."))
+        runCurrent()
+        val cur = vm.state.value.current!!
+        assertTrue(!cur.checked)
+        assertNull(cur.reveal)
+        assertEquals(2, cur.picked)
+        assertEquals("That answer didn't save. Please try again.", vm.state.value.message)
     }
 
     @Test fun timedSavesEveryAnswerAndSubmits() = runTest(dispatcher) {

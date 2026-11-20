@@ -13,10 +13,13 @@ class DeviceKeyTest {
     }
 
     @Test fun labelKeepsOnlyServerSafeCharacters() {
-        assertEquals("Samsung SM-A155F", DeviceKey.label("samsung", "SM-A155F"))
-        assertEquals("Google Pixel 8", DeviceKey.label("Google", "Pixel 8"))
-        assertEquals("Xiaomi Redmi Note 13", DeviceKey.label("Xiaomi", "Xiaomi Redmi Note 13"))
-        assertEquals("OnePlus CPH2581 5G", DeviceKey.label("OnePlus", "CPH2581 (5G)"))
+        assertEquals("Android app on Samsung SM-A155F", DeviceKey.label("samsung", "SM-A155F"))
+        assertEquals("Android app on Google Pixel 8", DeviceKey.label("Google", "Pixel 8"))
+        assertEquals("Android app on Xiaomi Redmi Note 13", DeviceKey.label("Xiaomi", "Xiaomi Redmi Note 13"))
+        assertEquals("Android app on OnePlus CPH2581 5G", DeviceKey.label("OnePlus", "CPH2581 (5G)"))
+        assertEquals("Android app on Alis Pixel", DeviceKey.label("Google", "Pixel 8", "Ali's Pixel"))
+        assertEquals("Android app", DeviceKey.label("Google", "sdk_gphone64_arm64", "sdk_gphone64_arm64"))
+        assertEquals("Android app", DeviceKey.label("Google", "sdk_gphone64_arm64"))
     }
 
     @Test fun requestHashMatchesTheServer() {
