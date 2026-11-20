@@ -9,8 +9,8 @@ import { getSession } from "./session";
 import { checkCaptcha } from "./turnstile";
 import { requireRole } from "./admin";
 
-/* Support tickets. Anyone can write in from /contact; each message starts a ticket, emailed back to them with a private
-   link where they can read the conversation and add to it. Admins answer from /admin/tickets, and each answer is
+/* Support tickets. Anyone can write in from /contact; each message starts a ticket, with a private link (shown
+   after sending, and in every answer) where they can read the conversation and add to it. Admins answer from /admin/tickets, and each answer is
    emailed from the support address. Every message, both ways, is kept in ticket_messages. */
 
 type Ctx = { env: Env; request: Request; db: D1Database; ip: string; origin: string };
@@ -92,17 +92,9 @@ const publicRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
     const id = made!.id;
     await c.db.prepare("INSERT INTO ticket_messages (ticket_id, from_staff, author_id, body, created_at) VALUES (?, 0, ?, ?, ?)").bind(id, s?.user_id ?? null, text, now).run();
 
-    const link = ticketUrl(c.origin, token);
-    const ack = messageEmail(
-      `We got your message, ${name.split(" ")[0]}`,
-      `Thanks for writing to ${site.name}. Your ticket number is #${id}, and we usually reply within one working day.\n\nWhat you wrote:\n\n${text}`,
-      "See your ticket", link,
-      "You can add to the conversation from the link above at any time.",
-    );
-    await Promise.all([
-      sendMail(c.env, email, subjectOf(id), ack.text, ack.html, { from: support(c.env), replyTo: support(c.env).address }).catch((e) => console.error("ticket receipt failed", e)),
-      tellInbox(c, { id, name, email, topic }, text, true),
-    ]);
+    // No receipt email to the sender (it would cost a send for every ticket): the page shows the ticket link instead,
+    // and the first answer emails it to them.
+    await tellInbox(c, { id, name, email, topic }, text, true);
     return json({ ok: true, id, link: `/contact/ticket?t=${encodeURIComponent(token)}` });
   },
 

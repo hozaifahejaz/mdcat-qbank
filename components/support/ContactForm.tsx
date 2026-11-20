@@ -72,8 +72,8 @@ export default function ContactForm() {
     return (
       <div className="stack-16">
         <p className="note-good" role="status">
-          Message sent{sent.id ? <>, your ticket number is <b>#{sent.id}</b></> : ""}. We&apos;ve emailed a copy to <b>{sent.email}</b> and will reply there.
-          If you don&apos;t see it, check your spam folder.
+          Message sent{sent.id ? <>, your ticket number is <b>#{sent.id}</b></> : ""}. We&apos;ll reply to <b>{sent.email}</b>, usually within one working day.
+          {sent.link && " Save your ticket's link below to see the conversation or add to it."}
         </p>
         <div className="role-row">
           {sent.link && <a className="dpill dark small" href={sent.link}>See your ticket</a>}
