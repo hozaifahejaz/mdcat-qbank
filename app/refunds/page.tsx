@@ -5,7 +5,7 @@ import "@/app/auth.css";
 import "@/app/dashboard.css";
 import "@/app/app.css";
 
-export const metadata: Metadata = { title: `Refunds · ${site.name}`, alternates: { canonical: "/refunds" } };
+export const metadata: Metadata = { title: `Refunds · ${site.name}`, description: "When and how Markhor Prep refunds a Season Pass or a one-month pass.", alternates: { canonical: "/refunds" } };
 
 export default function Page() {
   return (

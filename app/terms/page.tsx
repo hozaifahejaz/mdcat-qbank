@@ -5,7 +5,7 @@ import "@/app/auth.css";
 import "@/app/dashboard.css";
 import "@/app/app.css";
 
-export const metadata: Metadata = { title: `Terms · ${site.name}`, alternates: { canonical: "/terms" } };
+export const metadata: Metadata = { title: `Terms · ${site.name}`, description: "The terms of using Markhor Prep: your account, passes, fair use and what happens when something goes wrong.", alternates: { canonical: "/terms" } };
 
 export default function Page() {
   return (

@@ -5,7 +5,7 @@ import "@/app/auth.css";
 import "@/app/dashboard.css";
 import "@/app/app.css";
 
-export const metadata: Metadata = { title: `Privacy · ${site.name}`, alternates: { canonical: "/privacy" } };
+export const metadata: Metadata = { title: `Privacy · ${site.name}`, description: "What Markhor Prep collects, why, how long it is kept and how to have your data deleted.", alternates: { canonical: "/privacy" } };
 
 export default function Page() {
   return (
