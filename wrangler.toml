@@ -16,4 +16,24 @@ migrations_dir = "migrations"
 # visitors from Pakistan arrive in Singapore, about 80 ms away per call. "smart" mode never moved the code (answers
 # said cf-placement: local-SIN), so the place is named outright: the Cloudflare site nearest AWS's Tokyo region.
 [placement]
-region = "aws:ap-northeast-1"
+region = "aws:eu-west-2"
+
+[[d1_databases]]
+binding = "T_EEUR"
+database_name = "latency-test-eeur"
+database_id = "e099f35d-03fa-4401-9af3-34b113afda59"
+
+[[d1_databases]]
+binding = "T_WEUR"
+database_name = "latency-test-weur"
+database_id = "b1aebe5f-a23d-41bf-9258-91573983f8a2"
+
+[[d1_databases]]
+binding = "T_APAC"
+database_name = "latency-test-apac"
+database_id = "bf339f30-6762-47c8-952a-c2f05acd8c40"
+
+[[d1_databases]]
+binding = "T_ENAM"
+database_name = "latency-test-enam"
+database_id = "f480c73f-6e4f-4667-9bfc-785eaddd5c19"
