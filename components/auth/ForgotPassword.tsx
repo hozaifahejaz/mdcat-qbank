@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { type AuthConfig, api, getAuthConfig } from "@/lib/api";
+import { type AuthConfig, api, getAuthConfig, lastAuthConfig } from "@/lib/api";
 import { friendlyError } from "@/lib/auth";
 import AuthFrame from "@/components/auth/AuthFrame";
 import NotConfigured from "@/components/auth/NotConfigured";
@@ -11,7 +11,7 @@ import Turnstile from "@/components/auth/Turnstile";
 /* Email a reset link. The reply is the same whether or not the email has an account, so this page
    can't be used to find out who has signed up. */
 export default function ForgotPassword() {
-  const [config, setConfig] = useState<AuthConfig | null | undefined>(undefined);
+  const [config, setConfig] = useState<AuthConfig | null>(site.signIn);
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState(false);
@@ -20,7 +20,7 @@ export default function ForgotPassword() {
   const [captchaReset, setCaptchaReset] = useState(0);
   const siteKey = config?.turnstileSiteKey ?? "";
 
-  useEffect(() => { getAuthConfig().then(setConfig); }, []);
+  useEffect(() => { setConfig(lastAuthConfig()); getAuthConfig().then(setConfig); }, []);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();

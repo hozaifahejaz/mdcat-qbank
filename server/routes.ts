@@ -7,7 +7,6 @@ import { type Provider, appleConfigured, clearStateCookie, finishOAuth, googleCo
 import { hit, overLimit, peeked, rateLimit, usedStmt } from "./ratelimit";
 import { type NewSession, type Session, appVersion, bearer, clearSessionCookie, createSession, forgetReusedSessions, getSession, isApp, newSession, note, requireSession, reuseSession, rotateSession } from "./session";
 import { adminRoutes } from "./admin";
-import { currentLook, lookRoutes } from "./look";
 import { visitRoutes } from "./visits";
 import { studyRoutes } from "./study";
 import { prefRoutes } from "./prefs";
@@ -129,9 +128,7 @@ const routes: Record<string, (c: Ctx) => Promise<Response>> = {
 
   "GET /api/auth/me": async ({ db, request }) => {
     const s = await getSession(db, request);
-    // The site's look rides along, so open app pages pick up a switch made in the admin panel (lib/look.ts).
-    const [user, look] = await Promise.all([s ? publicUserById(db, s.user_id) : null, currentLook(db)]);
-    return json({ user, look });
+    return json({ user: s ? await publicUserById(db, s.user_id) : null });
   },
 
   "PATCH /api/auth/me": async ({ db, request }) => {
@@ -439,7 +436,7 @@ async function answer(request: Request, env: Env, db: D1Database): Promise<Respo
       throw fail(426, "update_required", "Please update Markhor Prep to keep going.");
     }
     const key = `${request.method} ${url.pathname}`;
-    const route = routes[key] ?? adminRoutes[key] ?? lookRoutes[key] ?? visitRoutes[key] ?? studyRoutes[key] ?? prefRoutes[key] ?? insightRoutes[key] ?? appRoutes[key] ?? offlineRoutes[key] ?? supportRoutes[key];
+    const route = routes[key] ?? adminRoutes[key] ?? visitRoutes[key] ?? studyRoutes[key] ?? prefRoutes[key] ?? insightRoutes[key] ?? appRoutes[key] ?? offlineRoutes[key] ?? supportRoutes[key];
     if (!route) throw fail(404, "not_found", "Not found.");
     // Cookies are sent by the browser on their own, so a cookie request must come from our own pages. The app sends no
     // cookies, and marks its requests with headers (X-Client, Authorization) that another site's page can't add without

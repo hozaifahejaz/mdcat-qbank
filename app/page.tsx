@@ -1,18 +1,17 @@
 import type { Metadata } from "next";
 import Logo, { Markhor } from "@/components/Logo";
-import Ahead from "@/components/Ahead";
+import Ahead, { AheadReading } from "@/components/Ahead";
 import ThemeToggle from "@/components/ThemeToggle";
 import { BuildTest, MockLog, NoteTyping } from "@/components/landing/Live";
 import { ExamMark, SubjectMark } from "@/components/Marks";
 import { money, plans } from "@/lib/billing";
-import { PublicFooter } from "@/components/public/Shell";
+import { PublicFooter } from "@/components/public/Frame";
 import { abs, bankSize, faqData, ld, subjects as subjectPages } from "@/lib/public";
 import { prices, site } from "@/lib/site";
 import "./landing-new.css";
 
 /* The landing page in the new look: a calm, light product page with floating cards around a big two-tone headline,
-   live mini widgets, an orbit of subjects and a highlighted middle plan. The earlier look is kept at app/classic/ and
-   the admin panel picks which one / shows (functions/index.ts). */
+   live mini widgets, an orbit of subjects and a highlighted middle plan. */
 export const metadata: Metadata = { alternates: { canonical: "/" } };
 
 const buy = (plan: string) => `/signup?next=${encodeURIComponent(`/checkout?plan=${plan}`)}`;
@@ -287,6 +286,7 @@ export default function Home() {
       <script type="application/ld+json" dangerouslySetInnerHTML={ld(faqData(faqs))} />
       <script type="application/ld+json" dangerouslySetInnerHTML={ld(who)} />
       <Ahead />
+      <AheadReading />
     </div>
   );
 }

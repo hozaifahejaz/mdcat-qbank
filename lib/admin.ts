@@ -1,7 +1,6 @@
 /* The browser side of the admin API (server/admin.ts). The server checks every role; these calls just fetch. */
 import { api } from "@/lib/api";
 import type { QuestionFields, Role, StageId } from "@/lib/qc";
-import type { Look } from "@/lib/look";
 import type { TicketDetail, TicketRow } from "@/lib/support";
 
 export type AdminQuestion = Omit<QuestionFields, "answer"> & {
@@ -189,6 +188,3 @@ export const actionNames: Record<string, string> = {
   "ticket.delete": "Deleted a support ticket",
 };
 
-/* The public pages' look (lib/look.ts, server/look.ts). */
-export const getLook = () => api<{ look: Look }>("/api/admin/look").then((r) => r.look);
-export const setLook = (look: Look) => api<{ look: Look }>("/api/admin/look", { body: { look } }).then((r) => r.look);

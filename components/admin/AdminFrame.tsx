@@ -28,9 +28,6 @@ function adminNav(user: AccountUser): Nav {
         { href: "/admin/visitors", label: "Visitors", icon: "results" },
         { href: "/admin/reveal", label: "Reveal watermark", icon: "target", short: "Watermark" },
       ],
-    }, {
-      label: "Site",
-      links: [{ href: "/admin/site", label: "Site theme", icon: "spark", short: "Theme" }],
     }] : []),
   ];
   return { kind: "admin", home: "/admin", groups, tabs: admin ? ["/admin", "/admin/questions", "/admin/users", "/admin/visitors"] : ["/admin", "/admin/questions"] };

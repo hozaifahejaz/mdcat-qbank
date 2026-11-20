@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "scripts": {
     "dev": "next dev",
-    "build": "next build && node scripts/build-sw.mjs && node scripts/build-seo.mjs",
+    "build": "next build && node scripts/build-light.mjs && node scripts/build-sw.mjs && node scripts/build-seo.mjs",
     "start": "next start",
     "typecheck": "tsc --noEmit && tsc --noEmit -p functions",
     "preview": "npm run build && wrangler d1 migrations apply mdcat-qbank --local && wrangler pages dev",

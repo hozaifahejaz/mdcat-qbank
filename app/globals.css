@@ -35,10 +35,9 @@
   color-scheme: dark;
 }
 
-/* The new look (lib/look.ts): the landing page's light canvas, blue for the main action, softer corners. Every page
+/* The site's look: the landing page's light canvas, blue for the main action, softer corners. Every page
    follows it, since every page is built from these tokens; the shapes that change are in dashboard.css and app.css
-   under the same mark. The look is on <html data-look>, set by the server on public pages (server/look.ts) and before
-   first paint everywhere else (the script in app/layout.tsx). Admin > Site theme switches back to classic. */
+   under the same mark. The mark is on <html data-look="new"> (app/layout.tsx). */
 :root[data-look="new"] {
   --bg: #fafafa; --card: #ffffff; --ink: #0f1115; --muted: #6b6f76; --line: #ececec;
   --blue: #2f55f0; --blue-soft: #e9edff; --cta: #2f55f0; --on-cta: #ffffff;
