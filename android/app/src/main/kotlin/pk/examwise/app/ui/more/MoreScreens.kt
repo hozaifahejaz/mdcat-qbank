@@ -54,7 +54,6 @@ fun planName(u: User): String = when {
     u.plan == "bundle" -> "MDCAT + NUMS Bundle"
     else -> u.plan.replaceFirstChar { it.uppercase() }
 }
-}
 
 @Composable
 fun MoreScreen(container: AppContainer, nav: NavHostController) {
