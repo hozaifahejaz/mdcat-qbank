@@ -7,7 +7,7 @@ import { type Provider, appleConfigured, clearStateCookie, finishOAuth, googleCo
 import { hit, overLimit, peeked, rateLimit, usedStmt } from "./ratelimit";
 import { type NewSession, type Session, appVersion, bearer, clearSessionCookie, createSession, forgetReusedSessions, getSession, isApp, newSession, note, requireSession, reuseSession, rotateSession } from "./session";
 import { adminRoutes } from "./admin";
-import { lookRoutes } from "./look";
+import { currentLook, lookRoutes } from "./look";
 import { visitRoutes } from "./visits";
 import { studyRoutes } from "./study";
 import { prefRoutes } from "./prefs";
@@ -128,7 +128,9 @@ const routes: Record<string, (c: Ctx) => Promise<Response>> = {
 
   "GET /api/auth/me": async ({ db, request }) => {
     const s = await getSession(db, request);
-    return json({ user: s ? await publicUserById(db, s.user_id) : null });
+    // The site's look rides along, so open app pages pick up a switch made in the admin panel (lib/look.ts).
+    const [user, look] = await Promise.all([s ? publicUserById(db, s.user_id) : null, currentLook(db)]);
+    return json({ user, look });
   },
 
   "PATCH /api/auth/me": async ({ db, request }) => {

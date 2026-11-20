@@ -35,6 +35,22 @@
   color-scheme: dark;
 }
 
+/* The new look (lib/look.ts): the landing page's light canvas, blue for the main action, softer corners. Every page
+   follows it, since every page is built from these tokens; the shapes that change are in dashboard.css and app.css
+   under the same mark. The look is on <html data-look>, set by the server on public pages (server/look.ts) and before
+   first paint everywhere else (the script in app/layout.tsx). Admin > Site theme switches back to classic. */
+:root[data-look="new"] {
+  --bg: #fafafa; --card: #ffffff; --ink: #0f1115; --muted: #6b6f76; --line: #ececec;
+  --blue: #2f55f0; --blue-soft: #e9edff; --cta: #2f55f0; --on-cta: #ffffff;
+  --shadow: 0 1px 2px rgba(15,17,21,.04), 0 10px 30px -10px rgba(15,17,21,.12);
+  --r-lg: 22px; --r-md: 14px;
+}
+:root[data-look="new"][data-theme="dark"] {
+  --bg: #0c0d0f; --card: #16171a; --ink: #f2f2f0; --muted: #9a9ca3; --line: #26272c;
+  --blue: #5b78ff; --blue-soft: #1a2142; --cta: #4f6ef7; --on-cta: #ffffff;
+  --shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 30px -10px rgba(0,0,0,.7);
+}
+
 html { scroll-behavior: smooth; }
 body { margin: 0; background: var(--bg); color: var(--ink); font: 400 1rem/1.6 var(--font); -webkit-font-smoothing: antialiased; }
 /* No sideways scroll on phones, whatever a child does */

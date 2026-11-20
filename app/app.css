@@ -669,3 +669,14 @@ dl.kpis.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .look-thumb[data-l="classic"] i:nth-child(2) { width: 36%; background: #2445ff; }
 .look-thumb[data-l="classic"] i:nth-child(3) { width: 70%; height: 34px; border-radius: 12px; background: #fff; box-shadow: 0 6px 16px -8px rgba(17,18,20,.25); }
 .look-thumb[data-l="classic"] b { background: #111214; border-radius: 99px; }
+
+/* The new look (app/globals.css): selected chips and tabs and the Next button in blue, rounded rectangles for buttons. */
+[data-look="new"] .chip, [data-look="new"] .tab, [data-look="new"] .stab { border-radius: 10px; }
+[data-look="new"] .chip[aria-pressed="true"], [data-look="new"] .tab[aria-selected="true"], [data-look="new"] .tab[aria-current="page"], [data-look="new"] .stab[aria-pressed="true"] { background: var(--cta); color: var(--on-cta); }
+[data-look="new"] .pnavb.pnext, [data-look="new"] .pnavb.pnext:hover:not(:disabled) { background: var(--cta); color: var(--on-cta); }
+/* Pricing: the Season Pass in blue, as on the landing page */
+[data-look="new"] .price.best { background: linear-gradient(170deg, #3a5ff5, #2343e0) !important; color: #fff; box-shadow: 0 30px 60px -20px rgba(36,69,255,.55); }
+[data-look="new"] .price.best .muted, [data-look="new"] .price.best s, [data-look="new"] .price.best small { color: rgba(255,255,255,.8); }
+[data-look="new"] .price.best .ticks svg { color: #fff; }
+[data-look="new"] .price.best .dpill.dark { background: #fff; color: #1d3fd8; box-shadow: none; }
+[data-look="new"] .price.best .badge { background: rgba(255,255,255,.18); color: #fff; }
