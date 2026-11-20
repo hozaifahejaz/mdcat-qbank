@@ -136,7 +136,7 @@ export function Body({ data, name, free, coachHidden, onShowCoach, progress, onB
         </section>
       )}
 
-      {!hasQuestions(data) && <p className="demo"><i />Questions coming soon. Your stats fill in as you practise.</p>}
+      {!hasQuestions(data) && <p className="demo"><i />Questions coming soon. Your stats fill in as you practice.</p>}
 
       <section className="kpis" aria-label="Your numbers">
         <div className="kpi">
@@ -161,7 +161,7 @@ export function Body({ data, name, free, coachHidden, onShowCoach, progress, onB
         <div className="kpi">
           <h2><span className="kpi-ic" style={{ color: "var(--warn)" }}><Icon name="flame" /></span>Streak</h2>
           <strong>{data.streakDays}<small className="unit">{data.streakDays === 1 ? "day" : "days"}</small></strong>
-          <p className="muted">{data.streakDays > 0 ? "Days in a row with practice" : "Practise today to start one"}</p>
+          <p className="muted">{data.streakDays > 0 ? "Days in a row with practice" : "Practice today to start one"}</p>
         </div>
         )}
       </section>
@@ -255,7 +255,7 @@ function Coach({ data, onHide }: { data: Data; onHide: () => void }) {
         <button type="button" className="icon-btn" onClick={onHide} aria-label="Hide suggestions" title="Hide"><Icon name="panel" /></button>
       </div>
       <div className="coach-body">
-        {!tips.length && <p className="muted">Questions are being written and checked. Suggestions show here once you can practise.</p>}
+        {!tips.length && <p className="muted">Questions are being written and checked. Suggestions show here once you can practice.</p>}
         <ul className="coach-tips">
           {tips.map((t) => (
             <li key={t.label}><a href={t.href}><span style={{ color: t.tone }}><Icon name={t.icon} size={16} /></span><b>{t.label}</b><Icon name="chevron" size={16} /></a></li>
@@ -274,7 +274,7 @@ function CoachStrip({ data }: { data: Data }) {
       <div className="m-coach-h">
         <h2 id="mcoach-h"><span className="coach-dot"><Icon name="spark" size={14} /></span>Up next</h2>
       </div>
-      {!hasQuestions(data) && <p className="muted small">Questions are being written and checked. Suggestions show here once you can practise.</p>}
+      {!hasQuestions(data) && <p className="muted small">Questions are being written and checked. Suggestions show here once you can practice.</p>}
       <ul className="m-tips">
         {coachTips(data, mockReady).map((t) => (
           <li key={t.label}><a href={t.href}><span style={{ color: t.tone }}><Icon name={t.icon} size={18} /></span>{t.label}</a></li>

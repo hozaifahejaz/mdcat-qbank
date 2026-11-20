@@ -14,7 +14,7 @@ import { isStaff, roleNames } from "@/lib/qc";
 import { site, supportHref } from "@/lib/site";
 import { type AccountUser, getCurrentUser, lastUser } from "@/lib/user";
 
-/* The sidebar, grouped like the study loop: practise, then review what went wrong. */
+/* The sidebar, grouped like the study loop: practice, then review what went wrong. */
 /* short is the label under a phone tab, when the full one is too long. */
 /* phoneOnly links show in the phone tab bar but not in the sidebar, where the dashboard already covers them. */
 /* inAccount links are reached from the name at the foot of the sidebar; on phones they sit in the More sheet. */

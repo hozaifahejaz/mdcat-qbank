@@ -6,7 +6,7 @@ export const site = {
   supportEmail: "support@markhorprep.com",
   /* WhatsApp support in international form without the +, e.g. "923001234567". Empty hides the WhatsApp links. */
   whatsapp: "",
-  /* The bank is open: anyone can make a free account and practise the free set. */
+  /* The bank is open: anyone can make a free account and practice the free set. */
   open: true,
   /* False until a payment provider is connected. The public pages then say payments open soon, and checkout shows
      how paying will work without taking any money. */

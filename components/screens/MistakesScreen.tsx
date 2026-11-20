@@ -89,7 +89,7 @@ function Mistakes({ user }: { user: AccountUser }) {
                 )}
               </li>
             ))}
-            {!rows.length && <li><Empty title={tab === "wrong" ? "No mistakes yet" : "No bookmarks yet"} text={tab === "wrong" ? "Questions you get wrong land here so you can retry them." : "Bookmark a question while you practise to keep it here."} /></li>}
+            {!rows.length && <li><Empty title={tab === "wrong" ? "No mistakes yet" : "No bookmarks yet"} text={tab === "wrong" ? "Questions you get wrong land here so you can retry them." : "Bookmark a question while you practice to keep it here."} /></li>}
           </ul>
           {rows.length > limit && <button type="button" className="dpill light small more-btn" onClick={() => setLimit((n) => n + PAGE)}>Show {Math.min(PAGE, rows.length - limit)} more</button>}
         </Protected>

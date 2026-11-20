@@ -9,7 +9,7 @@ const font = Plus_Jakarta_Sans({ subsets: ["latin"], weight: ["400", "500", "600
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
   title: `MDCAT MCQs with full explanations · ${site.name}`,
-  description: "Practise PMDC MDCAT MCQs by chapter, with a full explanation on every question, full-length timed mocks and past papers. One Season Pass, no renewal.",
+  description: "Practice PMDC MDCAT MCQs by chapter, with a full explanation on every question, full-length timed mocks and past papers. One Season Pass, no renewal.",
   icons: { icon: "/favicon.svg", apple: "/icons/apple-touch-icon.png" },
   manifest: "/manifest.webmanifest",
   openGraph: {

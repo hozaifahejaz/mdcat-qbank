@@ -307,7 +307,7 @@ function Switch({ label, on, onChange }: { label: string; on: boolean; onChange:
   );
 }
 
-/* A subject's or chapter's progress chip: accuracy once practised, otherwise whether questions are there yet. */
+/* A subject's or chapter's progress chip: accuracy once practiced, otherwise whether questions are there yet. */
 function Score({ ready, n, total, answered, correct }: { ready: boolean; n: number; total: number; answered: number; correct: number }) {
   if (!ready) return <span className="acc none" aria-hidden="true">…</span>;
   if (!n) return <span className="acc none">{total ? "With a pass" : "Coming soon"}</span>;

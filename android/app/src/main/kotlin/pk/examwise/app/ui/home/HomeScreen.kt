@@ -111,7 +111,7 @@ fun HomeContent(
                     PillButton("Resume", { onResume(id) }, modifier = Modifier.fillMaxWidth())
                 }
             }
-            Text("Start practising", style = MaterialTheme.typography.headlineSmall, color = c.ink)
+            Text("Start practicing", style = MaterialTheme.typography.headlineSmall, color = c.ink)
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 data.banks.forEach { b -> BankButton(b) { onBank(b.id) } }
             }

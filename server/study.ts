@@ -10,7 +10,7 @@ import { hit, peeked, rateLimit, spend, usedOf, usedStmt } from "./ratelimit";
 import { note, requireSession } from "./session";
 import { effectivePlan } from "./users";
 
-/* The student side of the bank (/api/study/*): which questions a student can practise, their tests, answers,
+/* The student side of the bank (/api/study/*): which questions a student can practice, their tests, answers,
    bookmarks and reports, and the dashboard numbers. Questions only ever reach the browser from here, a test's worth
    at a time and only on the account's active device. Keys and explanations go out once an answer is checked or a
    timed test is submitted, never before. Questions come from the `served` view (migrations/0004_study.sql). */
