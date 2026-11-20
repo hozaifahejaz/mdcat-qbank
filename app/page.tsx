@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Logo, { Markhor } from "@/components/Logo";
-import Ahead from "@/components/Ahead";
+import Ahead, { AheadReading } from "@/components/Ahead";
 import ThemeToggle from "@/components/ThemeToggle";
 import { BuildTest, MockLog, NoteTyping } from "@/components/landing/Live";
 import { ExamMark, SubjectMark } from "@/components/Marks";
@@ -286,6 +286,7 @@ export default function Home() {
       <script type="application/ld+json" dangerouslySetInnerHTML={ld(faqData(faqs))} />
       <script type="application/ld+json" dangerouslySetInnerHTML={ld(who)} />
       <Ahead />
+      <AheadReading />
     </div>
   );
 }

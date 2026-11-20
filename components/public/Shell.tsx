@@ -1,4 +1,4 @@
-import { AheadReading } from "@/components/Ahead";
+import Ahead, { AheadReading } from "@/components/Ahead";
 import { PublicFooter, PublicNav } from "@/components/public/Frame";
 import { type Crumb, crumbData, ld } from "@/lib/public";
 
@@ -29,6 +29,7 @@ export default function Shell({ trail, children, cta = true, article = false, pl
         )}
       </main>
       <PublicFooter />
+      <Ahead />
       <AheadReading />
       {trail.length > 1 && <script type="application/ld+json" dangerouslySetInnerHTML={ld(crumbData(trail))} />}
     </div>

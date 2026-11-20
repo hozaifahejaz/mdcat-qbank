@@ -11,15 +11,9 @@ database_name = "mdcat-qbank"
 database_id = "f909e867-fab8-4834-a715-e9dc75b3a4af"
 migrations_dir = "migrations"
 
-[[d1_databases]]
-binding = "T_WEUR"
-database_name = "latency-test-weur"
-database_id = "aba1eecf-f1a2-4382-9df2-cd7dc246dee2"
-
-[[d1_databases]]
-binding = "T_EEUR"
-database_name = "latency-test-eeur"
-database_id = "466c1133-d44c-4ac4-998f-0f85676a2003"
-
+# Run the API next to the database rather than next to the visitor: each request makes a few database calls, and
+# each one is a round trip. The database's main copy is in Tokyo (D1 answers with served_by_colo = NRT), while
+# visitors from Pakistan arrive in Singapore, about 80 ms away per call. "smart" mode never moved the code (answers
+# said cf-placement: local-SIN), so the place is named outright: the Cloudflare site nearest AWS's Tokyo region.
 [placement]
-region = "aws:eu-central-1"
+region = "aws:ap-northeast-1"

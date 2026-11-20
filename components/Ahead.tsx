@@ -14,7 +14,7 @@ export default function Ahead() {
 
 /* The same for the study pages, which are plain pages: any public page a visitor points at or presses is built in
    the background, so moving from chapter to chapter, or on to sign-up, shows at once. */
-const reading = ["/", "/mdcat", "/mdcat/*", "/guides", "/guides/*", "/nums-mdcat", "/aku-test", "/about", "/pricing", "/signup", "/signin"];
+const reading = ["/mdcat", "/mdcat/*", "/guides", "/guides/*", "/nums-mdcat", "/aku-test", "/about"];
 const readingRules = { prerender: [{ where: { href_matches: reading }, eagerness: "moderate" }] };
 
 export function AheadReading() {
