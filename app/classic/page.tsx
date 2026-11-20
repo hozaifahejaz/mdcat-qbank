@@ -257,6 +257,7 @@ export default function ClassicHome() {
               <li><a href="/privacy">Privacy</a></li>
               <li><a href="/terms">Terms</a></li>
               <li><a href="/refunds">Refunds</a></li>
+              <li><a href="/contact">Contact</a></li>
             </ul>
           </div>
           <p className="legal">Not affiliated with PMDC, NUMS or any university. MDCAT is administered by PMDC. © {new Date().getFullYear()} {site.name}</p>

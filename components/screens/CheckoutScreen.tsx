@@ -131,7 +131,7 @@ function Checkout({ user }: { user: AccountUser }) {
             {plan.blurb}. Signed in as {user.phone ? formatPhone(user.phone) : user.email}.
           </p>
           <p className="muted small">
-            Questions? <a className="link" href={supportHref}>{site.whatsapp ? "Message us on WhatsApp" : site.supportEmail}</a>
+            Questions? <a className="link" href={supportHref}>{site.whatsapp ? "Message us on WhatsApp" : "Contact support"}</a>
           </p>
         </aside>
       </div>

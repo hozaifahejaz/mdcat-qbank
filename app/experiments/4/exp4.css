@@ -1,0 +1,25 @@
+/* Landing experiment 4 (app/experiments/4). Builds on the live landing's .x3 look; everything new is scoped under .x4.
+   Kept short on purpose: a hero, the tracks in one row, three points. */
+
+/* Hero */
+.x4-hero { padding: 120px 0 64px; text-align: center; }
+.x4-hero h1 { font-size: clamp(2.4rem, 1.2rem + 4.6vw, 4.6rem); font-weight: 800; letter-spacing: -0.045em; line-height: 1.02; }
+.x4-hero h1 span { display: block; color: var(--x-mute); }
+.x4-hero p { max-width: 520px; margin: 22px auto 32px; color: var(--x-mute); font-size: 1.125rem; line-height: 1.55; }
+.x4-proof { display: block; margin-top: 14px; color: var(--x-mute); font-size: .875rem; }
+@media (max-width: 520px) { .x4-hero { padding: 72px 0 48px; } }
+
+/* Tracks: one quiet row of names with their marks */
+.x4-band { padding-bottom: 72px; }
+.x4-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px 28px; }
+.x4-row li { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: .9375rem; }
+.x4-tile { width: 38px; height: 38px; border-radius: 11px; display: grid; place-items: center; background: color-mix(in srgb, currentColor 12%, var(--x-card)); }
+@media (max-width: 520px) { .x4-row { justify-content: flex-start; display: grid; grid-template-columns: 1fr 1fr; } }
+
+/* Three points */
+.x4-points { padding: 72px 0 120px; border-top: 1px solid var(--x-line); }
+.x4-points ul { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 40px; }
+.x4-points b { display: block; font-size: 1.125rem; letter-spacing: -0.01em; margin-bottom: 6px; }
+.x4-points li p { color: var(--x-mute); line-height: 1.55; }
+.x4 .x4-apps { margin-top: 56px; text-align: center; color: var(--x-mute); font-size: .9375rem; }
+@media (max-width: 760px) { .x4-points ul { grid-template-columns: minmax(0, 1fr); gap: 28px; } .x4-points { padding: 56px 0 80px; } }

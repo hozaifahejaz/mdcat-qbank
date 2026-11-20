@@ -4,6 +4,8 @@ import { site } from "@/lib/site";
 import "@/app/auth.css";
 import "@/app/dashboard.css";
 import "@/app/app.css";
+import "@/app/landing-new.css";
+import "@/app/public.css";
 
 export const metadata: Metadata = { title: `Terms · ${site.name}`, description: "The terms of using Markhor Prep: your account, passes, fair use and what happens when something goes wrong.", alternates: { canonical: "/terms" } };
 

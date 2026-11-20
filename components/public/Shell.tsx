@@ -27,6 +27,7 @@ export function PublicFooter({ home = "/" }: { home?: string }) {
             <li><a href="/guides">Guides</a></li>
             <li><a href="/pricing">Pricing</a></li>
             <li><a href="/about">About</a></li>
+            <li><a href="/contact">Contact</a></li>
             <li><a href="/signin">Sign in</a></li>
           </ul>
           <ul>
@@ -36,34 +37,43 @@ export function PublicFooter({ home = "/" }: { home?: string }) {
             <li><a href="/refunds">Refunds</a></li>
           </ul>
         </div>
-        <p className="legal">Not affiliated with PMDC, NUMS or any university. © {new Date().getFullYear()} {site.name}</p>
+        <p className="x3-fine">Not affiliated with PMDC, NUMS or any university. © {new Date().getFullYear()} {site.name}</p>
       </div>
     </footer>
   );
 }
 
-/* The frame of a public study page: the landing page's bar, a trail of links, the page, a closing invitation and
-   the shared footer. Plain HTML with no script of its own, so it reads the same to a person and a crawler. */
-export default function Shell({ trail, children, cta = true }: { trail: Crumb[]; children: React.ReactNode; cta?: boolean }) {
+/* The bar at the top of every public page. A visitor this browser knows is signed in gets a way back to the app. */
+export function PublicNav({ inside = false }: { inside?: boolean }) {
   return (
-    <div className="x3 pub" id="top">
-      <nav className="x3-nav">
-        <div className="x3-wrap x3-navin">
-          <Logo href="/" size={22} />
-          <ul>
-            <li><a href="/mdcat">MDCAT</a></li>
-            <li><a href="/nums-mdcat">NUMS</a></li>
-            <li><a href="/aku-test">AKU</a></li>
-            <li><a href="/guides">Guides</a></li>
-            <li><a href="/pricing">Pricing</a></li>
-          </ul>
-          <div className="x3-navend">
-            <ThemeToggle />
+    <nav className="x3-nav">
+      <div className="x3-wrap x3-navin">
+        <Logo href="/" size={22} />
+        <ul>
+          <li><a href="/mdcat">MDCAT</a></li>
+          <li><a href="/nums-mdcat">NUMS</a></li>
+          <li><a href="/aku-test">AKU</a></li>
+          <li><a href="/guides">Guides</a></li>
+          <li><a href="/pricing">Pricing</a></li>
+        </ul>
+        <div className="x3-navend">
+          <ThemeToggle />
+          {inside ? <a className="x3-btn x3-dark" href="/dashboard">Dashboard</a> : <>
             <a className="x3-signin" href="/signin">Sign in</a>
             <a className="x3-btn x3-dark" href="/signup">Start free</a>
-          </div>
+          </>}
         </div>
-      </nav>
+      </div>
+    </nav>
+  );
+}
+
+/* The frame of a public study page: the landing page's bar, a trail of links, the page, a closing invitation and
+   the shared footer. Plain HTML with no script of its own, so it reads the same to a person and a crawler. */
+export default function Shell({ trail, children, cta = true, article = false }: { trail: Crumb[]; children: React.ReactNode; cta?: boolean; article?: boolean }) {
+  return (
+    <div className={`x3 pub${article ? " pub-article" : ""}`} id="top">
+      <PublicNav />
       <main className="x3-wrap pub-main">
         {trail.length > 1 && (
           <nav className="crumbs" aria-label="You are here">

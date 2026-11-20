@@ -23,7 +23,7 @@ const about = {
 export default function About() {
   const trail = [{ name: "Home", href: "/" }, { name: "About", href: "/about" }];
   return (
-    <Shell trail={trail}>
+    <Shell trail={trail} article>
       <header className="pub-head">
         <h1>About {site.name}</h1>
         <p className="lede">{line}</p>

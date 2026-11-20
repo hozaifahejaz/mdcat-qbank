@@ -48,7 +48,7 @@ function Billing({ user }: { user: AccountUser }) {
         <section className="dcard panel" aria-labelledby="help-h">
           <h2 id="help-h" className="panel-title">Paid but not showing?</h2>
           <p className="muted">Wallet and card payments switch your plan on straight away. Bank transfers are checked by hand first.</p>
-          <a className="link" href={supportHref}>Message support with your receipt number</a>
+          <a className="link" href={site.whatsapp ? supportHref : "/contact?topic=payment"}>Message support with your receipt number</a>
         </section>
       </div>
 

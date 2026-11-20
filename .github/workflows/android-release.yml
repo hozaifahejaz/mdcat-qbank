@@ -27,12 +27,12 @@ jobs:
         run: |
           if [ -z "$KEYSTORE_BASE64" ]; then echo "The ANDROID_UPLOAD_KEYSTORE_BASE64 secret is missing." >&2; exit 1; fi
           echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/upload.jks"
-          echo "EXAMWISE_KEYSTORE=$RUNNER_TEMP/upload.jks" >> "$GITHUB_ENV"
+          echo "MARKHORPREP_KEYSTORE=$RUNNER_TEMP/upload.jks" >> "$GITHUB_ENV"
       - name: Test and bundle
         env:
-          EXAMWISE_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_PASSWORD }}
-          EXAMWISE_KEY_ALIAS: ${{ secrets.ANDROID_UPLOAD_KEY_ALIAS }}
-          EXAMWISE_KEY_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEY_PASSWORD }}
+          MARKHORPREP_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_PASSWORD }}
+          MARKHORPREP_KEY_ALIAS: ${{ secrets.ANDROID_UPLOAD_KEY_ALIAS }}
+          MARKHORPREP_KEY_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEY_PASSWORD }}
         run: ./gradlew :core:test :app:testReleaseUnitTest :app:bundleRelease :app:assembleRelease --stacktrace
       - uses: actions/upload-artifact@v4
         with:

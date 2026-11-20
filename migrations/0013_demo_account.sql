@@ -6,7 +6,7 @@ INSERT OR IGNORE INTO users (id, name, email, email_verified_at, password_hash, 
 VALUES (
   'c2c11c2a-d829-4214-8b9f-b6af7ec75e4f',
   'Demo Account',
-  'demo@examwise.pk',
+  'demo@markhorprep.com',
   1794200826202,
   'pbkdf2-sha256$100000$7f13b803aa463581420731f850dc2474$a34f2703baf7fa0f4124a9b00c68656fd494ac25abf198be00e818e8c36eadaa',
   'bundle',

@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { PubMark } from "@/components/public/Mark";
 import Shell from "@/components/public/Shell";
 import Question from "@/components/public/Question";
 import { mdcat, subjectBySlug, subjects } from "@/lib/public";
@@ -28,6 +29,7 @@ export default async function Subject({ params }: { params: Promise<{ subject: s
   return (
     <Shell trail={trail}>
       <header className="pub-head">
+        <PubMark subject={s.name} size="lg" />
         <h1>MDCAT {s.name} MCQs by chapter</h1>
         <p className="lede">
           {s.name} is <b>{s.count} of the {mdcat.mcqs} questions</b> in the PMDC MDCAT, which is {Math.round((s.count / mdcat.mcqs) * 100)}% of the paper.
@@ -57,7 +59,7 @@ export default async function Subject({ params }: { params: Promise<{ subject: s
       <h2>Other subjects</h2>
       <div className="pub-grid">
         {subjects.filter((x) => x.slug !== s.slug).map((x) => (
-          <a key={x.slug} className="tile" href={`/mdcat/${x.slug}`}><b>{x.name}</b><em>{x.count} in the paper</em></a>
+          <a key={x.slug} className="tile" href={`/mdcat/${x.slug}`}><span className="tl"><PubMark subject={x.name} size="sm" /><b>{x.name}</b></span><em>{x.count} in the paper</em></a>
         ))}
       </div>
     </Shell>

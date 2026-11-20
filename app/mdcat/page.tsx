@@ -1,3 +1,4 @@
+import { PubMark } from "@/components/public/Mark";
 import Shell from "@/components/public/Shell";
 import { bankSize, checkedText, data, faqData, ld, mdcat, subjects } from "@/lib/public";
 import { pageMeta } from "@/lib/public-meta";
@@ -23,6 +24,7 @@ export default function Mdcat() {
   return (
     <Shell trail={trail}>
       <header className="pub-head">
+        <PubMark exam="mdcat" size="lg" />
         <h1>MDCAT MCQs for {site.season}, chapter by chapter</h1>
         <p className="lede">
           {site.name} is an online question bank for the PMDC MDCAT with <b>{bankSize} original MCQs</b>, each with a full explanation.
@@ -45,8 +47,9 @@ export default function Mdcat() {
       <div className="pub-grid">
         {subjects.map((s) => (
           <a key={s.slug} className="tile big" href={`/mdcat/${s.slug}`}>
+            <PubMark subject={s.name} />
             <b>{s.name} MCQs</b>
-            <small>{s.count} of {mdcat.mcqs} questions in the paper · {s.chapters.length} chapters · {s.total.toLocaleString("en-GB")} practice MCQs</small>
+            <small>{s.count} of {mdcat.mcqs} questions in the paper<br />{s.chapters.length} chapters · {s.total.toLocaleString("en-GB")} practice MCQs</small>
           </a>
         ))}
       </div>

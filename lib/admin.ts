@@ -2,6 +2,7 @@
 import { api } from "@/lib/api";
 import type { QuestionFields, Role, StageId } from "@/lib/qc";
 import type { Look } from "@/lib/look";
+import type { TicketDetail, TicketRow } from "@/lib/support";
 
 export type AdminQuestion = Omit<QuestionFields, "answer"> & {
   id: string;
@@ -36,6 +37,8 @@ export type Overview = {
   waitingBlind: number;
   openReports: number;
   waitlist: number;
+  /* Open support tickets whose last message is from the person (admins only). */
+  tickets?: number;
   users: { total: number; newThisWeek: number; staff: number; paid: Record<string, number> } | null;
   visits: { today: number; week: number; now: number } | null;
   activity: LogEntry[];
@@ -134,6 +137,15 @@ export type Report = {
 };
 export const listReports = (status: "open" | "closed") => keep(`reports:${status}`, api<{ reports: Report[] }>(`/api/admin/reports?status=${status}`).then((r) => r.reports));
 export const resolveReports = (questionId: string, status: "fixed" | "dismissed", note: string) => api("/api/admin/reports/resolve", { body: { questionId, status, note } });
+export type TicketView = "waiting" | "open" | "closed" | "all";
+export type TicketList = { tickets: TicketRow[]; counts: Record<TicketView, number> };
+export const ticketsKey = (view: TicketView, q: string) => `tickets:${view}|${q}`;
+export const listTickets = (view: TicketView, q: string) => keep(ticketsKey(view, q), api<TicketList>(`/api/admin/tickets?view=${view}&q=${encodeURIComponent(q)}`));
+export const getTicket = (id: number) => keep(`ticket:${id}`, api<TicketDetail>(`/api/admin/tickets/one?id=${id}`));
+export const replyTicket = (id: number, message: string, close: boolean) => api("/api/admin/tickets/reply", { body: { id, message, close } });
+export const setTicketStatus = (id: number, status: "open" | "closed") => api("/api/admin/tickets/status", { body: { id, status } });
+export const deleteTicket = (id: number) => api("/api/admin/tickets/delete", { body: { id } });
+
 export type WaitlistEntry = { contact: string; kind: "email" | "phone"; created_at: number };
 export const getWaitlist = () => keep("waitlist", api<{ waitlist: WaitlistEntry[] }>("/api/admin/waitlist").then((r) => r.waitlist));
 
@@ -169,6 +181,11 @@ export const actionNames: Record<string, string> = {
   "user.plan": "Plan changed",
   "user.reset_devices": "Devices reset",
   "user.signout": "Signed out everywhere",
+  "ticket.reply": "Answered a support ticket",
+  "ticket.reply_close": "Answered and closed a support ticket",
+  "ticket.close": "Closed a support ticket",
+  "ticket.reopen": "Reopened a support ticket",
+  "ticket.delete": "Deleted a support ticket",
 };
 
 /* The public pages' look (lib/look.ts, server/look.ts). */

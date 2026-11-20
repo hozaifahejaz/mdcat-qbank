@@ -7,8 +7,8 @@ import Empty from "@/components/app/Empty";
 import { isStaff } from "@/lib/qc";
 import { type AccountUser, getCurrentUser, lastUser } from "@/lib/user";
 
-/* The admin panel in the same frame as the student app, with its own sidebar. Users, the waitlist, visitors and the
-   watermark tool are admins only, so writers and reviewers don't see them. */
+/* The admin panel in the same frame as the student app, with its own sidebar. Users, support tickets, the waitlist,
+   visitors and the watermark tool are admins only, so writers and reviewers don't see them. */
 function adminNav(user: AccountUser): Nav {
   const admin = user.role === "admin";
   const reviewer = admin || user.role === "reviewer";
@@ -23,6 +23,7 @@ function adminNav(user: AccountUser): Nav {
       label: "Accounts",
       links: [
         { href: "/admin/users", label: "Users and plans", icon: "account", short: "Users" },
+        { href: "/admin/tickets", label: "Support tickets", icon: "help", short: "Tickets" },
         { href: "/admin/waitlist", label: "Waitlist", icon: "bell" },
         { href: "/admin/visitors", label: "Visitors", icon: "results" },
         { href: "/admin/reveal", label: "Reveal watermark", icon: "target", short: "Watermark" },

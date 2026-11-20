@@ -372,7 +372,8 @@ ul.legend .cell.flag::after { top: 4px; right: 4px; width: 8px; height: 8px; }
 .price-n b { font-size: 2.5rem; font-weight: 800; letter-spacing: -0.05em; line-height: 1; }
 .price-n s { font-size: 1rem; }
 .ticks { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; align-content: start; }
-.ticks li { display: flex; gap: 10px; align-items: center; font-size: .9375rem; }
+.ticks li { display: flex; gap: 10px; align-items: flex-start; font-size: .9375rem; line-height: 1.5; }
+.ticks li svg { flex: none; margin-top: 3px; }
 .ticks svg { color: var(--good); }
 .pay-strip { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; }
 
@@ -593,9 +594,30 @@ dl.kpis.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .legal { max-width: 760px; margin: 24px auto 64px; padding: clamp(22px, 4vw, 44px); display: grid; gap: 12px; line-height: 1.65; }
 .legal h1 { font-size: clamp(2rem, 1.5rem + 2vw, 2.75rem); font-weight: 800; letter-spacing: -0.04em; line-height: 1.1; }
 .legal h2 { font-size: 1.1875rem; font-weight: 700; margin-top: 14px; }
-.legal ul { margin: 0; padding-left: 1.25em; display: grid; gap: 6px; }
+.legal ul { margin: 0; padding-left: 1.25em; display: grid; gap: 6px; list-style: disc; }
+.legal li::marker { color: var(--muted); }
 .legal a { text-decoration: underline; text-underline-offset: 2px; }
 .legal hr { border: 0; border-top: 1px solid var(--line); margin: 12px 0 0; }
+
+/* Contact page, ticket page and the admin ticket view */
+.support .lede-sm { color: var(--muted); font-size: 1.0625rem; margin: 0 0 8px; }
+.support .stack-16 { display: grid; gap: 16px; }
+.support-form { display: grid; gap: 14px; }
+.support .note-good, .support .note-bad { line-height: 1.5; }
+.hp { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
+.support-mine { display: grid; gap: 8px; margin-top: 8px; }
+.support-mine ul { list-style: none !important; padding: 0 !important; gap: 0 !important; }
+.support-mine li { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 10px 0; border-top: 1px solid var(--line); }
+.tk-thread { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.tk-msg { padding: 12px 14px; border-radius: 14px; background: var(--bg); display: grid; gap: 4px; margin-right: 12%; }
+.tk-msg.staff { background: var(--blue-soft); margin-right: 0; margin-left: 12%; }
+.tk-msg p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.55; font-size: .9375rem; }
+.tk-meta { display: flex; justify-content: space-between; gap: 10px; font-size: .8125rem; color: var(--muted); }
+.tk-meta b { color: var(--ink); }
+.tk-who { display: grid; gap: 2px; padding-bottom: 14px; }
+.tk-who > * { overflow-wrap: anywhere; }
+.tk-preview { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+.legal.support ul.tk-thread { list-style: none; padding: 0; }
 
 
 /* Wide things (the users table, the QC stepper) scroll inside their card instead of stretching it past a phone's screen. */
@@ -680,3 +702,11 @@ dl.kpis.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 [data-look="new"] .price.best .ticks svg { color: #fff; }
 [data-look="new"] .price.best .dpill.dark { background: #fff; color: #1d3fd8; box-shadow: none; }
 [data-look="new"] .price.best .badge { background: rgba(255,255,255,.18); color: #fff; }
+
+/* Accounts list on a phone: the name and email keep their words whole (a long email ends in "…"; the full one is in
+   the account's details) */
+@media (max-width: 640px) {
+  .utable td:first-child { min-width: 36vw; }
+  .utable .badge { white-space: normal; height: auto; display: inline-block; line-height: 1.35; padding-block: 3px; border-radius: 8px; }
+  .utable .link-row b, .utable .link-row .small { display: block; max-width: 36vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}

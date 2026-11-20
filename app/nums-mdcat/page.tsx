@@ -1,3 +1,4 @@
+import { PubMark } from "@/components/public/Mark";
 import Shell from "@/components/public/Shell";
 import { bankById } from "@/lib/banks";
 import { checkedText, data, faqData, ld, mdcat, nums, round } from "@/lib/public";
@@ -25,6 +26,7 @@ export default function Nums() {
   return (
     <Shell trail={trail}>
       <header className="pub-head">
+        <PubMark exam="nums" size="lg" />
         <h1>NUMS MDCAT MCQs, sorted by the NUMS syllabus</h1>
         <p className="lede">
           The NUMS MDCAT is the entry test of the National University of Medical Sciences. Its subject paper has <b>{nums.mcqs} MCQs in {nums.time}</b> with no negative marking.
@@ -59,8 +61,8 @@ export default function Nums() {
 
       {bank.subjects.map((s) => (
         <section key={s.name}>
-          <h2>NUMS {s.name}: {s.chapters.length} {s.chapters.length === 1 ? "unit" : "units"}</h2>
-          <div className="pub-grid">{s.chapters.map((c) => <div key={c} className="tile"><b>{c}</b></div>)}</div>
+          <h2 className="with-mark"><PubMark subject={s.name} size="sm" />NUMS {s.name}: {s.chapters.length} {s.chapters.length === 1 ? "unit" : "units"}</h2>
+          <ol className="pub-grid">{s.chapters.map((c, i) => <li key={c} className="tile plain"><b><span className="num">{i + 1}.</span>{c}</b></li>)}</ol>
         </section>
       ))}
 

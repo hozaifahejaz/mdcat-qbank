@@ -637,6 +637,7 @@ const overviewRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
       c.db.prepare("SELECT count(*) AS n FROM waitlist"),
       c.db.prepare(`SELECT e.user_id AS id, u.name, u.email, u.phone, e.kind, e.detail, max(e.created_at) AS at
         FROM security_events e JOIN users u ON u.id = e.user_id WHERE e.created_at > ? GROUP BY e.user_id, e.kind ORDER BY at DESC LIMIT 20`).bind(now - 7 * DAY),
+      c.db.prepare("SELECT count(*) AS n FROM tickets WHERE status = 'open' AND last_from = 'person'"),
     ]);
     const [res, more, visits, growth] = await Promise.all([base, extra, isAdmin ? visitSummary(c.db) : null, isAdmin ? keptActivity(c.db).catch(() => null) : null]);
     const n = (i: number) => (res[i]!.results[0] as { n: number } | undefined)?.n ?? 0;
@@ -648,6 +649,7 @@ const overviewRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
     let waitlist = 0;
     let activity: unknown[] = [];
     let watch: unknown[] = [];
+    let tickets = 0;
     if (more) {
       const t = more[0]!.results[0] as { total: number; week: number | null; staff: number | null };
       users = {
@@ -657,8 +659,9 @@ const overviewRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
       activity = more[2]!.results;
       waitlist = (more[3]!.results[0] as { n: number } | undefined)?.n ?? 0;
       watch = more[4]!.results;
+      tickets = (more[5]!.results[0] as { n: number } | undefined)?.n ?? 0;
     }
-    return json({ byStage, liveBySubject, sentBackToMe: n(2), waitingBlind: n(3), openReports: me.role === "writer" ? 0 : n(4), waitlist, users, visits, activity, watch, growth: growth?.days ?? null });
+    return json({ byStage, liveBySubject, sentBackToMe: n(2), waitingBlind: n(3), openReports: me.role === "writer" ? 0 : n(4), waitlist, tickets, users, visits, activity, watch, growth: growth?.days ?? null });
   },
 };
 

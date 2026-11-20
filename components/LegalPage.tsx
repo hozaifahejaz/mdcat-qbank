@@ -1,12 +1,14 @@
 import Logo from "@/components/Logo";
+import { PublicFooter, PublicNav } from "@/components/public/Shell";
 import ThemeToggle from "@/components/ThemeToggle";
 import { site } from "@/lib/site";
 
-/* The frame for /terms, /privacy and /refunds: the public header, a readable column, and links between the three. */
+/* The frame for /terms, /privacy and /refunds: the public bar and footer (the classic look keeps its own header), a readable column, and links between the three. */
 export default function LegalPage({ title, updated, children }: { title: string; updated: string; children: React.ReactNode }) {
   return (
     <div className="dash">
-      <header className="dnav-wrap">
+      <div className="x3 x3-part look-new"><PublicNav /></div>
+      <header className="dnav-wrap look-classic">
         <div className="dwrap">
           <div className="dnav">
             <Logo href="/" />
@@ -29,6 +31,7 @@ export default function LegalPage({ title, updated, children }: { title: string;
           </p>
         </article>
       </main>
+      <div className="x3 x3-part look-new"><PublicFooter /></div>
     </div>
   );
 }

@@ -1,0 +1,28 @@
+package com.markhorprep.core
+
+import org.junit.Assert.assertEquals
+import org.junit.Test
+import com.markhorprep.core.watermark.Watermark
+
+/* Vectors made by running lib/watermark.ts (shortId, then encode) for each ID. The app must draw the same grid. */
+class WatermarkTest {
+    private val vectors = listOf(
+        "3f2a9c1b-0000-4000-8000-000000000000" to "1110100110100111111000101010100011100000111011110010011000110100001111111001010100100111001000110110",
+        "a1b2c3d4-e5f6" to "1110100110110100001100110010110000011110110100010010000011000011101000101101100100110000111110101000",
+        "FFFFFFFF" to "1110100110111111111101111111110111111111111111000111101000010111111111111111111101111111111111111110",
+        "00000000" to "1110100110100000000000000000000000000000100000100010100110000000000000100000000000000000001000000000",
+        "7e57ab1e-dead-beef" to "1110100110101111110001010111100101011000111110100011101110010010011111110010101101101010111000111100",
+        "12" to "1110100110100010010000000000000000000000100000011110010000010111000100110000000000000000001000000000",
+    )
+
+    @Test fun matchesTheWebsiteCellForCell() {
+        for ((id, cells) in vectors) {
+            assertEquals(id, cells, Watermark.encode(Watermark.shortId(id)).joinToString(""))
+        }
+    }
+
+    @Test fun shortIdPadsAndUppercases() {
+        assertEquals("12000000", Watermark.shortId("12"))
+        assertEquals("3F2A9C1B", Watermark.shortId("3f2a9c1b-0000"))
+    }
+}
