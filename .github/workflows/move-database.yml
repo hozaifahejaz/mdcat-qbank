@@ -30,7 +30,7 @@ jobs:
           [[d1_databases]]
           binding = "NEW"
           database_name = "mdcat-qbank-eu"
-          database_id = "787e5d79-1435-4a72-a374-2ce59f57fdaf"
+          database_id = "3e787d4c-b8ab-4326-93b1-e05f151c8d4a"
           T
       - name: Export from Tokyo
         run: |

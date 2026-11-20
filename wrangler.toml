@@ -7,13 +7,16 @@ compatibility_date = "2026-10-01"
 
 [[d1_databases]]
 binding = "DB"
-database_name = "mdcat-qbank"
-database_id = "f909e867-fab8-4834-a715-e9dc75b3a4af"
+database_name = "mdcat-qbank-eu"
+database_id = "3e787d4c-b8ab-4326-93b1-e05f151c8d4a"
 migrations_dir = "migrations"
 
 # Run the API next to the database rather than next to the visitor: each request makes a few database calls, and
-# each one is a round trip. The database's main copy is in Tokyo (D1 answers with served_by_colo = NRT), while
-# visitors from Pakistan arrive in Singapore, about 80 ms away per call. "smart" mode never moved the code (answers
-# said cf-placement: local-SIN), so the place is named outright: the Cloudflare site nearest AWS's Tokyo region.
+# each one is a round trip, so the code and the database must sit together. Where they sit is chosen by how fast
+# Pakistan reaches it. Measured from Cloudflare's Karachi site in November 2026, per API request: Frankfurt about
+# 190 ms, US East 365, Hong Kong 420, Tokyo 450, London 475. So the database (mdcat-qbank-eu, Eastern Europe hint,
+# served from Frankfurt) and the code are both in Frankfurt. The earlier database in Tokyo (mdcat-qbank,
+# f909e867-fab8-4834-a715-e9dc75b3a4af) is kept untouched as a fallback. "smart" mode never moved the code, so the
+# place is named outright: the Cloudflare site nearest AWS's Frankfurt region.
 [placement]
-region = "aws:ap-northeast-1"
+region = "aws:eu-central-1"

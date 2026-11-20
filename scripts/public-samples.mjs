@@ -1,6 +1,6 @@
 /* Writes lib/public-data.json: the questions shown on the public study pages (/mdcat/...), and the counts beside them.
 
-   Run it after the bank changes:  npx wrangler d1 migrations apply mdcat-qbank --local && node scripts/public-samples.mjs
+   Run it after the bank changes:  npx wrangler d1 migrations apply mdcat-qbank-eu --local && node scripts/public-samples.mjs
    It reads the local copy of the database that wrangler keeps, so what it writes is what the migrations hold. The
    file is committed, which keeps the site build free of any database.
 

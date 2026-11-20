@@ -34,7 +34,7 @@ Rate limits are stored in D1. Phone codes are limited to 1 a minute and 5 an hou
 
 ## What's already done
 
-- I created the D1 database **`mdcat-qbank`** in your Cloudflare account (Asia-Pacific) and created its tables. `wrangler.toml` binds it to the Pages project as `DB`.
+- The D1 database is **`mdcat-qbank-eu`** in your Cloudflare account (served from Frankfurt; the earlier `mdcat-qbank` in Tokyo is kept as a fallback). `wrangler.toml` binds it to the Pages project as `DB`.
 - On every push to `main`, the deploy workflow applies any new files in `migrations/`.
 
 ## What you need to set up
