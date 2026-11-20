@@ -137,3 +137,68 @@ form.stack, .stack { display: grid; gap: 14px; }
 .gate-body, .gate-in { display: contents; }
 html:not([data-in]) .gate-body { display: none; }
 html[data-in] .gate-wait { display: none; }
+
+/* The new look (lib/look.ts): the landing page's light canvas, blue buttons, softer rectangles and floating product
+   cards. The page is marked <html data-look="new"> by functions/signin.ts and friends; without the mark it stays as above. */
+.side-new { display: none; }
+html[data-look="new"] .auth {
+  --bg: #fafafa; --card: #ffffff; --ink: #0f1115; --muted: #6b6f76; --line: #ececec; --blue: #2f55f0; --blue-soft: #e9edff;
+  --n-faint: #a1a3a8; --n-note: #fbe9a0;
+  --shadow: 0 1px 2px rgba(15,17,21,.04), 0 10px 30px -10px rgba(15,17,21,.12);
+  --n-shadow-lg: 0 2px 4px rgba(15,17,21,.04), 0 24px 48px -16px rgba(15,17,21,.18);
+  background: radial-gradient(70% 45% at 50% 0%, #fff, transparent 70%), var(--bg);
+  color: var(--ink);
+}
+:root[data-theme="dark"][data-look="new"] .auth {
+  --bg: #0c0d0f; --card: #16171a; --ink: #f2f2f0; --muted: #9a9ca3; --line: #26272c; --blue: #5b78ff; --blue-soft: #1a2142;
+  --n-faint: #55585f; --n-note: #4a4120;
+  --shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 30px -10px rgba(0,0,0,.7);
+  --n-shadow-lg: 0 2px 4px rgba(0,0,0,.4), 0 24px 48px -16px rgba(0,0,0,.8);
+  background: radial-gradient(70% 45% at 50% 0%, #16171a, transparent 70%), var(--bg);
+}
+html[data-look="new"] body { background: #fafafa; }
+:root[data-theme="dark"][data-look="new"] body { background: #0c0d0f; }
+html[data-look="new"] .auth-top { padding-block: 16px; border-bottom: 1px solid color-mix(in srgb, var(--line) 80%, transparent); max-width: none; padding-inline: max(24px, calc((100% - 1080px) / 2 + 24px)); }
+html[data-look="new"] .auth-top .end a { color: var(--ink); }
+html[data-look="new"] .auth-top .end .hint { color: var(--muted); }
+html[data-look="new"] .theme-toggle { border-radius: 10px; box-shadow: none; background: transparent; color: var(--muted); }
+html[data-look="new"] .theme-toggle:hover { color: var(--ink); background: var(--card); transform: none; }
+html[data-look="new"] .auth-main { padding-block: 40px 48px; gap: 28px; }
+html[data-look="new"] .card { border-radius: 22px; box-shadow: var(--n-shadow-lg); }
+html[data-look="new"] .auth-card h1 { letter-spacing: -0.045em; }
+html[data-look="new"] .pill { border-radius: 12px; }
+html[data-look="new"] .pill-dark { background: var(--blue); color: #fff; box-shadow: 0 8px 20px -8px color-mix(in srgb, var(--blue) 70%, transparent); }
+html[data-look="new"] .pill-light { box-shadow: inset 0 0 0 1px var(--line), 0 1px 2px rgba(15,17,21,.04); }
+html[data-look="new"] .tabs { border-radius: 12px; box-shadow: inset 0 0 0 1px var(--line); }
+html[data-look="new"] .tabs button { border-radius: 9px; }
+html[data-look="new"] .input, html[data-look="new"] .phone-in { border-radius: 12px; background: var(--card); box-shadow: inset 0 0 0 1px var(--line); }
+html[data-look="new"] .phone-in .input { box-shadow: none; }
+html[data-look="new"] .input:hover, html[data-look="new"] .phone-in:hover { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--muted) 45%, var(--line)); }
+html[data-look="new"] .input:focus, html[data-look="new"] .phone-in:focus-within { box-shadow: inset 0 0 0 1.5px var(--blue), 0 0 0 4px color-mix(in srgb, var(--blue) 14%, transparent); }
+html[data-look="new"] .phone-in .input:focus { box-shadow: none; }
+html[data-look="new"] .note { border-radius: 12px; }
+html[data-look="new"] .auth-card .switch a:hover, html[data-look="new"] .auth-top .end a:hover { color: var(--blue); }
+
+/* Side panel: the headline and points over a faint grid, with product cards floating beside them */
+html[data-look="new"] .auth-side { position: relative; overflow: hidden; background: var(--card); box-shadow: var(--n-shadow-lg); border-radius: 22px; align-content: start; padding: 44px 40px 300px; }
+html[data-look="new"] .auth-side::before { content: ""; position: absolute; inset: 0; pointer-events: none; background-image: linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px); background-size: 40px 40px; -webkit-mask-image: radial-gradient(80% 60% at 60% 85%, #000 20%, transparent 80%); mask-image: radial-gradient(80% 60% at 60% 85%, #000 20%, transparent 80%); }
+html[data-look="new"] .auth-side > * { position: relative; }
+html[data-look="new"] .auth-side h2 { letter-spacing: -0.045em; }
+html[data-look="new"] .auth-side li::before { color: var(--blue); }
+html[data-look="new"] .auth-side li { color: var(--muted); }
+html[data-look="new"] .devices-sketch { display: none; }
+html[data-look="new"] .side-new { display: block; position: absolute; left: 0; right: 0; bottom: 0; height: 290px; }
+.sn-note, .sn-card { position: absolute; animation: sn-bob 6s ease-in-out infinite alternate; }
+@keyframes sn-bob { from { translate: 0 0; } to { translate: 0 -10px; } }
+.sn-note { left: 36px; top: 40px; width: 150px; height: 140px; padding: 30px 16px; box-sizing: border-box; border-radius: 4px; background: var(--n-note); rotate: -4deg; font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: .9375rem; line-height: 1.5; box-shadow: var(--n-shadow-lg); animation-duration: 7s; }
+.sn-note::before { content: ""; position: absolute; top: 10px; left: 50%; width: 10px; height: 10px; margin-left: -5px; border-radius: 50%; background: #e5484d; }
+.sn-card { background: var(--card); border-radius: 16px; box-shadow: var(--n-shadow-lg); padding: 16px 18px; display: grid; gap: 6px; font-size: .8125rem; }
+.sn-card b { font-size: .875rem; }
+.sn-card small { color: var(--muted); }
+.sn-today { right: 32px; top: 22px; width: 220px; animation-delay: -3s; }
+.sn-today span { display: flex; justify-content: space-between; margin-top: 4px; }
+.sn-today em { font-style: normal; font-weight: 600; }
+.sn-today u { display: block; height: 5px; border-radius: 9px; background: var(--line); overflow: hidden; }
+.sn-today s { display: block; height: 100%; border-radius: 9px; background: var(--blue); }
+.sn-mock { left: 46%; top: 190px; width: 180px; rotate: 2deg; animation-delay: -1.5s; }
+@media (prefers-reduced-motion: reduce) { .sn-note, .sn-card { animation: none; } }

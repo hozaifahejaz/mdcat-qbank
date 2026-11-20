@@ -1,4 +1,4 @@
-/* Experiment 3. Everything is scoped under .x3 so nothing leaks into the live pages. Motion is transform-only
+/* The landing page in the new look (app/page.tsx). Everything is scoped under .x3 so nothing leaks into the live pages. Motion is transform-only
    (no opacity fades) and stops for people who ask for reduced motion. */
 .x3 {
   --x-bg: #fafafa;
