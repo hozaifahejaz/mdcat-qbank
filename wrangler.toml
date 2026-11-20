@@ -16,7 +16,7 @@ migrations_dir = "migrations"
 # visitors from Pakistan arrive in Singapore, about 80 ms away per call. "smart" mode never moved the code (answers
 # said cf-placement: local-SIN), so the place is named outright: the Cloudflare site nearest AWS's Tokyo region.
 [placement]
-region = "aws:eu-west-2"
+region = "aws:eu-central-1"
 
 [[d1_databases]]
 binding = "T_EEUR"
