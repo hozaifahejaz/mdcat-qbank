@@ -5,6 +5,7 @@ import { seen } from "@/lib/cache";
 import AppShell, { PageHead } from "@/components/app/AppShell";
 import Icon from "@/components/app/Icon";
 import { type Bank, bankById, banks, toneOf } from "@/lib/banks";
+import { ExamMark, SubjectMark } from "@/components/Marks";
 import { band, pct } from "@/lib/format";
 import { type Catalog, type ChapterPool, type Filter, type Pool, doneCount, filters, getPool, openCount, poolMatch, sumPools, testHref, totalCount, warmCatalog, warmPools, watchCatalog, watchPools } from "@/lib/study";
 
@@ -61,7 +62,7 @@ export function BankButtons() {
       {banks.map((b) => (
         <li key={b.id}>
           <a className={`bank-btn bank-${b.id}`} href={`/practice?bank=${b.id}`}>
-            <span className="bank-mark" aria-hidden="true">{b.short}</span>
+            <span className="bank-mark" aria-hidden="true"><ExamMark id={b.id} size={26} /></span>
             <span className="bank-txt"><b>{b.name}</b><span>{b.blurb}</span></span>
             <span className="bank-go" aria-hidden="true"><Icon name="chevron" size={18} /></span>
           </a>
@@ -181,7 +182,7 @@ function BankPractice({ bank, onBank }: { bank: Bank; onBank: (b: Bank) => void 
       <nav className="ptabs" aria-label="Question bank">
         {banks.map((b) => (
           <a key={b.id} className="tab" href={`/practice?bank=${b.id}`} aria-current={b.id === bank.id ? "page" : undefined}
-            onClick={(e) => tab(e, b)} onPointerEnter={() => b.id !== bank.id && warmBank(b.id)} onTouchStart={() => b.id !== bank.id && warmBank(b.id)}>{b.name}</a>
+            onClick={(e) => tab(e, b)} onPointerEnter={() => b.id !== bank.id && warmBank(b.id)} onTouchStart={() => b.id !== bank.id && warmBank(b.id)}><ExamMark id={b.id} size={16} />{b.name}</a>
         ))}
       </nav>
 
@@ -238,7 +239,7 @@ function BankPractice({ bank, onBank }: { bank: Bank; onBank: (b: Bank) => void 
                   <div className="book-row">
                     <label>
                       <input type="checkbox" checked={checked} ref={(el) => { if (el) el.indeterminate = partial; }} onChange={() => toggleSubject(s.name)} />
-                      <span className="row-ic" style={{ background: tone.tone, color: tone.solid }}>{s.name[0]}</span>
+                      <span className="row-ic" style={{ background: tone.tone, color: tone.solid }}><SubjectMark subject={s.name} /></span>
                       <span className="book-name">
                         <b>{s.name}</b>
                         <span className="muted">{s.chapters.length} chapters{partial ? ` · ${sel.set.size} picked` : ""}</span>

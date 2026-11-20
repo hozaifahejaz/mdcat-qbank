@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import AppShell from "@/components/app/AppShell";
 import { go } from "@/components/Nav";
+import { ExamMark } from "@/components/Marks";
 import { friendlyError } from "@/lib/auth";
 import { type BankId, banks } from "@/lib/banks";
 import { keep, seen } from "@/lib/cache";
@@ -73,7 +74,7 @@ function Welcome({ user }: { user: AccountUser }) {
         <div className="wel-opts" role="radiogroup" aria-labelledby="wel-test">
           {choices.map((b) => (
             <button key={b.id} type="button" role="radio" aria-checked={bank === b.id} className="wel-opt" onClick={() => setBank(b.id)}>
-              <b>{b.name}</b><span>{b.blurb}</span>
+              <span className={`wel-mark bank-${b.id}`}><ExamMark id={b.id} size={22} /></span><b>{b.name}</b><span>{b.blurb}</span>
             </button>
           ))}
         </div>

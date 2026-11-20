@@ -3,6 +3,7 @@ import Logo, { Markhor } from "@/components/Logo";
 import Ahead from "@/components/Ahead";
 import ThemeToggle from "@/components/ThemeToggle";
 import { BuildTest, MockLog, NoteTyping } from "@/components/landing/Live";
+import { ExamMark, SubjectMark } from "@/components/Marks";
 import { money, plans } from "@/lib/billing";
 import { prices, site } from "@/lib/site";
 import "./landing-new.css";
@@ -21,15 +22,18 @@ const subjects = [
   { name: "English", c: "#8a63ff" },
   { name: "Logical Reasoning", c: "#c9a400" },
 ];
-const outer = ["PMDC MDCAT", "NUMS", "AKU", "Past papers", "FSc Part 1", "FSc Part 2", "Timed mocks", "My mistakes"];
+const outer = [
+  { name: "PMDC MDCAT", id: "mdcat" }, { name: "NUMS", id: "nums" }, { name: "AKU", id: "aku" }, { name: "Past papers" },
+  { name: "FSc Part 1", id: "fsc1" }, { name: "FSc Part 2", id: "fsc2" }, { name: "Timed mocks" }, { name: "My mistakes" },
+];
 
 const tests = [
-  { name: "PMDC MDCAT", field: "Medical", live: true },
-  { name: "NUMS MDCAT", field: "Medical", live: true },
-  { name: "AKU test", field: "Medical", live: true },
-  { name: "ECAT", field: "Engineering" },
-  { name: "NUST NET", field: "Engineering" },
-  { name: "LAT", field: "Law" },
+  { name: "PMDC MDCAT", id: "mdcat", c: "#2f55f0", field: "Medical", live: true },
+  { name: "NUMS MDCAT", id: "nums", c: "#b06a00", field: "Medical", live: true },
+  { name: "AKU test", id: "aku", c: "#8a63ff", field: "Medical", live: true },
+  { name: "ECAT", id: "ecat", field: "Engineering" },
+  { name: "NUST NET", id: "net", field: "Engineering" },
+  { name: "LAT", id: "lat", field: "Law" },
 ];
 
 const faqs = [
@@ -99,7 +103,7 @@ export default function Home() {
           <div className="fl fl-subj" aria-hidden="true">
             <b>5 subjects</b>
             <div className="chips">
-              {subjects.slice(0, 3).map((s) => <i key={s.name} style={{ color: s.c }}>{s.name.slice(0, 2)}</i>)}
+              {subjects.slice(0, 3).map((s) => <i key={s.name} style={{ color: s.c }}><SubjectMark subject={s.name} size={24} /></i>)}
             </div>
           </div>
         </div>
@@ -146,12 +150,12 @@ export default function Home() {
             <div className="orbit" aria-label="Subjects and banks">
               <div className="orb r2">
                 {outer.map((o, i) => (
-                  <span key={o} className="sat" style={{ ["--a" as string]: `${(360 / outer.length) * i}deg` }}><i>{o}</i></span>
+                  <span key={o.name} className="sat" style={{ ["--a" as string]: `${(360 / outer.length) * i}deg` }}><i>{o.id && <ExamMark id={o.id} size={16} />}{o.name}</i></span>
                 ))}
               </div>
               <div className="orb r1">
                 {subjects.map((s, i) => (
-                  <span key={s.name} className="sat" style={{ ["--a" as string]: `${(360 / subjects.length) * i + 20}deg` }}><i><em style={{ background: s.c }} />{s.name}</i></span>
+                  <span key={s.name} className="sat" style={{ ["--a" as string]: `${(360 / subjects.length) * i + 20}deg` }}><i><em style={{ color: s.c }}><SubjectMark subject={s.name} size={16} /></em>{s.name}</i></span>
                 ))}
               </div>
               <div className="core"><Markhor height={52} /></div>
@@ -170,7 +174,10 @@ export default function Home() {
             <ul>
               {[0, 1].map((copy) => tests.map((t) => (
                 <li key={copy + t.name} aria-hidden={copy === 1 || undefined} className="x3-card tcard">
-                  <span className={t.live ? "st live" : "st"}>{t.live ? "Live" : "Coming soon"}</span>
+                  <span className="thead">
+                    <span className="tmark" style={t.c ? { color: t.c } : undefined}><ExamMark id={t.id} size={24} /></span>
+                    <span className={t.live ? "st live" : "st"}>{t.live ? "Live" : "Coming soon"}</span>
+                  </span>
                   <b>{t.name}</b>
                   <small>{t.field}</small>
                 </li>

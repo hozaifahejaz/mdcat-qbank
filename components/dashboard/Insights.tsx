@@ -2,6 +2,7 @@
 
 import { Fragment, useState } from "react";
 import Icon from "@/components/app/Icon";
+import { SubjectMark } from "@/components/Marks";
 import { banks, toneOf } from "@/lib/banks";
 import { warm } from "@/lib/cache";
 import { type ChapterStat, type Dashboard, ESTIMATE_AFTER, estimateScore, getDashboard } from "@/lib/dashboard-data";
@@ -135,7 +136,7 @@ export function Subjects({ data, onBank }: { data: Dashboard; onBank?: (bank: st
           return (
             <li key={s.subject} className={isOpen ? "open" : undefined}>
               <button type="button" className="sj-row" aria-expanded={isOpen} onClick={() => setOpen(isOpen ? null : s.subject)}>
-                <span className="row-ic" style={{ background: tone.tone, color: tone.solid }}>{s.subject[0]}</span>
+                <span className="row-ic" style={{ background: tone.tone, color: tone.solid }}><SubjectMark subject={s.subject} /></span>
                 <span className="sj-main">
                   <b>{s.subject}</b>
                   <span className="muted">{nf(t.answered)} of {nf(t.available)} answered{onPaper ? ` · ${onPaper} on the paper` : ""}</span>
