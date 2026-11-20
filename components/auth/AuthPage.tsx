@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { type AuthConfig, getAuthConfig } from "@/lib/api";
-import { readNext, signInError } from "@/lib/auth";
+import { type Entered, readNext, signInError } from "@/lib/auth";
+import { inAppPath, whenShown } from "@/lib/paths";
 import { getCurrentUser } from "@/lib/user";
 import AuthFrame from "@/components/auth/AuthFrame";
 import AfterSignIn from "@/components/auth/AfterSignIn";
@@ -25,25 +27,30 @@ export default function AuthPage({ mode }: { mode: Mode }) {
   const [next, setNext] = useState("/dashboard");
   const [config, setConfig] = useState<AuthConfig | null | undefined>(undefined);
   const [method, setMethod] = useState<Method>("phone");
-  const [signedIn, setSignedIn] = useState(false);
+  const [entered, setEntered] = useState<Entered | null>(null);
+  const router = useRouter();
   const [error, setError] = useState("");
   const c = copy[mode];
 
   useEffect(() => {
-    setNext(readNext());
+    const to = readNext();
+    setNext(to);
+    // The page that opens after signing in is fetched while the form is being filled in.
+    if (inAppPath(to)) router.prefetch(to);
     const params = new URLSearchParams(window.location.search);
     if (params.get("error")) setError(signInError(params.get("error")!));
     getAuthConfig().then((cfg) => {
       setConfig(cfg);
       if (cfg && (params.get("method") === "email" || !cfg.phone) && cfg.email) setMethod("email");
     });
-    getCurrentUser().then((u) => { if (u) setSignedIn(true); });
-  }, []);
+    // Already signed in: straight on to the page, which makes this the active device, so only once really opened.
+    whenShown(() => getCurrentUser().then((u) => { if (u) setEntered((e) => e ?? { user: u }); }));
+  }, [router]);
 
   const switchHref = next === "/dashboard" ? c.switchHref : `${c.switchHref}?next=${encodeURIComponent(next)}`;
   const top = { hint: c.switchText, label: c.switchLabel, href: switchHref };
 
-  if (signedIn) return <AuthFrame><AfterSignIn next={next} /></AuthFrame>;
+  if (entered) return <AuthFrame><AfterSignIn next={next} entered={entered} /></AuthFrame>;
   if (config === null) return <AuthFrame top={top}><NotConfigured /></AuthFrame>;
 
   const siteKey = config?.turnstileSiteKey ?? "";
@@ -70,8 +77,8 @@ export default function AuthPage({ mode }: { mode: Mode }) {
             )}
             {error && <p className="note bad" role="alert">{error}</p>}
             <div role={config.phone ? "tabpanel" : undefined}>
-              {method === "phone" && <PhoneForm key={`p-${mode}`} mode={mode} siteKey={siteKey} available={config.phone} onSignedIn={() => setSignedIn(true)} />}
-              {method === "email" && <EmailForm key={`e-${mode}`} mode={mode} next={next} siteKey={siteKey} onSignedIn={() => setSignedIn(true)} />}
+              {method === "phone" && <PhoneForm key={`p-${mode}`} mode={mode} siteKey={siteKey} available={config.phone} onSignedIn={setEntered} />}
+              {method === "email" && <EmailForm key={`e-${mode}`} mode={mode} next={next} siteKey={siteKey} onSignedIn={setEntered} />}
             </div>
           </>
         )}

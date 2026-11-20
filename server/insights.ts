@@ -124,13 +124,13 @@ export const insightRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
           (SELECT count(DISTINCT question_id) FROM answers a WHERE a.user_id = u.id AND a.counted_at IS NOT NULL AND a.answer IS NOT NULL) AS answered
         FROM users u ORDER BY u.created_at DESC LIMIT 20000`)
       .all<{ name: string; email: string | null; phone: string | null; role: string; plan: string; plan_expires_at: number | null; created_at: number; last_seen: number | null; answered: number }>();
-    return csv(`examwise-accounts-${pkDay(Date.now())}.csv`, ["Name", "Email", "Phone", "Role", "Plan", "Plan ends", "Joined", "Last seen", "Questions answered"],
+    return csv(`markhor-prep-accounts-${pkDay(Date.now())}.csv`, ["Name", "Email", "Phone", "Role", "Plan", "Plan ends", "Joined", "Last seen", "Questions answered"],
       results.map((u) => [u.name, u.email, u.phone, u.role, u.plan, iso(u.plan_expires_at), iso(u.created_at), iso(u.last_seen), u.answered]));
   },
 
   "GET /api/admin/waitlist/export": async (c) => {
     await requireRole(c, ["admin"]);
     const { results } = await c.db.prepare("SELECT contact, kind, created_at FROM waitlist ORDER BY created_at DESC LIMIT 20000").all<{ contact: string; kind: string; created_at: number }>();
-    return csv(`examwise-waitlist-${pkDay(Date.now())}.csv`, ["Contact", "Kind", "Joined"], results.map((w) => [w.contact, w.kind, iso(w.created_at)]));
+    return csv(`markhor-prep-waitlist-${pkDay(Date.now())}.csv`, ["Contact", "Kind", "Joined"], results.map((w) => [w.contact, w.kind, iso(w.created_at)]));
   },
 };

@@ -191,7 +191,7 @@ fun HistoryList(list: List<TestResult>, onOpen: (String) -> Unit) {
 }
 
 /* Start a practice set from a list of question IDs (mistakes, saved questions). */
-private suspend fun practise(container: AppContainer, nav: NavHostController, ids: List<String>, title: String): String? = try {
+private suspend fun practice(container: AppContainer, nav: NavHostController, ids: List<String>, title: String): String? = try {
     val r = container.study.start(StartRequest(kind = "practice", ids = ids.take(100), tutor = true, timed = false, count = minOf(100, ids.size), title = title))
     nav.navigate(R.player(r.id)); null
 } catch (e: ApiError) { e.message }
@@ -216,9 +216,9 @@ fun MistakesScreen(container: AppContainer, nav: NavHostController) {
                 else -> ReviewList(list.map { RItem(it.q, it.chosen) }, size) {
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         note?.let { Note(it, "bad") }
-                        PillButton("Practise these", busy = busy, modifier = Modifier.fillMaxWidth(), onClick = {
+                        PillButton("Practice these", busy = busy, modifier = Modifier.fillMaxWidth(), onClick = {
                             busy = true
-                            scope.launch { note = practise(container, nav, list.map { it.q.id }, "Mistakes"); busy = false }
+                            scope.launch { note = practice(container, nav, list.map { it.q.id }, "Mistakes"); busy = false }
                         })
                     }
                 }
@@ -247,9 +247,9 @@ fun BookmarksScreen(container: AppContainer, nav: NavHostController) {
                 else -> ReviewList(list.map { RItem(it, null) }, size) {
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         note?.let { Note(it, "bad") }
-                        PillButton("Practise these", busy = busy, modifier = Modifier.fillMaxWidth(), onClick = {
+                        PillButton("Practice these", busy = busy, modifier = Modifier.fillMaxWidth(), onClick = {
                             busy = true
-                            scope.launch { note = practise(container, nav, list.map { it.id }, "Saved questions"); busy = false }
+                            scope.launch { note = practice(container, nav, list.map { it.id }, "Saved questions"); busy = false }
                         })
                     }
                 }

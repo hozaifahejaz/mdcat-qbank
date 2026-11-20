@@ -1,4 +1,4 @@
-/* The question banks a student can practise from: one per exam or textbook part. Each bank has its own subjects (for
+/* The question banks a student can practice from: one per exam or textbook part. Each bank has its own subjects (for
    FSc, the textbooks of that part) and each subject its chapters, in book order.
 
    A question can sit in more than one bank. Its own subject and chapter (questions table) place it in the MDCAT bank;

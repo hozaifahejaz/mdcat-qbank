@@ -1,7 +1,7 @@
 /* The browser side of the study API (server/study.ts): starting and sitting tests, results, mistakes, bookmarks and
    reports. Everything is saved on the server, so a test started on the phone can be finished on the laptop. */
 import { api } from "@/lib/api";
-import { fresh } from "@/lib/cache";
+import { cached, fresh, keepFresh, seen, warm } from "@/lib/cache";
 import type { Asked, Question } from "@/lib/bank";
 import type { TestResult } from "@/lib/dashboard-data";
 
@@ -76,11 +76,24 @@ export const watchCatalog = (bank: string, show: (c: Catalog) => void) =>
     return getCatalog(bank);
   }, show, true).catch(() => {});
 
+/* Fetch a bank's catalog ahead of its page (lib/warm.ts). */
+export const warmCatalog = (bank: string) => warm(`catalog:${bank}`, () => {
+  catalogs.delete(bank); asked.set(bank, Date.now());
+  return getCatalog(bank);
+}, true);
+
 /* Starting a test answers with the test itself, ready to sit. */
 export const startTest = (o: StartOptions) => api<{ id: string; count: number; short: boolean; attempt: OpenAttempt }>("/api/study/start", { body: o });
-export const getOpenAttempt = (id: string) => api<OpenAttempt | { finished: true; id: string }>(`/api/study/attempt?id=${encodeURIComponent(id)}`);
+const fetchAttempt = (id: string) => api<OpenAttempt | { finished: true; id: string }>(`/api/study/attempt?id=${encodeURIComponent(id)}`);
+/* A copy fetched a moment ago, when its link was pointed at, is used as it is; anything saved since asks again. */
+export const getOpenAttempt = (id: string) => cached(`attempt:${id}`, () => fetchAttempt(id));
+export const warmAttempt = (id: string) => warm(`attempt:${id}`, () => fetchAttempt(id));
 export const saveAnswer = (id: string, idx: number, answer: number | null, flagged: boolean, seconds?: number) => api("/api/study/answer", { body: { id, idx, answer, flagged, seconds } });
 export const checkAnswer = (id: string, idx: number, answer: number, seconds?: number) => api<{ answer: number; reveal: Question; stats: Stats | null }>("/api/study/check", { body: { id, idx, answer, seconds } });
+/* Tutor sets: the result of the question on screen, fetched while it is being read, so Submit can show it at once
+   (peekAnswer) and only has to lock the answer in behind it (lockAnswer). Kept in memory only. */
+export const peekAnswer = (id: string, idx: number) => api<{ reveal: Question; stats: Stats | null }>(`/api/study/peek?id=${encodeURIComponent(id)}&idx=${idx}`);
+export const lockAnswer = (id: string, idx: number, answer: number, seconds?: number) => api<{ answer: number }>("/api/study/check", { body: { id, idx, answer, seconds, quiet: true } });
 /* How many of a selection are unused, incorrect, marked, omitted and correct for this student. */
 export const getPool = (o: Pick<StartOptions, "bank" | "subject" | "subjects" | "chapters" | "topic">) => {
   const p = new URLSearchParams();
@@ -89,13 +102,36 @@ export const getPool = (o: Pick<StartOptions, "bank" | "subject" | "subjects" | 
   if (o.subjects?.length) p.set("subjects", o.subjects.join("|"));
   if (o.chapters?.length) p.set("chapters", o.chapters.join("|"));
   if (o.topic) p.set("topic", o.topic);
-  return api<Pool>(`/api/study/pool?${p}`);
+  return cached(`pool:${p}`, () => api<Pool>(`/api/study/pool?${p}`));
 };
-export const finishTest = (id: string) => api<{ id: string; empty?: boolean }>("/api/study/finish", { body: { id } });
+/* Submitting answers with the results themselves, which are kept for the results page to open with. */
+/* The same counts for every chapter of a bank at once: the practice screen adds up whatever is ticked, with no
+   request per tick. */
+export type ChapterPool = Pool & { subject: string; chapter: string };
+const fetchPools = (bank: string) => api<{ bank: string; chapters: ChapterPool[] }>(`/api/study/pool?by=chapter&bank=${encodeURIComponent(bank)}`).then((r) => r.chapters);
+export const watchPools = (bank: string, show: (p: ChapterPool[]) => void) => fresh(`pools:${bank}`, () => fetchPools(bank), show, true).catch(() => {});
+export const warmPools = (bank: string) => warm(`pools:${bank}`, () => fetchPools(bank), true);
+export function sumPools(list: ChapterPool[], subjects: string[], chapters: string[]): Pool {
+  const out: Pool = { total: 0, unused: 0, incorrect: 0, marked: 0, omitted: 0, correct: 0, markedIn: { unused: 0, incorrect: 0, omitted: 0, correct: 0 } };
+  for (const c of list) {
+    if ((subjects.length && !subjects.includes(c.subject)) || (chapters.length && !chapters.includes(c.chapter))) continue;
+    for (const k of ["total", "unused", "incorrect", "marked", "omitted", "correct"] as const) out[k] += c[k];
+    for (const k of ["unused", "incorrect", "omitted", "correct"] as const) out.markedIn[k] += c.markedIn[k];
+  }
+  return out;
+}
+export const finishTest = (id: string) => api<{ id: string; empty?: boolean; review?: Review }>("/api/study/finish", { body: { id } })
+  .then((r) => { if (r.review) keepFresh(`review:${r.id}`, r.review); return r; });
 export const getReview = (id: string) => api<Review>(`/api/study/review?id=${encodeURIComponent(id)}`);
+/* A submitted test doesn't change, so its results show at once from the copy in memory (they carry answers and
+   explanations, so that is the only place they are kept) while a fresh copy is read behind it. */
+export const watchReview = (id: string, show: (r: Review) => void) => fresh(`review:${id}`, () => getReview(id), show);
+export const warmReview = (id: string) => { if (seen(`review:${id}`) === undefined) warm(`review:${id}`, () => getReview(id)); };
 export const getHistory = () => api<{ tests: TestResult[] }>("/api/study/history").then((r) => r.tests);
 export const watchHistory = (show: (t: TestResult[]) => void) => fresh("history", getHistory, show, true);
+export const warmHistory = () => warm("history", getHistory, true);
 /* These two carry answers and explanations, so they are remembered only while the tab stays open on the site. */
+export const warmMistakes = () => { warm("mistakes", getMistakes); warm("bookmarks", getBookmarks); };
 export const watchMistakes = (show: (m: Mistake[]) => void) => fresh("mistakes", getMistakes, show);
 export const watchBookmarks = (show: (q: Question[]) => void) => fresh("bookmarks", getBookmarks, show);
 export const getMistakes = () => api<{ mistakes: Mistake[] }>("/api/study/mistakes").then((r) => r.mistakes);

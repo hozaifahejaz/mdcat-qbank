@@ -11,7 +11,7 @@ plugins {
 // The API address can be pointed at a preview deployment for testing: apiBase=https://... in local.properties,
 // or -PapiBase=... on the command line. Release builds always use the production address.
 val local = Properties().apply { rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use { load(it) } }
-val productionApi = "https://mdcat-qbank.pages.dev"
+val productionApi = "https://markhorprep.com"
 val debugApi = (findProperty("apiBase") as String?) ?: local.getProperty("apiBase") ?: productionApi
 
 // Upload key for release builds, only from environment variables (GitHub secrets), never from the repo.

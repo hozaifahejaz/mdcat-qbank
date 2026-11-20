@@ -77,7 +77,7 @@ fun DownloadsScreen(container: AppContainer, nav: NavHostController) {
             note?.let { Note(it, "good") }
             PillButton("Download questions", { note = null; picking = true }, enabled = held < cap, modifier = Modifier.fillMaxWidth())
             val list = packs
-            if (list != null && list.isEmpty()) EmptyState("Nothing downloaded", "Download questions to practise without a connection.")
+            if (list != null && list.isEmpty()) EmptyState("Nothing downloaded", "Download questions to practice without a connection.")
             if (!list.isNullOrEmpty()) Panel(padding = 0.dp) {
                 list.forEachIndexed { i, p ->
                     if (i > 0) Divider()
@@ -90,7 +90,7 @@ fun DownloadsScreen(container: AppContainer, nav: NavHostController) {
                                 style = MaterialTheme.typography.bodySmall, color = if (ok) c.muted else c.warn,
                             )
                         }
-                        if (ok && p.answered < p.questionCount) PillButton("Practise", { nav.navigate(R.offlinePlayer(p.id)) }, dark = false)
+                        if (ok && p.answered < p.questionCount) PillButton("Practice", { nav.navigate(R.offlinePlayer(p.id)) }, dark = false)
                         LinkButton("Delete", { deleting = p }, color = c.bad)
                     }
                 }

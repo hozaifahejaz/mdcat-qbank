@@ -4,8 +4,8 @@ import type { Env } from "./env";
 import { HttpError, assertJson, assertSameOrigin, body, clientIp, fail, json, redirect, safeNext, str } from "./http";
 import { linkEmail, mailConfigured, sendMail } from "./mail";
 import { type Provider, appleConfigured, clearStateCookie, finishOAuth, googleConfigured, startOAuth, verifyGoogleIdToken } from "./oauth";
-import { rateLimit, rateLimitPeek } from "./ratelimit";
-import { type NewSession, appVersion, bearer, clearSessionCookie, createSession, getSession, isApp, note, requireSession, rotateSession } from "./session";
+import { hit, overLimit, peeked, rateLimit, usedStmt } from "./ratelimit";
+import { type NewSession, type Session, appVersion, bearer, clearSessionCookie, createSession, forgetReusedSessions, getSession, isApp, newSession, note, requireSession, reuseSession, rotateSession } from "./session";
 import { adminRoutes } from "./admin";
 import { visitRoutes } from "./visits";
 import { studyRoutes } from "./study";
@@ -16,13 +16,13 @@ import { offlineRoutes, revokeDevicePacks, revokeUserPacks } from "./offline";
 import { checkCode, sendCode, smsConfigured } from "./sms";
 import { checkCaptcha } from "./turnstile";
 import { checkIntegrity } from "./integrity";
-import { createUser, publicUser, publicUserById, userByEmail, userById, userByPhone, userForOAuth } from "./users";
+import { type UserRow, USER_COLUMNS, createUser, publicUser, publicUserById, userByEmail, userById, userByPhone, userForOAuth } from "./users";
 import { normalisePhone } from "../lib/phone";
 
 const HOUR = 60 * 60 * 1000;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
-type Ctx = { env: Env; request: Request; db: D1Database; ip: string; origin: string };
+type Ctx = { env: Env; request: Request; db: D1Database; ip: string; origin: string; fresh?: Session };
 
 /* A sign-in's answer. The website gets the session as a cookie; the app gets the secret in the body and keeps it itself. */
 const signedIn = (request: Request, s: NewSession, extra: Record<string, unknown> = {}) =>
@@ -56,6 +56,32 @@ function name(v: unknown, required: boolean): string {
   return n;
 }
 
+/* The end of every sign-in on the website. The browser sends its device id along, so the same request that signs it in
+   also makes it the account's active device (what /api/device/claim does), and the answer carries the account for the
+   pages to draw with: one request instead of three before the dashboard can open. The app claims its device itself. */
+async function enter(c: Ctx, b: Record<string, unknown>, who: string | { user: UserRow; linked: { provider: string }[] }, extra: Record<string, unknown> = {}): Promise<Response> {
+  const deviceKey = str(b.deviceKey, 64);
+  const userId = typeof who === "string" ? who : who.user.id;
+  if (isApp(c.request) || !/^[0-9a-f-]{36}$/i.test(deviceKey)) return signedIn(c.request, await createSession(c.db, userId, c.request), extra);
+  let known = typeof who === "string" ? null : who;
+  if (!known) {
+    const [user, linked] = await c.db.batch([
+      c.db.prepare(`SELECT ${USER_COLUMNS} FROM users WHERE id = ?`).bind(userId),
+      c.db.prepare("SELECT provider FROM identities WHERE user_id = ?").bind(userId),
+    ]);
+    const u = user!.results[0] as UserRow | undefined;
+    if (!u) throw fail(401, "signed_out", "Please sign in.");
+    known = { user: u, linked: linked!.results as { provider: string }[] };
+  }
+  const made = await newSession(c.db, known.user, c.request);
+  // The session is new, so there is no older cookie to replace when this takes the account over from another device.
+  const claim = await claimDevice(c.db, made.session, deviceKey, str(b.label, 80), { platform: "web", appVersion: null }, [made.save]);
+  const device = claim.status === "active" ? { status: claim.status, takeovers_today: claim.takeovers_today } : claim;
+  // As the next request would read it from the database: on its device, and holding the account.
+  if (claim.status === "active") c.fresh = { ...made.session, device_id: claim.device_id, active_session_id: made.session.id };
+  return signedIn(c.request, made.out, { ...extra, user: await publicUser(c.db, known.user, known.linked), device });
+}
+
 async function newToken(db: D1Database, userId: string, kind: "verify_email" | "reset_password", ttl: number): Promise<string> {
   const token = randomToken();
   await db.batch([
@@ -85,8 +111,10 @@ async function sendVerifyEmail(c: Ctx, userId: string, to: string, next: string)
 /* ---------- Routes ---------- */
 
 const routes: Record<string, (c: Ctx) => Promise<Response>> = {
+  /* The same for everyone and rarely changed, so browsers keep it for a few minutes instead of asking on every visit
+     to the sign-in page. */
   "GET /api/auth/config": async ({ env }) =>
-    json({
+    new Response(JSON.stringify({
       // Email + password always works. Confirmation emails and password reset switch on with email sending.
       email: true,
       emailVerification: mailConfigured(env),
@@ -95,7 +123,7 @@ const routes: Record<string, (c: Ctx) => Promise<Response>> = {
       google: googleConfigured(env),
       apple: appleConfigured(env),
       turnstileSiteKey: env.TURNSTILE_SECRET_KEY ? env.TURNSTILE_SITE_KEY ?? "" : "",
-    }),
+    }), { headers: { "content-type": "application/json; charset=utf-8", "cache-control": "public, max-age=300", "x-content-type-options": "nosniff" } }),
 
   "GET /api/auth/me": async ({ db, request }) => {
     const s = await getSession(db, request);
@@ -124,7 +152,7 @@ const routes: Record<string, (c: Ctx) => Promise<Response>> = {
       // No email sending yet, so no confirmation step: the account works straight away.
       if (existing) throw fail(409, "user_already_exists", "An account with this email already exists. Sign in instead.");
       const userId = await createUser(c.db, { name: fullName, email: addr, passwordHash: await hashPassword(pw) });
-      return signedIn(c.request, await createSession(c.db, userId, c.request), { status: "signed_in" });
+      return enter(c, b, userId, { status: "signed_in" });
     }
     if (existing?.email_verified_at) {
       // Same answer as a new sign-up, so this can't be used to check who has an account. The owner gets a heads-up.
@@ -164,7 +192,7 @@ const routes: Record<string, (c: Ctx) => Promise<Response>> = {
     await rateLimit(c.db, `verify:ip:${c.ip}`, 30, HOUR);
     const userId = await useToken(c.db, b.token, "verify_email");
     await c.db.prepare("UPDATE users SET email_verified_at = coalesce(email_verified_at, ?) WHERE id = ?").bind(Date.now(), userId).run();
-    return signedIn(c.request, await createSession(c.db, userId, c.request));
+    return enter(c, b, userId);
   },
 
   "POST /api/auth/signin": async (c) => {
@@ -173,16 +201,27 @@ const routes: Record<string, (c: Ctx) => Promise<Response>> = {
     // Only wrong tries count. The tight limit is per address and email together, so someone guessing at an account
     // from elsewhere can't lock its owner out; the wider ones bound guessing from many addresses.
     const limits: [string, number, number][] = [[`signin:ip:${c.ip}`, 30, HOUR], [`signin:pair:${addr}:${c.ip}`, 5, HOUR / 4], [`signin:email:${addr}`, 40, HOUR]];
-    for (const [key, limit, window] of limits) await rateLimitPeek(c.db, key, limit, window);
-    await humanCheck(c, b);
-    const u = await userByEmail(c.db, addr);
+    // One trip reads the three counters and the account, while the person-not-a-script check runs beside it.
+    const [rows, human] = await Promise.all([
+      c.db.batch([
+        ...limits.map(([key]) => usedStmt(c.db, key)),
+        c.db.prepare(`SELECT ${USER_COLUMNS} FROM users WHERE email = ?`).bind(addr),
+        c.db.prepare("SELECT provider FROM identities WHERE user_id = (SELECT id FROM users WHERE email = ?)").bind(addr),
+      ]),
+      // Its failure is reported after the counters have had their say, as before.
+      humanCheck(c, b).then(() => null, (e: unknown) => e),
+    ]);
+    limits.forEach(([, limit, window], k) => peeked(rows[k]!.results[0] as { count: number; window_start: number } | undefined, limit, window));
+    if (human) throw human;
+    const u = rows[3]!.results[0] as UserRow | undefined;
     const ok = await verifyPassword(typeof b.password === "string" ? b.password : "", u?.password_hash ?? null);
     if (!u || !ok) {
-      for (const [key, limit, window] of limits) await rateLimit(c.db, key, limit + 1, window);
+      const counted = await c.db.batch(limits.map(([key, , window]) => hit(c.db, key, window)));
+      limits.forEach(([, limit, window], k) => overLimit(counted[k]!.results[0] as { count: number; window_start: number } | undefined, limit + 1, window));
       throw fail(401, "invalid_credentials", "That email and password don't match. Check them, or reset your password.");
     }
     if (!u.email_verified_at && mailConfigured(c.env)) throw fail(403, "email_not_confirmed", "Please confirm your email first. We sent you a link when you signed up.");
-    return signedIn(c.request, await createSession(c.db, u.id, c.request));
+    return enter(c, b, { user: u, linked: rows[4]!.results as { provider: string }[] });
   },
 
   "POST /api/auth/forgot": async (c) => {
@@ -237,7 +276,7 @@ const routes: Record<string, (c: Ctx) => Promise<Response>> = {
     if (!(await checkCode(c.env, phone, code))) throw fail(400, "bad_code", "That code is wrong or has expired. Request a new one.");
     const u = await userByPhone(c.db, phone);
     const userId = u?.id ?? (await createUser(c.db, { name: name(b.name, false), phone }));
-    return signedIn(c.request, await createSession(c.db, userId, c.request), { created: !u });
+    return enter(c, b, userId, { created: !u });
   },
 
   /* Google sign-in from the Android app: the phone sends the ID token it got from Google. */
@@ -279,9 +318,11 @@ const routes: Record<string, (c: Ctx) => Promise<Response>> = {
   "POST /api/auth/signout": async ({ db, request }) => {
     const s = await getSession(db, request);
     if (s) {
-      await releaseDevice(db, s);
-      if (s.device_id) await revokeDevicePacks(db, s.device_id).run();
-      await db.prepare("DELETE FROM sessions WHERE id = ?").bind(s.id).run();
+      await db.batch([
+        releaseDevice(db, s),
+        ...(s.device_id ? [revokeDevicePacks(db, s.device_id)] : []),
+        db.prepare("DELETE FROM sessions WHERE id = ?").bind(s.id),
+      ]);
     }
     return json({ ok: true }, { headers: { "set-cookie": clearSessionCookie() } });
   },
@@ -297,7 +338,7 @@ const routes: Record<string, (c: Ctx) => Promise<Response>> = {
     const res = await claimDevice(db, s, str(b.deviceKey, 64), str(b.label, 80), { platform: isApp(request) ? "android" : "web", appVersion: appVersion(request) });
     if (res.status !== "active") return json(res);
     if (trusted) await db.prepare("UPDATE devices SET integrity_at = ? WHERE user_id = ? AND device_key = ? AND removed_at IS NULL").bind(Date.now(), s.user_id, str(b.deviceKey, 64).toLowerCase()).run();
-    const { took_over, ...out } = res;
+    const { took_over, device_id: _device, ...out } = res;
     // Taking the account over from another device gives this browser a new cookie (the app a new secret), so a copy
     // of the old one is dead.
     if (!took_over) return json(out);
@@ -341,9 +382,46 @@ async function oauth(c: Ctx, provider: Provider, step: "start" | "callback"): Pr
   }
 }
 
+/* Counts a request's trips to the database and the time they took, for the Server-Timing header: the browser's
+   network panel then shows where a slow answer spent its time. */
+function counted(db: D1Database) {
+  const tally = { trips: 0, ms: 0 };
+  const real = new WeakMap<object, D1PreparedStatement>();
+  const timed = async <T>(run: () => Promise<T>): Promise<T> => {
+    const t = Date.now();
+    tally.trips++;
+    try { return await run(); } finally { tally.ms += Date.now() - t; }
+  };
+  const wrap = (st: D1PreparedStatement): D1PreparedStatement => {
+    const w = {
+      bind: (...v: unknown[]) => wrap(st.bind(...v)),
+      first: (...a: [string?]) => timed(() => (st.first as (...x: unknown[]) => Promise<unknown>)(...a)),
+      all: () => timed(() => st.all()),
+      run: () => timed(() => st.run()),
+      raw: (...a: unknown[]) => timed(() => (st.raw as (...x: unknown[]) => Promise<unknown>)(...a)),
+    } as unknown as D1PreparedStatement;
+    real.set(w, st);
+    return w;
+  };
+  const out = {
+    prepare: (sql: string) => wrap(db.prepare(sql)),
+    batch: (list: D1PreparedStatement[]) => timed(() => db.batch(list.map((x) => real.get(x) ?? x))),
+    exec: (sql: string) => timed(() => db.exec(sql)),
+  } as unknown as D1Database;
+  return { db: out, tally };
+}
+
 export async function handle(request: Request, env: Env): Promise<Response> {
+  const began = Date.now();
+  const { db, tally } = counted(env.DB);
+  const res = await answer(request, env, db);
+  try { res.headers.set("server-timing", `db;dur=${tally.ms};desc="${tally.trips} trips", all;dur=${Date.now() - began}`); } catch {}
+  return res;
+}
+
+async function answer(request: Request, env: Env, db: D1Database): Promise<Response> {
   const url = new URL(request.url);
-  const c: Ctx = { env, request, db: env.DB, ip: clientIp(request), origin: url.origin };
+  const c: Ctx = { env, request, db, ip: clientIp(request), origin: url.origin };
   try {
     const o = /^\/api\/auth\/oauth\/(google|apple)(\/callback)?$/.exec(url.pathname);
     if (o) {
@@ -354,7 +432,7 @@ export async function handle(request: Request, env: Env): Promise<Response> {
     // An app too old to be safe is asked to update before anything else; the config call says which version is needed.
     const min = Number(env.APP_MIN_VERSION) || 0;
     if (isApp(request) && url.pathname !== "/api/app/config" && (appVersion(request) ?? 0) < min) {
-      throw fail(426, "update_required", "Please update Examwise to keep going.");
+      throw fail(426, "update_required", "Please update Markhor Prep to keep going.");
     }
     const key = `${request.method} ${url.pathname}`;
     const route = routes[key] ?? adminRoutes[key] ?? visitRoutes[key] ?? studyRoutes[key] ?? prefRoutes[key] ?? insightRoutes[key] ?? appRoutes[key] ?? offlineRoutes[key];
@@ -366,7 +444,14 @@ export async function handle(request: Request, env: Env): Promise<Response> {
       if (!request.headers.get("cookie") && (bearer(request) || isApp(request))) assertJson(request);
       else assertSameOrigin(request);
     }
-    return await route(c);
+    try {
+      return await route(c);
+    } finally {
+      // Sign-in, device, account and admin changes can change who may do what, so sessions reused for study requests
+      // (server/session.ts) are looked up afresh after one. Study writes, page counts and the device check change none of that.
+      if (request.method !== "GET" && !/^\/api\/(study\/|visit$|device\/check$)/.test(url.pathname)) forgetReusedSessions();
+      if (c.fresh) reuseSession(c.fresh);
+    }
   } catch (e) {
     if (e instanceof HttpError) return json({ error: { code: e.code, message: e.message, ...e.extra } }, { status: e.status });
     console.error(e);

@@ -124,7 +124,7 @@ fun DeviceLimitScreen(container: AppContainer, nav: NavHostController) {
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         Spacer(Modifier.height(12.dp))
         Text("You're signed in on two devices", style = MaterialTheme.typography.headlineSmall, color = c.ink)
-        Text("Remove one to use Examwise on this phone.", style = MaterialTheme.typography.bodyLarge, color = c.muted)
+        Text("Remove one to use Markhor Prep on this phone.", style = MaterialTheme.typography.bodyLarge, color = c.muted)
         note?.let { Note(it, "warn") }
         Panel(padding = 0.dp) {
             list.forEachIndexed { i, d ->

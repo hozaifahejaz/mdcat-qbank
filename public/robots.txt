@@ -1,6 +1,7 @@
 User-agent: *
 Allow: /
 Disallow: /admin
+Disallow: /experiments
 Disallow: /api/
 Disallow: /dashboard
 Disallow: /practice
@@ -13,4 +14,4 @@ Disallow: /test
 Disallow: /account
 Disallow: /checkout
 
-Sitemap: https://mdcat-qbank.pages.dev/sitemap.xml
+Sitemap: https://markhorprep.com/sitemap.xml

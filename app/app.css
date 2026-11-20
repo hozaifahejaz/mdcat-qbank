@@ -86,7 +86,7 @@
 .pk-no { margin-right: 6px; font-variant-numeric: tabular-nums; }
 @media (max-width: 480px) { .chapter-list { margin-left: 8px; } .book-row label { gap: 10px; } }
 @media (max-width: 480px) { .picklist label { grid-template-columns: 18px minmax(0, 1fr) auto; } .pk-n { display: none; } }
-/* Create a test: what to practise on the left, how on the right with Start. One column on small screens. */
+/* Create a test: what to practice on the left, how on the right with Start. One column on small screens. */
 .setup-grid { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(320px, 1fr); grid-template-rows: auto 1fr; grid-template-areas: "b a" "b c"; gap: 16px; align-items: start; }
 .su-a { grid-area: a; } .su-b { grid-area: b; } .su-c { grid-area: c; position: sticky; top: 34px; }
 .setup { padding: 0 22px; display: grid; }
@@ -122,6 +122,9 @@
 /* Question player: a plain page. A thin bar on top, the question and its options, and Previous, Navigator and Next
    pinned to the bottom of the screen. */
 .dash:has(> .player) { padding-bottom: 0; }
+/* The test player inside the shared frame: the frame's wrappers stay in the tree (so the page never restarts) but take up no room. */
+.dash.bare { padding-bottom: 0; }
+.dash.bare > div, .dash.bare > div > div, .dash.bare > div > div > div { display: contents; }
 .player { min-height: 100dvh; background: var(--card); padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
 .player .dwrap { max-width: 1040px; }
 .ptop-wrap { position: sticky; top: 0; z-index: 20; background: var(--card); }
@@ -594,11 +597,6 @@ dl.kpis.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .legal a { text-decoration: underline; text-underline-offset: 2px; }
 .legal hr { border: 0; border-top: 1px solid var(--line); margin: 12px 0 0; }
 
-/* 404 */
-.lost { min-height: 100dvh; display: grid; place-content: center; justify-items: center; gap: 14px; text-align: center; padding: 24px 16px; }
-.lost h1 { font-size: clamp(2.25rem, 1.5rem + 3vw, 3.5rem); font-weight: 800; letter-spacing: -0.05em; margin-top: 18px; }
-.lost p { max-width: 34ch; }
-.lost .hello-ctas { justify-content: center; }
 
 /* Wide things (the users table, the QC stepper) scroll inside their card instead of stretching it past a phone's screen. */
 .editor { grid-template-columns: minmax(0, 1fr); }
@@ -642,3 +640,9 @@ dl.kpis.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .gr-bars i { flex: 1; background: var(--blue); border-radius: 2px 2px 0 0; min-width: 0; }
 .gr-bars i.zero { background: var(--line); }
 .gr-x { display: flex; justify-content: space-between; }
+
+/* The answer fades in under the options. Pages and questions swap with no effect at all: a fade on every move made
+   the whole page blink. */
+@keyframes come-in { from { opacity: .35; } }
+.qresult { animation: come-in .2s ease-out; }
+@media (prefers-reduced-motion: reduce) { .qresult { animation: none; } }

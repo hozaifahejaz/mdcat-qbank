@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 import { PageHead } from "@/components/app/AppShell";
 import Empty from "@/components/app/Empty";
+import { go } from "@/components/Nav";
 import { friendlyError } from "@/lib/auth";
-import { type Coverage, type Quality, getCoverage, getQuality } from "@/lib/admin";
+import { type Coverage, type Quality, getCoverage, getQuality, last } from "@/lib/admin";
 import { letters } from "@/lib/format";
 import type { AccountUser } from "@/lib/user";
 
@@ -14,8 +15,8 @@ const nf = (n: number) => n.toLocaleString("en-GB");
 
 /* /admin/bank — how full each chapter of each test is, and which questions students' answers say need a look. */
 export default function Bank({ user }: { user: AccountUser }) {
-  const [cov, setCov] = useState<Coverage | null>(null);
-  const [q, setQ] = useState<Quality | null>(null);
+  const [cov, setCov] = useState<Coverage | null>(() => last<Coverage>("coverage"));
+  const [q, setQ] = useState<Quality | null>(() => last<Quality>("quality"));
   const [bank, setBank] = useState("mdcat");
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
@@ -59,7 +60,7 @@ export default function Bank({ user }: { user: AccountUser }) {
                   <thead><tr><th>Question</th><th>Right</th><th>Picks</th><th>Why</th></tr></thead>
                   <tbody>
                     {q.look.map((r) => (
-                      <tr key={r.id} onClick={() => { window.location.href = `/admin/questions?id=${encodeURIComponent(r.id)}`; }}>
+                      <tr key={r.id} onClick={() => go(`/admin/questions?id=${encodeURIComponent(r.id)}`)}>
                         <td>
                           <a className="link-row" href={`/admin/questions?id=${encodeURIComponent(r.id)}`}>
                             <b>{r.id}{r.reports > 0 && <> <span className="badge bad">{r.reports} report{r.reports === 1 ? "" : "s"}</span></>}</b>

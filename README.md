@@ -27,7 +27,7 @@ npm run typecheck
 
 ## Hosting
 
-Cloudflare Pages, project `mdcat-qbank`. The build is a static export to `out/`. The GitHub Actions workflow in `.github/workflows/deploy.yml` builds and deploys on every push: `main` goes to production, and any other branch gets a preview at `<branch>.mdcat-qbank.pages.dev`.
+Cloudflare Pages, project `mdcat-qbank`, served at https://markhorprep.com (www redirects to it; mdcat-qbank.pages.dev also still works). The build is a static export to `out/`. The GitHub Actions workflow in `.github/workflows/deploy.yml` builds and deploys on every push: `main` goes to production, and any other branch gets a preview at `<branch>.mdcat-qbank.pages.dev`.
 
 It needs two repository secrets (Settings > Secrets and variables > Actions):
 

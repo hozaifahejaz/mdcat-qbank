@@ -21,7 +21,7 @@ import pk.examwise.core.model.SyncSession
 import pk.examwise.core.offline.Lease
 import java.util.UUID
 
-/* Offline practice: packs of full questions kept only in the encrypted database, practised without a connection
+/* Offline practice: packs of full questions kept only in the encrypted database, practiced without a connection
    and sent to the server afterwards (server/offline.ts). */
 class OfflineRepository(
     private val db: suspend () -> AppDatabase,

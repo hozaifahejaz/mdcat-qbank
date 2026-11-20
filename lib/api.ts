@@ -1,3 +1,5 @@
+import { outdated } from "@/lib/cache";
+
 /* The browser side of the sign-in API (functions/api, server/). Cookies carry the session, so there is no
    token handling here: every call is a same-origin fetch. */
 export class ApiError extends Error {
@@ -23,6 +25,9 @@ export async function api<T>(path: string, init: { method?: string; body?: unkno
     const e = (data as { error?: { code?: string; message?: string } } | null)?.error;
     throw new ApiError(res.status, e?.code ?? "server_error", e?.message ?? "Something went wrong. Please try again.", (e ?? {}) as Record<string, unknown>);
   }
+  // Anything the student does (answering, finishing, bookmarking, settings) changes what pages show, so kept copies
+  // are asked for again on the next look. The device check-in and page counts change nothing shown.
+  if ((init.method ?? (init.body === undefined ? "GET" : "POST")) !== "GET" && !/^\/api\/(device\/|visit$)/.test(path)) outdated();
   return data as T;
 }
 

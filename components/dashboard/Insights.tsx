@@ -3,14 +3,14 @@
 import { Fragment, useState } from "react";
 import Icon from "@/components/app/Icon";
 import { banks, toneOf } from "@/lib/banks";
-import { type ChapterStat, type Dashboard, ESTIMATE_AFTER, estimateScore } from "@/lib/dashboard-data";
+import { warm } from "@/lib/cache";
+import { type ChapterStat, type Dashboard, ESTIMATE_AFTER, estimateScore, getDashboard } from "@/lib/dashboard-data";
 import { band, pct } from "@/lib/format";
 import { examDateFor, goalChoices, savePrefs } from "@/lib/prefs";
 import { paper } from "@/lib/site";
-import { testHref } from "@/lib/study";
 
 /* The parts of the dashboard that tell a student where they stand and what to study next: today's goal and streak,
-   the first-day checklist, coverage and pace, and the subjects table that opens into chapters. */
+   coverage and pace, and the subjects table that opens into chapters. */
 
 const nf = (n: number) => n.toLocaleString("en-GB");
 export const daysUntil = (iso: string) => Math.max(0, Math.ceil((new Date(iso + "T09:00:00+05:00").getTime() - Date.now()) / 86_400_000));
@@ -58,39 +58,8 @@ export function GoalStrip({ data, onGoal, cta }: { data: Dashboard; onGoal?: (n:
   );
 }
 
-/* A new student's dashboard: three things to do, ticked off from their own numbers, instead of empty charts. */
-export const FIRST_DAY_UNTIL = 20;
-export function FirstDay({ data }: { data: Dashboard }) {
-  const answered = data.answeredEver ?? 0;
-  const steps = [
-    { done: answered >= 10, title: "Answer your first 10 questions", text: "Every question explains why the answer is right and why the others are wrong.", href: testHref({ kind: "practice", bank: data.bank, count: 10, title: "Your first 10 questions" }), cta: "Start" },
-    { done: data.recent.some((t) => t.kind !== "practice"), title: "Try a timed test", text: "A minute a question, answers at the end, like the real paper.", href: "/practice?mode=timed", cta: "Set one up" },
-    { done: data.daily.some((d) => d.answered >= data.dailyGoal), title: `Reach your daily goal of ${data.dailyGoal}`, text: "A little every day beats a lot once a week.", href: "/practice", cta: "Practise" },
-  ];
-  const next = steps.findIndex((s) => !s.done);
-  return (
-    <section className="box fd" aria-labelledby="fd-h">
-      <div className="panel-h">
-        <h2 id="fd-h">Getting started</h2>
-        <span className="muted">{steps.filter((s) => s.done).length} of {steps.length} done</span>
-      </div>
-      <ol className="fd-list">
-        {steps.map((s, i) => (
-          <li key={s.title} className={s.done ? "done" : i === next ? "next" : undefined}>
-            <span className="fd-mark" aria-hidden="true">{s.done ? <Icon name="check" size={16} /> : i + 1}</span>
-            <span className="fd-txt"><b>{s.title}</b><span className="muted">{s.text}</span></span>
-            {!s.done && <a className={`dpill ${i === next ? "dark" : "light"} small`} href={s.href}>{s.cta}</a>}
-            {s.done && <span className="muted small">Done</span>}
-          </li>
-        ))}
-      </ol>
-      <p className="muted small">Your charts and chapter numbers show here once you have answered {FIRST_DAY_UNTIL} questions.</p>
-    </section>
-  );
-}
-
 /* Coverage of the bank, pace per question and (for MDCAT) a rough score out of 180. */
-export function Stand({ data }: { data: Dashboard }) {
+export function Stand({ data, free }: { data: Dashboard; free?: boolean }) {
   const t = totalsOf(data);
   const bank = banks.find((b) => b.id === (data.bank ?? "mdcat")) ?? banks.find((b) => b.id === "mdcat")!;
   const days = daysUntil(examDateFor(data.examYear));
@@ -105,7 +74,7 @@ export function Stand({ data }: { data: Dashboard }) {
         <h2>Bank covered</h2>
         <strong>{pct(t.answered, t.available)}<small>%</small></strong>
         <span className="meter" role="img" aria-label={`${pct(t.answered, t.available)}% of the ${bank.name} bank answered`}><i style={{ width: `${pct(t.answered, t.available)}%` }} /></span>
-        <p className="muted">{nf(t.answered)} of {nf(t.available)} {bank.short} questions.{left > 0 && days > 0 && <> About <b>{nf(perDay)} a day</b> finishes it by the exam.</>}</p>
+        <p className="muted">{nf(t.answered)} of {nf(t.available)} {free ? "free" : bank.short} questions.{free ? <> <a className="link" href="/pricing">A pass opens the whole bank.</a></> : left > 0 && days > 0 && <> About <b>{nf(perDay)} a day</b> finishes it by the exam.</>}</p>
       </div>
       <div className="st-cell">
         <h2>Time per question</h2>
@@ -137,7 +106,11 @@ function ordered(chapters: ChapterStat[]) {
 export function Subjects({ data, onBank }: { data: Dashboard; onBank?: (bank: string) => void }) {
   const [open, setOpen] = useState<string | null>(null);
   const bankId = data.bank ?? "mdcat";
-  const practise = (subject: string, chapter?: string) => `/practice?${new URLSearchParams({ bank: bankId, subject, ...(chapter ? { chapter } : {}) })}`;
+  // The tab lights the moment it is pressed, and its numbers are fetched as soon as it is pointed at or touched.
+  const [pressed, setPressed] = useState<string | null>(null);
+  const lit = pressed ?? bankId;
+  const ahead = (id: string) => { if (id !== bankId) warm(`dashboard:${id}`, () => getDashboard(undefined, id), true); };
+  const practice = (subject: string, chapter?: string) => `/practice?${new URLSearchParams({ bank: bankId, subject, ...(chapter ? { chapter } : {}) })}`;
   return (
     <section className="box" aria-labelledby="subj-h">
       <div className="panel-h">
@@ -145,7 +118,8 @@ export function Subjects({ data, onBank }: { data: Dashboard; onBank?: (bank: st
         {onBank && (
           <div className="bk-tabs" role="tablist" aria-label="Question bank">
             {banks.map((b) => (
-              <button key={b.id} type="button" role="tab" aria-selected={b.id === bankId} onClick={() => b.id !== bankId && onBank(b.id)}>{b.short}</button>
+              <button key={b.id} type="button" role="tab" aria-selected={b.id === lit} onPointerEnter={() => ahead(b.id)} onTouchStart={() => ahead(b.id)} onFocus={() => ahead(b.id)}
+                onClick={() => { if (b.id !== lit) { setPressed(b.id); onBank(b.id); } }}>{b.short}</button>
             ))}
           </div>
         )}
@@ -179,16 +153,16 @@ export function Subjects({ data, onBank }: { data: Dashboard; onBank?: (bank: st
                     return (
                       <Fragment key={c.chapter}>
                         {i > 0 && judged !== (list[i - 1]!.answered >= 3) && <p className="sj-sep muted small">Not enough answers yet</p>}
-                        <a className="sj-ch" href={practise(s.subject, c.chapter)}>
+                        <a className="sj-ch" href={practice(s.subject, c.chapter)}>
                           <span className="sj-ch-name">{c.chapter}</span>
                           <span className="muted sj-ch-n">{c.answered} of {c.available}</span>
                           <span className="sj-ch-acc">{judged ? <b className={band(cacc).cls}>{cacc}%</b> : <span className="muted">–</span>}</span>
-                          <span className="sj-ch-go">Practise<Icon name="chevron" size={14} /></span>
+                          <span className="sj-ch-go">Practice<Icon name="chevron" size={14} /></span>
                         </a>
                       </Fragment>
                     );
                   })}
-                  <a className="dpill light small" href={practise(s.subject)}>Practise all of {s.subject}</a>
+                  <a className="dpill light small" href={practice(s.subject)}>Practice all of {s.subject}</a>
                 </div>
               )}
             </li>

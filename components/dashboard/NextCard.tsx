@@ -26,7 +26,7 @@ export default function NextCard({ data }: { data: Dashboard }) {
     );
   }
   return (
-    <section className="next-card" aria-label="Start practising">
+    <section className="next-card" aria-label="Start practicing">
       <div className="next-txt">
         <span className="next-k">Today</span>
         <b>{today === 0 ? "Start today's practice" : left > 0 ? "Keep going" : "Daily goal done"}</b>

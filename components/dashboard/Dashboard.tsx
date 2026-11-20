@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AppFrame } from "@/components/app/AppShell";
+import { Framed } from "@/components/app/AppShell";
 import Empty from "@/components/app/Empty";
 import Icon from "@/components/app/Icon";
 import BarChart from "@/components/dashboard/BarChart";
 import MobileHome from "@/components/dashboard/MobileHome";
 import NextCard from "@/components/dashboard/NextCard";
-import { FIRST_DAY_UNTIL, FirstDay, GoalStrip, Stand, Subjects, daysUntil } from "@/components/dashboard/Insights";
+import { GoalStrip, Stand, Subjects, daysUntil } from "@/components/dashboard/Insights";
 import { go } from "@/components/Nav";
 import { BankButtons } from "@/components/screens/PracticeScreen";
 import { getDashboard, type Dashboard as Data, type SubjectStat } from "@/lib/dashboard-data";
@@ -85,9 +85,9 @@ export default function Dashboard() {
 
   const aside = narrow === false && user && data && coach ? <Coach data={data} onHide={() => toggleCoach(false)} /> : null;
   return (
-    <AppFrame active="/dashboard" user={user} aside={aside}>
-      {user && data && narrow !== null && !fresher ? narrow ? <MobileHome data={data} /> : <Body data={data} name={user.name} coachHidden={!coach} onShowCoach={() => toggleCoach(true)} onBank={setBank} onGoal={setGoal} /> : <Skeleton />}
-    </AppFrame>
+    <Framed active="/dashboard" aside={aside}>
+      {user && data && narrow !== null && !fresher ? narrow ? <MobileHome data={data} /> : <Body data={data} name={user.name} free={user.plan === "free"} coachHidden={!coach} onShowCoach={() => toggleCoach(true)} onBank={setBank} onGoal={setGoal} /> : <Skeleton />}
+    </Framed>
   );
 }
 
@@ -103,7 +103,7 @@ export function Skeleton() {
 
 /* The full dashboard on laptops. progress: the phone's Progress tab, which shows the same numbers under its own
    heading, without the exam header and the Up next strip. */
-export function Body({ data, name, coachHidden, onShowCoach, progress, onBank, onGoal }: { data: Data; name?: string; coachHidden?: boolean; onShowCoach?: () => void; progress?: boolean; onBank?: (bank: string) => void; onGoal?: (n: number) => void }) {
+export function Body({ data, name, free, coachHidden, onShowCoach, progress, onBank, onGoal }: { data: Data; name?: string; free?: boolean; coachHidden?: boolean; onShowCoach?: () => void; progress?: boolean; onBank?: (bank: string) => void; onGoal?: (n: number) => void }) {
   const totals = data.subjects.map(sumChapters).reduce((t, s) => ({ answered: t.answered + s.answered, available: t.available + s.available, correct: t.correct + s.correct }), { answered: 0, available: 0, correct: 0 });
   const month = data.daily.slice(-30).reduce((t, d) => ({ answered: t.answered + d.answered, correct: t.correct + d.correct }), { answered: 0, correct: 0 });
   const mocks = data.recent.filter((t) => t.kind === "mock").sort((a, b) => a.date.localeCompare(b.date));
@@ -112,8 +112,6 @@ export function Body({ data, name, coachHidden, onShowCoach, progress, onBank, o
   const change = lastMock && prevMock ? lastMock.score - prevMock.score : null;
   const mockReady = useMockReady();
   const showMock = mockReady || !!lastMock;
-  // Until a student has answered a handful of questions the charts are empty: they get a short checklist instead.
-  const early = !progress && hasQuestions(data) && (data.answeredEver ?? FIRST_DAY_UNTIL) < FIRST_DAY_UNTIL;
   const examDate = examDateFor(data.examYear);
 
   return (
@@ -129,8 +127,7 @@ export function Body({ data, name, coachHidden, onShowCoach, progress, onBank, o
       )}
 
       {!progress && hasQuestions(data) && data.resume && <NextCard data={data} />}
-      {hasQuestions(data) && <GoalStrip data={data} onGoal={onGoal} cta={!progress && !data.resume && !early} />}
-      {early && <FirstDay data={data} />}
+      {hasQuestions(data) && <GoalStrip data={data} onGoal={onGoal} cta={!progress && !data.resume} />}
 
       {!progress && (
         <section aria-labelledby="banks-h" className="home-banks">
@@ -139,9 +136,8 @@ export function Body({ data, name, coachHidden, onShowCoach, progress, onBank, o
         </section>
       )}
 
-      {!hasQuestions(data) && <p className="demo"><i />Questions coming soon. Your stats fill in as you practise.</p>}
+      {!hasQuestions(data) && <p className="demo"><i />Questions coming soon. Your stats fill in as you practice.</p>}
 
-      {!early && <>
       <section className="kpis" aria-label="Your numbers">
         <div className="kpi">
           <h2><span className="kpi-ic" style={{ color: "var(--blue)" }}><Icon name="practice" /></span>Answered</h2>
@@ -165,12 +161,12 @@ export function Body({ data, name, coachHidden, onShowCoach, progress, onBank, o
         <div className="kpi">
           <h2><span className="kpi-ic" style={{ color: "var(--warn)" }}><Icon name="flame" /></span>Streak</h2>
           <strong>{data.streakDays}<small className="unit">{data.streakDays === 1 ? "day" : "days"}</small></strong>
-          <p className="muted">{data.streakDays > 0 ? "Days in a row with practice" : "Practise today to start one"}</p>
+          <p className="muted">{data.streakDays > 0 ? "Days in a row with practice" : "Practice today to start one"}</p>
         </div>
         )}
       </section>
 
-      <Stand data={data} />
+      <Stand data={data} free={free} />
 
       {!progress && <CoachStrip data={data} />}
 
@@ -230,7 +226,6 @@ export function Body({ data, name, coachHidden, onShowCoach, progress, onBank, o
         </div>
         </>}
       </section>
-      </>}
     </div>
   );
 }
@@ -260,7 +255,7 @@ function Coach({ data, onHide }: { data: Data; onHide: () => void }) {
         <button type="button" className="icon-btn" onClick={onHide} aria-label="Hide suggestions" title="Hide"><Icon name="panel" /></button>
       </div>
       <div className="coach-body">
-        {!tips.length && <p className="muted">Questions are being written and checked. Suggestions show here once you can practise.</p>}
+        {!tips.length && <p className="muted">Questions are being written and checked. Suggestions show here once you can practice.</p>}
         <ul className="coach-tips">
           {tips.map((t) => (
             <li key={t.label}><a href={t.href}><span style={{ color: t.tone }}><Icon name={t.icon} size={16} /></span><b>{t.label}</b><Icon name="chevron" size={16} /></a></li>
@@ -279,7 +274,7 @@ function CoachStrip({ data }: { data: Data }) {
       <div className="m-coach-h">
         <h2 id="mcoach-h"><span className="coach-dot"><Icon name="spark" size={14} /></span>Up next</h2>
       </div>
-      {!hasQuestions(data) && <p className="muted small">Questions are being written and checked. Suggestions show here once you can practise.</p>}
+      {!hasQuestions(data) && <p className="muted small">Questions are being written and checked. Suggestions show here once you can practice.</p>}
       <ul className="m-tips">
         {coachTips(data, mockReady).map((t) => (
           <li key={t.label}><a href={t.href}><span style={{ color: t.tone }}><Icon name={t.icon} size={18} /></span>{t.label}</a></li>

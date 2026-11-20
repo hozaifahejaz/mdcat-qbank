@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { PageHead } from "@/components/app/AppShell";
 import Empty from "@/components/app/Empty";
 import { friendlyError } from "@/lib/auth";
-import { type GrowthDay, type Overview as Data, actionNames, getOverview, noteNames } from "@/lib/admin";
+import { type GrowthDay, type Overview as Data, actionNames, getOverview, last, noteNames } from "@/lib/admin";
 import { planNames } from "@/lib/format";
 import { stages } from "@/lib/qc";
 import { paper } from "@/lib/site";
@@ -30,7 +30,7 @@ function Growth({ days, pick, label, latest }: { days: GrowthDay[]; pick: (d: Gr
 
 /* /admin — what needs doing now, where the bank stands, and (for admins) accounts, plans and recent activity. */
 export default function Overview({ user }: { user: AccountUser }) {
-  const [d, setD] = useState<Data | null>(null);
+  const [d, setD] = useState<Data | null>(() => last<Data>("overview"));
   const [err, setErr] = useState("");
   useEffect(() => { getOverview().then(setD, (e) => setErr(friendlyError(e))); }, []);
 

@@ -60,7 +60,7 @@ fun MoreScreen(container: AppContainer, nav: NavHostController) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val support = container.config.config.value?.support
-    val site = support?.site ?: "https://mdcat-qbank.pages.dev"
+    val site = support?.site ?: "https://markhorprep.com"
     val offlineOn = container.config.config.value?.offline?.enabled == true && user?.isFree == false
     var askSignOut by remember { mutableStateOf(false) }
     var unsent by remember { mutableIntStateOf(0) }

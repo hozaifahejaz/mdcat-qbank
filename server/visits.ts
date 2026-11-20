@@ -1,6 +1,6 @@
 import { randomToken, sha256 } from "./crypto";
 import { fail, json, body, readCookie, str } from "./http";
-import { rateLimit } from "./ratelimit";
+import { hit } from "./ratelimit";
 import { SESSION_COOKIE } from "./session";
 import { requireRole } from "./admin";
 
@@ -15,6 +15,7 @@ const HOUR = 60 * 60 * 1000;
 const PKT = 5 * HOUR;
 const KEEP = 400 * DAY;
 const RANGES = [7, 30, 90];
+const VISITS_PER_HOUR = 600;
 
 /* The Pakistan date of a moment, as YYYY-MM-DD. */
 export const pkDay = (ms: number) => new Date(ms + PKT).toISOString().slice(0, 10);
@@ -68,8 +69,11 @@ function cleanPath(raw: unknown) {
 let cached: { day: string; salt: string } | null = null;
 async function daySalt(db: D1Database, day: string, now: number) {
   if (cached?.day === day) return cached.salt;
-  const made = await db.prepare("INSERT OR IGNORE INTO visit_salts (day, salt) VALUES (?, ?)").bind(day, randomToken(16)).run();
-  if (made.meta.changes) {
+  const [made, read] = await db.batch([
+    db.prepare("INSERT OR IGNORE INTO visit_salts (day, salt) VALUES (?, ?)").bind(day, randomToken(16)),
+    db.prepare("SELECT salt FROM visit_salts WHERE day = ?").bind(day),
+  ]);
+  if (made!.meta.changes) {
     await db.batch([
       db.prepare("DELETE FROM visit_salts WHERE day < ?").bind(day),
       db.prepare("DELETE FROM page_views WHERE created_at < ?").bind(now - KEEP),
@@ -78,7 +82,7 @@ async function daySalt(db: D1Database, day: string, now: number) {
       db.prepare("DELETE FROM security_events WHERE created_at < ?").bind(now - 90 * DAY),
     ]);
   }
-  const row = await db.prepare("SELECT salt FROM visit_salts WHERE day = ?").bind(day).first<{ salt: string }>();
+  const row = read!.results[0] as { salt: string } | undefined;
   cached = { day, salt: row!.salt };
   return cached.salt;
 }
@@ -92,33 +96,27 @@ export const visitRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
     const ua = c.request.headers.get("user-agent") ?? "";
     if (!path || path.startsWith("/admin") || !ua || BOTS.test(ua)) return noContent();
 
-    // Signed in? Staff are skipped. The session isn't touched, so a page view never extends a sign-in.
-    let signedIn = 0;
     const token = readCookie(c.request, SESSION_COOKIE);
-    if (token) {
-      const now = Date.now();
-      const u = await c.db
-        .prepare("SELECT u.role FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.id = ? AND s.expires_at > ?")
-        .bind(await sha256(token), now)
-        .first<{ role: string }>();
-      if (u && u.role !== "student") return noContent();
-      signedIn = u ? 1 : 0;
-    }
-
     const now = Date.now();
     const day = pkDay(now);
-    const visitor = (await sha256(`${await daySalt(c.db, day, now)}|${c.ip}|${ua}`)).slice(0, 16);
+    const [salt, session, limitKey] = await Promise.all([daySalt(c.db, day, now), token ? sha256(token) : "", sha256(`${day}|${c.ip}`)]);
+    const visitor = (await sha256(`${salt}|${c.ip}|${ua}`)).slice(0, 16);
     // By address alone: a changed browser name must not buy a fresh allowance.
-    await rateLimit(c.db, `visit:${(await sha256(`${day}|${c.ip}`)).slice(0, 16)}`, 600, HOUR);
-
+    const key = `visit:${limitKey.slice(0, 16)}`;
     const cf = (c.request as Request & { cf?: { country?: string } }).cf;
     const campaign = str(b.campaign, 60).toLowerCase().replace(/[^\w\-. ]/g, "");
-    await c.db
-      .prepare(`INSERT INTO page_views (created_at, day, visitor, path, referrer, campaign, country, device, os, browser, signed_in)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-      .bind(now, day, visitor, path, referrerHost(b.referrer, new URL(c.request.url).hostname), campaign,
-        (cf?.country ?? "").slice(0, 2).toUpperCase(), device(ua), os(ua), browser(ua), signedIn)
-      .run();
+    // One trip: the count for this address, then the view itself, which is only written while the address is inside its
+    // allowance and the visitor isn't staff. The session isn't touched, so a page view never extends a sign-in.
+    await c.db.batch([
+      hit(c.db, key, HOUR),
+      c.db
+        .prepare(`INSERT INTO page_views (created_at, day, visitor, path, referrer, campaign, country, device, os, browser, signed_in)
+          SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, EXISTS (SELECT 1 FROM sessions WHERE id = ?11 AND expires_at > ?1)
+          WHERE coalesce((SELECT count FROM rate_limits WHERE key = ?12), 0) <= ${VISITS_PER_HOUR}
+            AND NOT EXISTS (SELECT 1 FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.id = ?11 AND s.expires_at > ?1 AND u.role != 'student')`)
+        .bind(now, day, visitor, path, referrerHost(b.referrer, new URL(c.request.url).hostname), campaign,
+          (cf?.country ?? "").slice(0, 2).toUpperCase(), device(ua), os(ua), browser(ua), session, key),
+    ]);
     return noContent();
   },
 

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import LegalPage from "@/components/LegalPage";
 import { site } from "@/lib/site";
 import "@/app/auth.css";
-import "@/app/dashboard/dashboard.css";
+import "@/app/dashboard.css";
 import "@/app/app.css";
 
 export const metadata: Metadata = { title: `Terms · ${site.name}`, alternates: { canonical: "/terms" } };

@@ -35,8 +35,11 @@ function Mistakes({ user }: { user: AccountUser }) {
     if (new URLSearchParams(window.location.search).get("tab") === "saved") setTab("saved");
   }, []);
 
-  const rows = (tab === "wrong" ? mistakes.map((m) => ({ q: m.q, m })) : saved.map((q) => ({ q, m: undefined as Mistake | undefined })))
-    .filter((r) => subject === "all" || r.q.subject === subject);
+  const all = tab === "wrong" ? mistakes.map((m) => ({ q: m.q, m })) : saved.map((q) => ({ q, m: undefined as Mistake | undefined }));
+  // Only the subjects that have something in this list are offered as filters.
+  const present = subjects.filter((s) => all.some((r) => r.q.subject === s));
+  const shown = subject === "all" || present.includes(subject) ? subject : "all";
+  const rows = all.filter((r) => shown === "all" || r.q.subject === shown);
   const ids = rows.map((r) => r.q.id);
   const unsave = (id: string) => {
     setSaved((x) => x.filter((q) => q.id !== id));
@@ -57,8 +60,8 @@ function Mistakes({ user }: { user: AccountUser }) {
       {error && <p className="note-bad" role="alert">{error}</p>}
       <section className="dcard panel">
         <div className="chips" role="group" aria-label="Subject">
-          <button type="button" className="chip" aria-pressed={subject === "all"} onClick={() => setSubject("all")}>All subjects</button>
-          {subjects.map((s) => <button key={s} type="button" className="chip" aria-pressed={subject === s} onClick={() => setSubject(s)}>{s}</button>)}
+          <button type="button" className="chip" aria-pressed={shown === "all"} onClick={() => setSubject("all")}>All subjects</button>
+          {present.map((s) => <button key={s} type="button" className="chip" aria-pressed={shown === s} onClick={() => setSubject(s)}>{s}</button>)}
         </div>
         <Protected user={user}>
           <ul className="mlist">
@@ -86,7 +89,7 @@ function Mistakes({ user }: { user: AccountUser }) {
                 )}
               </li>
             ))}
-            {!rows.length && <li><Empty title={tab === "wrong" ? "No mistakes yet" : "No bookmarks yet"} text={tab === "wrong" ? "Questions you get wrong land here so you can retry them." : "Bookmark a question while you practise to keep it here."} /></li>}
+            {!rows.length && <li><Empty title={tab === "wrong" ? "No mistakes yet" : "No bookmarks yet"} text={tab === "wrong" ? "Questions you get wrong land here so you can retry them." : "Bookmark a question while you practice to keep it here."} /></li>}
           </ul>
           {rows.length > limit && <button type="button" className="dpill light small more-btn" onClick={() => setLimit((n) => n + PAGE)}>Show {Math.min(PAGE, rows.length - limit)} more</button>}
         </Protected>

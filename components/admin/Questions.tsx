@@ -7,6 +7,7 @@ import { friendlyError } from "@/lib/auth";
 import {
   type AdminQuestion, type LogEntry, type QuestionPage, actionNames, advanceQuestion, blindSolve, bulkQuestions, deleteQuestion, discardEdit, getQuestion, listQuestions,
   questionLog, saveQuestion, sendBack, setQuestionMeta,
+  last, questionsKey,
 } from "@/lib/admin";
 import { subjects, syllabus } from "@/lib/bank";
 import type { Subject } from "@/lib/dashboard-data";
@@ -30,7 +31,7 @@ const fieldsOf = (q: AdminQuestion): QuestionFields => ({
    question through the check in docs/plan.md: template complete and not a duplicate, a blind solve by someone other
    than the writer, the textbook checklist, an admin's sign-off, beta, then live. The server enforces every step. */
 export default function Questions({ user }: { user: AccountUser }) {
-  const [page, setPage] = useState<QuestionPage | null>(null);
+  const [page, setPage] = useState<QuestionPage | null>(() => last<QuestionPage>(questionsKey({ view: "all", subject: "", q: "" })));
   const [err, setErr] = useState("");
   const [view, setView] = useState<View>("all");
   const [subject, setSubject] = useState<Subject | "all">("all");
@@ -78,7 +79,9 @@ export default function Questions({ user }: { user: AccountUser }) {
       const id = p.get("id");
       if (p.get("new")) setSel("new");
       else if (id) { setSel(id); getQuestion(id).then(setExtra, (e) => setErr(friendlyError(e))); }
-      load().then((d) => { if (d && !p.get("new") && !id) setSel(d.questions[0]?.id ?? null); });
+      // With last visit's list already showing, its first question opens at once too.
+      if (!p.get("new") && !id && page) setSel(page.questions[0]?.id ?? null);
+      load().then((d) => { if (d && !p.get("new") && !id) setSel((s) => (s && d.questions.some((q) => q.id === s) ? s : d.questions[0]?.id ?? null)); });
       return;
     }
     load().then((d) => setSel((s) => s ?? d?.questions[0]?.id ?? null));

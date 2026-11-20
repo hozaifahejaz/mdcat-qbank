@@ -1,5 +1,6 @@
 import { ApiError, api } from "@/lib/api";
 import { forgetAll } from "@/lib/cache";
+import { type AccountUser, forgetUser } from "@/lib/user";
 import { deviceLabel, getDeviceKey } from "@/lib/device";
 export { formatPhone, normalisePhone } from "@/lib/phone";
 
@@ -19,6 +20,13 @@ export type RemoveResult =
   | { status: "removed"; devices: Device[] }
   | { status: "swap_limit"; next_allowed_at: string }
   | { status: "not_found" };
+
+/* What a sign-in answers with on the website: the account, and this device made its active one, in the same request
+   (server/routes.ts enter). Either can be missing (an older answer, or a sign-in that came back through Google), and
+   then it is asked for separately. */
+export type Entered = { user?: AccountUser; device?: ClaimResult };
+/* Sent with every sign-in so the server can do that. */
+export const thisDevice = () => ({ deviceKey: getDeviceKey(), label: deviceLabel() });
 
 /* Where to go after signing in. Only paths on this site, so ?next= can't send anyone elsewhere. */
 export const HOME_AFTER_SIGN_IN = "/dashboard";
@@ -55,5 +63,6 @@ export const myDevices = () => api<Device[]>("/api/device/list");
 /* Frees the active slot and ends this browser's session; the other device stays signed in. */
 export async function signOut(): Promise<void> {
   forgetAll();
+  forgetUser();
   try { await api("/api/auth/signout", { body: {} }); } catch {}
 }

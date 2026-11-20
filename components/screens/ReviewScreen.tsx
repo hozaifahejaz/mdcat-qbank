@@ -8,7 +8,7 @@ import Protected from "@/components/test/Protected";
 import { ReportDialog } from "@/components/test/TestPlayer";
 import { friendlyError } from "@/lib/auth";
 import { type Question, subjects } from "@/lib/bank";
-import { type Review as Data, type Scored, getReview, setBookmark, testHref } from "@/lib/study";
+import { type Review as Data, type Scored, setBookmark, testHref, watchReview } from "@/lib/study";
 import { band, clock, day, kindNames, letters, pct } from "@/lib/format";
 import { paper } from "@/lib/site";
 import type { AccountUser } from "@/lib/user";
@@ -28,7 +28,7 @@ function Review({ user }: { user: AccountUser }) {
   const [error, setError] = useState("");
   useEffect(() => {
     const id = new URLSearchParams(window.location.search).get("id") ?? "";
-    getReview(id).then(setData, (e) => {
+    watchReview(id, setData).catch((e) => {
       // Still open: back to the test to finish it.
       if ((e as { code?: string }).code === "open") return go(`/test?id=${encodeURIComponent(id)}`, true);
       setError(friendlyError(e));
