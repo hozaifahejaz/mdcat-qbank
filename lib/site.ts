@@ -36,6 +36,6 @@ export const paper = [
   { subject: "Logical Reasoning", count: 9, tone: "var(--lemon)", solid: "#c9a400" },
 ];
 
-/* Where Help links go: WhatsApp when there's a number, email otherwise. */
-export const supportHref = site.whatsapp ? `https://wa.me/${site.whatsapp}` : `mailto:${site.supportEmail}`;
+/* Where Help links go: WhatsApp when there's a number, otherwise the contact form (each message becomes a support ticket). */
+export const supportHref = site.whatsapp ? `https://wa.me/${site.whatsapp}` : "/contact";
 export const whatsappHref = site.whatsapp ? `https://wa.me/${site.whatsapp}` : "";

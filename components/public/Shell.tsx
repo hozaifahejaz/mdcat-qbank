@@ -27,6 +27,7 @@ export function PublicFooter({ home = "/" }: { home?: string }) {
             <li><a href="/guides">Guides</a></li>
             <li><a href="/pricing">Pricing</a></li>
             <li><a href="/about">About</a></li>
+            <li><a href="/contact">Contact</a></li>
             <li><a href="/signin">Sign in</a></li>
           </ul>
           <ul>

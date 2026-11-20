@@ -49,7 +49,7 @@ export default function ForgotPassword() {
             <h1>Forgot your password?</h1>
             <p className="lede">Reset links by email aren&apos;t switched on yet. Message us from the email address or phone number on your account and we&apos;ll reset it for you.</p>
           </div>
-          <a className="pill pill-dark block" href={supportHref}>{site.whatsapp ? "Message us on WhatsApp" : `Email ${site.supportEmail}`}</a>
+          <a className="pill pill-dark block" href={supportHref}>{site.whatsapp ? "Message us on WhatsApp" : "Contact support"}</a>
           <p className="fine">Signed up with your phone number, Google or Apple? You don&apos;t need a password. <a href="/signin">Sign in that way</a> instead.</p>
         </div>
       </AuthFrame>

@@ -24,6 +24,7 @@ export interface Env {
   CF_ACCOUNT_ID?: string;
   CF_EMAIL_API_TOKEN?: string; // Cloudflare API token with "Email Sending: Edit"
   EMAIL_FROM?: string; // e.g. "Markhor Prep <no-reply@yourdomain.com>"
+  SUPPORT_EMAIL?: string; // where support replies come from and tickets are announced; defaults to lib/site.ts supportEmail
 
   /* Android app. APP_MIN_VERSION: older app versions are told to update (426). APP_LATEST_VERSION: the newest on Play.
      OFFLINE_ENABLED: "1" switches offline packs on. PLAY_CLOUD_PROJECT_NUMBER: the Google Cloud project linked to Play,

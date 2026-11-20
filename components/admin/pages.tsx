@@ -5,6 +5,7 @@ import Bank from "@/components/admin/Bank";
 import Overview from "@/components/admin/Overview";
 import Questions from "@/components/admin/Questions";
 import Reports from "@/components/admin/Reports";
+import Tickets from "@/components/admin/Tickets";
 import SiteTheme from "@/components/admin/SiteTheme";
 import Users from "@/components/admin/Users";
 import Visitors from "@/components/admin/Visitors";
@@ -21,3 +22,4 @@ export const ReportsPage = () => <AdminFrame active="/admin/reports" reviewerOnl
 export const SiteThemePage = () => <AdminFrame active="/admin/site" adminOnly>{() => <SiteTheme />}</AdminFrame>;
 export const WaitlistPage = () => <AdminFrame active="/admin/waitlist" adminOnly>{() => <Waitlist />}</AdminFrame>;
 export const BankPage = () => <AdminFrame active="/admin/bank">{(user) => <Bank user={user} />}</AdminFrame>;
+export const TicketsPage = () => <AdminFrame active="/admin/tickets" adminOnly>{(user) => <Tickets user={user} />}</AdminFrame>;
