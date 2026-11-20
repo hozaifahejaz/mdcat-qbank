@@ -1,5 +1,4 @@
 import { api } from "@/lib/api";
-import { applyLook } from "@/lib/look-client";
 import { forgetAll, keep, seen } from "@/lib/cache";
 import type { Role } from "@/lib/qc";
 
@@ -35,9 +34,8 @@ export function getCurrentUser(): Promise<AccountUser | null> {
   if (asking && Date.now() - askedAt > SHARE_MS) asking = null;
   if (!asking) {
     askedAt = Date.now();
-    const p: Promise<AccountUser | null> = api<{ user: AccountUser | null; look?: string }>("/api/auth/me")
-      .then(({ user, look }) => {
-        applyLook(look);
+    const p: Promise<AccountUser | null> = api<{ user: AccountUser | null }>("/api/auth/me")
+      .then(({ user }) => {
         rememberUser(user);
         // Only a signed-in answer is shared; signed out, the next page asks again (it may be just after signing in).
         if (!user && asking === p) asking = null;

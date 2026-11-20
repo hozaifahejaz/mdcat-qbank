@@ -19,8 +19,7 @@ npm run build      # production build
 npm run typecheck
 ```
 
-- `app/page.tsx` and `app/landing.css`: the landing page. Its look matches residencypilot.com (same tokens in `app/globals.css`).
-- `components/SampleQuestion.tsx`: the "Try a question" card, with sample questions in `lib/sample-questions.ts`.
+- `app/page.tsx` and `app/landing-new.css`: the landing page.
 - `lib/site.ts`: the brand name (a working name for now), prices and the paper's subject split.
 - `app/signin`, `app/signup`, `app/account` and `components/auth/`: the sign-in pages, with the two-device rule. The API behind them is `functions/` and `server/` (Cloudflare Pages Functions), and the D1 database schema is in `migrations/`. Setup steps for SMS, email, Google and Apple are in [docs/auth-setup.md](docs/auth-setup.md).
 - `app/admin` and `components/admin/`: the admin panel at `/admin`, for staff only. Questions go through the quality check (auto checks, a blind solve by someone other than the writer, the textbook checklist, an admin's sign-off, beta, live); admins also manage accounts, roles and plans. The API is `server/admin.ts`, the shared rules are in `lib/qc.ts`, and roles live in the `users.role` column (`migrations/0002_admin.sql`). Admins give other people roles from `/admin/users`.

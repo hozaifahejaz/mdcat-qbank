@@ -11,8 +11,7 @@ import { prices, site } from "@/lib/site";
 import "./landing-new.css";
 
 /* The landing page in the new look: a calm, light product page with floating cards around a big two-tone headline,
-   live mini widgets, an orbit of subjects and a highlighted middle plan. The earlier look is kept at app/classic/ and
-   the admin panel picks which one / shows (functions/index.ts). */
+   live mini widgets, an orbit of subjects and a highlighted middle plan. */
 export const metadata: Metadata = { alternates: { canonical: "/" } };
 
 const buy = (plan: string) => `/signup?next=${encodeURIComponent(`/checkout?plan=${plan}`)}`;

@@ -138,8 +138,8 @@ form.stack, .stack { display: grid; gap: 14px; }
 html:not([data-in]) .gate-body { display: none; }
 html[data-in] .gate-wait { display: none; }
 
-/* The new look (lib/look.ts): the landing page's light canvas, blue buttons, softer rectangles and floating product
-   cards. The page is marked <html data-look="new"> by functions/signin.ts and friends; without the mark it stays as above. */
+/* The site's look: the landing page's light canvas, blue buttons, softer rectangles and floating product
+   cards. Every page is marked <html data-look="new"> (app/layout.tsx). */
 .side-new { display: none; }
 html[data-look="new"] .auth {
   --bg: #fafafa; --card: #ffffff; --ink: #0f1115; --muted: #6b6f76; --line: #ececec; --blue: #2f55f0; --blue-soft: #e9edff;
