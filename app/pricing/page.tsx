@@ -6,6 +6,8 @@ import { site } from "@/lib/site";
 import "@/app/auth.css";
 import "@/app/dashboard.css";
 import "@/app/app.css";
+import "@/app/landing-new.css";
+import "@/app/public.css";
 
 export const metadata: Metadata = {
   title: `Pricing · ${site.name}`,
