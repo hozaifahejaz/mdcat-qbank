@@ -5,14 +5,14 @@ import { PublicFooter } from "@/components/public/Frame";
 import Experience from "@/components/experiment4/Experience";
 import { ExamProvider } from "@/components/experiment4/ExamState";
 import Climb from "@/components/experiment4/Climb";
-import { Features, Orbit, Exams, Pricing, Faq, End } from "@/components/experiment4/Sections";
+import { Features, Pricing, Faq, End } from "@/components/experiment4/Sections";
 import { site } from "@/lib/site";
 import "../../landing-new.css";
 import "./exp4.css";
 
 /* Landing page experiment 4: "I'm preparing for ___". The visitor names their area (medical college, engineering,
    residency...) in the headline and the whole page then speaks to that area alone, using the main landing page's
-   sections: features with live widgets, the subject orbit, the climb, the area's tests, its own prices and FAQ. The live landing page at / is unchanged. Noindex. */
+   sections: its tests (hero cards), a look inside the account, the climb, its own prices and FAQ, each said once. The live landing page at / is unchanged. Noindex. */
 export const metadata: Metadata = { title: `Experiment 4 · ${site.name}`, robots: { index: false, follow: false } };
 
 export default function Experiment4() {
@@ -25,8 +25,8 @@ export default function Experiment4() {
           <ul>
             <li><a href="#features">Inside</a></li>
             <li><a href="#how">How it works</a></li>
-            <li><a href="#exams">Tests</a></li>
             <li><a href="#pricing">Pricing</a></li>
+            <li><a href="#faq">FAQ</a></li>
           </ul>
           <div className="x3-navend">
             <ThemeToggle />
@@ -39,9 +39,7 @@ export default function Experiment4() {
         <main>
           <Experience />
           <Features />
-          <Orbit />
           <Climb />
-          <Exams />
           <Pricing payments={site.payments} />
           <Faq />
           <End />

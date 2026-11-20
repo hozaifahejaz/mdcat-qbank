@@ -10,10 +10,10 @@ import { useArea, type Area } from "./ExamState";
 
 const list = (xs: string[]) => xs.length < 2 ? xs.join("") : `${xs.slice(0, -1).join(", ")} and ${xs[xs.length - 1]}`;
 const stepsFor = (a: Area) => [
-  { h: "Pick your area", p: `Your account shows ${a.name.toLowerCase()} and nothing else.` },
-  { h: "Practice by chapter", p: `${list(a.page.subjects.slice(0, 4).map((s) => s.name))}, chapter by chapter, every option explained.` },
+  { h: "Sign up free", p: `Choose ${a.name.toLowerCase()}, pick your tests and set your exam date.` },
+  { h: "Learn by chapter", p: `${list(a.page.subjects.slice(0, 3).map((s) => s.name))}, one chapter at a time, every answer explained.` },
+  { h: "Test yourself", p: "Mixed tests from the chapters you've finished, as long or short as you like." },
   { h: "Sit the real paper", p: a.page.mock.line },
-  { h: "Fix your mistakes", p: "Every wrong answer waits in My mistakes for another try." },
   { h: "Exam day", p: "Walk in having seen it all before." },
 ];
 const ROUTE = "M80 660 C 240 650 450 620 480 560 S 200 470 230 400 S 400 330 360 250 S 290 130 300 62";

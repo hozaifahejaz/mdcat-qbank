@@ -1,13 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { tracks, type TrackId } from "@/lib/catalogue";
 import { useArea, type Area } from "./ExamState";
 import TrackMark from "./TrackMark";
+import { ExamMark } from "@/components/Marks";
 
 /* The heart of experiment 4: "I'm preparing for ___". The blank is an area (medical college, engineering university,
    residency...). Until the visitor touches it, it turns through the areas so they can see the page adapt. Picking one
-   changes the card under it and every section below, which read the same choice from ExamState. */
+   changes the test cards under it and every section below, which read the same choice from ExamState. */
 
 export default function Experience() {
   const { shown, touched, open, setOpen, choose } = useArea();
@@ -63,63 +64,37 @@ function Picker({ current, onPick, onClose }: { current: string; onPick: (id: Tr
   );
 }
 
-/* The area's tests as a fan of cards (the main landing's test cards), then one call to action with the same proof
-   line as the main hero. */
+/* The area's tests as a fan of cards, each in its own colour, with its paper in one line and a thin bar of its parts.
+   Then one call to action with the main hero's proof line. */
+const palette = ["#11804a", "#2445ff", "#b06a00", "#8a63ff", "#d4483b", "#0f9fb5", "#c9a400"];
+const marks = new Set(["mdcat", "nums", "aku", "ecat", "net", "lat"]);
+
 function AreaCard({ area }: { area: Area }) {
   const n = area.exams.length;
+  const start = Math.max(0, palette.indexOf(area.colour));
   return (
     <div className="x4-under">
       <ul className="x4-fan" aria-label={`Tests in ${area.name}`}>
-        {area.exams.map((e, i) => (
-          <li key={e.id} className="x3-card x4-fcard" style={{ ["--r" as string]: `${(i - (n - 1) / 2) * 3}deg`, ["--d" as string]: `${i * 60}ms` }}>
-            <span className="x4-fhead">
-              <span className="x4-tile" style={{ color: area.colour }}><TrackMark id={area.id} size={20} /></span>
-              <em className={e.live ? "x4-status live" : "x4-status"}>{e.live ? "Live" : "Soon"}</em>
-            </span>
-            <b>{e.name}</b>
-            <small>{e.pattern ? e.pattern.summary : e.body}</small>
-          </li>
-        ))}
+        {area.exams.map((e, i) => {
+          const c = palette[(start + i) % palette.length];
+          return (
+            <li key={e.id} className="x3-card x4-fcard" style={{ ["--r" as string]: n > 5 ? `${i % 2 ? 1.5 : -1.5}deg` : `${(i - (n - 1) / 2) * 3}deg`, ["--d" as string]: `${i * 60}ms`, ["--c" as string]: c }}>
+              <span className="x4-tile">{marks.has(e.id) ? <ExamMark id={e.id} size={20} /> : <TrackMark id={area.id} size={20} />}</span>
+              <b>{e.name}</b>
+              <small>{e.pattern ? e.pattern.summary : e.body}</small>
+              {e.pattern && (
+                <span className="x4-fbar" aria-hidden="true">
+                  {e.pattern.parts.map((p, j) => <i key={p.name} style={{ flexGrow: p.n, background: `color-mix(in srgb, var(--c) ${100 - j * 15}%, var(--x-card))` }} />)}
+                </span>
+              )}
+            </li>
+          );
+        })}
       </ul>
-      {area.live ? (
-        <div className="x4-go">
-          <a className="x3-btn x3-blue x3-big" href="/signup">Start free</a>
-          <small className="x3-proof">100 questions free. No card needed.</small>
-        </div>
-      ) : (
-        <div className="x4-go">
-          <Notify name={area.name.toLowerCase()} />
-          <small className="x3-proof">{area.name} opens soon. We&apos;ll tell you the day it does.</small>
-        </div>
-      )}
+      <div className="x4-go">
+        <a className="x3-btn x3-blue x3-big" href="/signup">Start free</a>
+        <small className="x3-proof">100 questions free. No card needed.</small>
+      </div>
     </div>
-  );
-}
-
-export function Notify({ name }: { name: string }) {
-  const [v, setV] = useState("");
-  const [state, setState] = useState<"idle" | "busy" | "done" | "error">("idle");
-  const [msg, setMsg] = useState("");
-  const send = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setState("busy");
-    try {
-      const r = await fetch("/api/waitlist", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ contact: v }) });
-      if (r.ok) { setState("done"); return; }
-      const j = await r.json().catch(() => ({}));
-      setMsg(j?.message || "That didn't work. Try again.");
-      setState("error");
-    } catch {
-      setMsg("No connection. Try again.");
-      setState("error");
-    }
-  };
-  if (state === "done") return <p className="x4-done">You&apos;re on the list. We&apos;ll tell you when {name} opens.</p>;
-  return (
-    <form className="x4-notify" onSubmit={send}>
-      <input value={v} onChange={(e) => setV(e.target.value)} placeholder="Email or mobile number" aria-label="Email or mobile number" required />
-      <button className="x3-btn x3-dark" disabled={state === "busy"}>Tell me when it opens</button>
-      {state === "error" && <small role="alert">{msg}</small>}
-    </form>
   );
 }

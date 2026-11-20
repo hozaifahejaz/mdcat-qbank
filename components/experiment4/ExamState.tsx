@@ -14,7 +14,8 @@ const FALLBACK: TrackId = "medical";
 export const still = () => typeof window !== "undefined" && matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 const find = (id: string) => tracks.find((t) => t.id === id) ?? tracks[0];
-const withPage = (id: string) => { const t = find(id); return { ...t, page: trackPages[t.id], live: t.exams.some((e) => e.live) }; };
+// The experiment shows every area as open (Huzaifa 2026-11-21: "make it like everything is done").
+const withPage = (id: string) => { const t = find(id); return { ...t, page: trackPages[t.id] }; };
 export type Area = ReturnType<typeof withPage>;
 
 type State = {
