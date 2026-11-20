@@ -1,74 +1,104 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { Subject } from "@/lib/track-pages";
+import type { Area } from "./ExamState";
 import { still } from "./ExamState";
+import TrackMark from "./TrackMark";
 
-/* The main landing page's live widgets, fed with the chosen area's subjects. Same classes (.build, .term), so they
-   look exactly like the ones on /. */
+/* "Inside your account": one app window, filled with the chosen area, in place of a row of feature cards. Three tabs
+   (Practice, Mocks, My mistakes) turn on their own until the visitor clicks one. Sample numbers only. */
 
+const tabs = ["Practice", "Mocks", "My mistakes"] as const;
+type Tab = (typeof tabs)[number];
+const done = [72, 58, 45, 81, 34, 63];
+const left = [6, 3, 2, 4, 1, 2];
 const short = (name: string) => name.replace(/^(SAT|IELTS) /, "").slice(0, 2);
 
-export function BuildTest({ pool }: { pool: Subject[] }) {
-  const list = pool.slice(0, 3);
-  const [on, setOn] = useState(list.map((_, i) => i !== 1));
-  const total = list.reduce((s, p, i) => s + (on[i] ? p.n : 0), 0);
-  return (
-    <div className="build">
-      {list.map((p, i) => (
-        <label key={p.name} className="tog">
-          <i style={{ background: p.c }}>{short(p.name)}</i>
-          <span><b>{p.name}</b><small>{on[i] ? `${p.n} questions` : "Off"}</small></span>
-          <input type="checkbox" role="switch" checked={on[i]} onChange={() => setOn(on.map((v, j) => (j === i ? !v : v)))} aria-label={p.name} />
-          <u aria-hidden="true" />
-        </label>
-      ))}
-      <div className="build-total"><b>{total}</b> questions ready</div>
-    </div>
-  );
-}
-
-const pattern = [true, true, false, true, true, true, false, true];
-export function MockLog({ pool, secs }: { pool: Subject[]; secs: number }) {
-  const lines = pattern.map((ok, i) => [`Q${12 + i}`, pool[Math.min(pool.length - 1, Math.floor(i / 2))].name, ok] as const);
-  const [sec, setSec] = useState(secs - 19);
-  const [shown, setShown] = useState(4);
+export function Inside({ area }: { area: Area }) {
+  const [tab, setTab] = useState<Tab>("Practice");
+  const [auto, setAuto] = useState(true);
+  const [cleared, setCleared] = useState<number[]>([]);
+  useEffect(() => { setCleared([]); }, [area.id]);
   useEffect(() => {
-    if (still()) return;
-    const a = setInterval(() => setSec((s) => (s > 0 ? s - 1 : secs)), 1000);
-    const b = setInterval(() => setShown((n) => (n >= lines.length ? 4 : n + 1)), 1600);
-    return () => { clearInterval(a); clearInterval(b); };
-  }, [secs, lines.length]);
-  const hh = String(Math.floor(sec / 3600)).padStart(2, "0");
-  const mm = String(Math.floor((sec % 3600) / 60)).padStart(2, "0");
-  const ss = String(sec % 60).padStart(2, "0");
-  const rows = lines.slice(Math.max(0, shown - 4), shown);
-  return (
-    <div className="term" aria-hidden="true">
-      <div className="term-top"><i /><i /><i /><span>{hh}:{mm}:{ss}</span></div>
-      <div className="term-body">
-        {rows.map(([q, s, ok]) => (
-          <p key={q}><span className="q">[{q}]</span> {s}: <span className={ok ? "g" : "r"}>{ok ? "correct" : "review later"}</span></p>
-        ))}
-        <p><span className="q">[Q{Number(rows[rows.length - 1][0].slice(1)) + 1}]</span> Waiting for answer<b className="caret" /></p>
-      </div>
-    </div>
-  );
-}
+    if (!auto || still()) return;
+    const t = setTimeout(() => setTab(tabs[(tabs.indexOf(tab) + 1) % tabs.length]), 4200);
+    return () => clearTimeout(t);
+  }, [tab, auto]);
+  const pick = (t: Tab) => { setAuto(false); setTab(t); };
 
-/* My mistakes: wrong answers waiting per subject; tapping Retry clears one. */
-export function Mistakes({ pool }: { pool: Subject[] }) {
-  const start = pool.slice(0, 3).map((p, i) => ({ ...p, left: [7, 4, 2][i] }));
-  const [rows, setRows] = useState(start);
+  const subjects = area.page.subjects.slice(0, 5);
+  const lead = area.exams.find((e) => e.pattern) ?? area.exams[0];
+  const total = lead.pattern ? lead.pattern.parts.reduce((s, p) => s + p.n, 0) : 100;
+  const score = Math.round(total * 0.78);
+
   return (
-    <div className="x4-miss">
-      {rows.map((r, i) => (
-        <div key={r.name}>
-          <i style={{ background: r.c }}>{short(r.name)}</i>
-          <span><b>{r.name}</b><small>{r.left ? `${r.left} to retry` : "All cleared"}</small></span>
-          <button type="button" disabled={!r.left} onClick={() => setRows(rows.map((x, j) => (j === i ? { ...x, left: x.left - 1 } : x)))}>Retry</button>
+    <div className="x4-app" style={{ ["--x4-c" as string]: area.colour }}>
+      <div className="x4-appbar"><i /><i /><i /><span>markhorprep.com/app</span></div>
+      <div className="x4-appin">
+        <aside>
+          <div className="x4-appme">
+            <span className="x4-tile" style={{ color: area.colour }}><TrackMark id={area.id} size={18} /></span>
+            <b>{area.name}</b>
+          </div>
+          <nav role="tablist" aria-label="Inside your account">
+            {tabs.map((t) => (
+              <button key={t} type="button" role="tab" aria-selected={t === tab} className={t === tab ? "on" : ""} onClick={() => pick(t)}>{t}</button>
+            ))}
+          </nav>
+          <small>Your tests</small>
+          <ul>{area.exams.slice(0, 5).map((e) => <li key={e.id}>{e.name}</li>)}</ul>
+        </aside>
+
+        <div className="x4-pane" key={tab + area.id}>
+          {tab === "Practice" && (
+            <>
+              <h4>Pick up where you left off</h4>
+              {subjects.map((s, i) => (
+                <div key={s.name} className="x4-row">
+                  <i style={{ background: s.c }}>{short(s.name)}</i>
+                  <span><b>{s.name}</b><u><s style={{ ["--w" as string]: done[i] / 100, background: s.c }} /></u></span>
+                  <em>{done[i]}%</em>
+                </div>
+              ))}
+            </>
+          )}
+          {tab === "Mocks" && (
+            <>
+              <h4>Full mocks</h4>
+              <div className="x4-mock">
+                <div className="x4-ring" style={{ ["--p" as string]: `${(score / total) * 100}%` }}><b>{score}</b><small>of {total}</small></div>
+                <div>
+                  <b>Last mock: {lead.name}</b>
+                  <p>{area.page.mock.line}</p>
+                  <span className="x4-chip">Next mock ready</span>
+                </div>
+              </div>
+              {lead.pattern && (
+                <div className="x4-split">
+                  {lead.pattern.parts.slice(0, 5).map((p, i) => (
+                    <span key={p.name}><small>{p.name}</small><b>{Math.round(p.n * [0.82, 0.74, 0.69, 0.9, 0.8][i])}/{p.n}</b></span>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+          {tab === "My mistakes" && (
+            <>
+              <h4>Waiting for another try</h4>
+              {subjects.slice(0, 4).map((s, i) => {
+                const n = cleared.includes(i) ? 0 : left[i];
+                return (
+                  <div key={s.name} className="x4-row">
+                    <i style={{ background: s.c }}>{short(s.name)}</i>
+                    <span><b>{s.name}</b><small>{n ? `${n} to retry` : "All cleared"}</small></span>
+                    <button type="button" disabled={!n} onClick={() => { setAuto(false); setCleared([...cleared, i]); }}>{n ? "Retry" : "Done"}</button>
+                  </div>
+                );
+              })}
+            </>
+          )}
         </div>
-      ))}
+      </div>
     </div>
   );
 }
