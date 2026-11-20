@@ -1,6 +1,7 @@
 User-agent: *
 Allow: /
 Disallow: /admin
+Disallow: /experiments
 Disallow: /api/
 Disallow: /dashboard
 Disallow: /practice
