@@ -84,14 +84,15 @@ export const getOverview = () => keep("overview", api<Overview>("/api/admin/over
 
 /* Visitors are counted once a day (server/visits.ts), so a total over a range adds up each day's visitors. */
 export type VisitRow = { key: string; visitors: number; views: number };
+export type VisitDim = "page" | "entry" | "referrer" | "campaign" | "country" | "region" | "city" | "device" | "os" | "browser" | "hour";
 export type Visits = {
   days: number;
   now: number;
-  totals: { visitors: number; views: number; signedIn: number; signups: number };
+  totals: { visitors: number; views: number; signedIn: number; single: number; signups: number };
   previous: { visitors: number; views: number };
-  daily: { date: string; visitors: number; views: number; signedIn: number }[];
-  pages: VisitRow[]; referrers: VisitRow[]; campaigns: VisitRow[]; countries: VisitRow[];
-  devices: VisitRow[]; os: VisitRow[]; browsers: VisitRow[];
+  daily: { date: string; visitors: number; views: number; signedIn: number; single: number }[];
+  hourly: { hour: string; visitors: number; views: number }[] | null;
+  lists: Record<VisitDim, VisitRow[]>;
 };
 export const getVisits = (days: number) => keep(`visits:${days}`, api<Visits>(`/api/admin/visitors?days=${days}`));
 
