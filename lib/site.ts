@@ -16,7 +16,7 @@ export const site = {
   bank: { questions: 7200, papers: [2026] },
   season: "2027",
   examMonth: "August 2027",
-  /* Expected date for the dashboard countdown. PMDC announces the real one; 2026 was 16 August. Update when it does. */
+  /* Expected date for the dashboard countdown. PMDC announces the real one; 2026 was set for 16 August and held on 20 September. Update when it does. */
   examDate: "2027-08-15",
 };
 

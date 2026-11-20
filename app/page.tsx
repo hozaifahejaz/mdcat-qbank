@@ -5,6 +5,8 @@ import ThemeToggle from "@/components/ThemeToggle";
 import { BuildTest, MockLog, NoteTyping } from "@/components/landing/Live";
 import { ExamMark, SubjectMark } from "@/components/Marks";
 import { money, plans } from "@/lib/billing";
+import { PublicFooter } from "@/components/public/Shell";
+import { abs, bankSize, faqData, ld, subjects as subjectPages } from "@/lib/public";
 import { prices, site } from "@/lib/site";
 import "./landing-new.css";
 
@@ -38,16 +40,25 @@ const tests = [
 
 const faqs = [
   { q: "Is this a coaching course?", a: "No. It's a practice tool: MCQs, explanations, timed mocks and past papers, for a fraction of a course." },
+  { q: "Is it free?", a: "100 questions are free with a full explanation on each, plus one mini mock. No card is needed. A Season Pass opens the whole bank." },
+  { q: "How many questions are there?", a: `${bankSize} original MCQs across Biology, Chemistry, Physics, English and Logical Reasoning, sorted by chapter for the PMDC MDCAT, NUMS and AKU syllabi.` },
   { q: "Where do the questions come from?", a: "Every question is written for this bank from the syllabus and its textbooks, then checked against the textbook." },
-  { q: "How do I pay?", a: site.payments ? "JazzCash, Easypaisa, card or bank transfer. One payment for the season, no renewal." : "Payments open soon: JazzCash, Easypaisa, card or bank transfer, as one payment with no renewal. The free questions are open now." },
   { q: "Which tests do you cover?", a: "PMDC MDCAT, NUMS and the AKU test, plus FSc chapter practice. Engineering and law come later." },
+  { q: "Does it follow the current syllabus?", a: "Yes. Questions are filed under the chapters of the PMDC MDCAT syllabus, with separate chapter lists for NUMS and AKU." },
+  { q: "How do I pay?", a: site.payments ? "JazzCash, Easypaisa, card or bank transfer. One payment for the season, no renewal." : "Payments open soon: JazzCash, Easypaisa, card or bank transfer, as one payment with no renewal. The free questions are open now." },
+  { q: "Does it work on a phone?", a: "Yes. The site is built for phones first and works in any browser. iOS and Android apps are coming soon." },
 ];
 
-/* The FAQ again in the form search engines read, so its questions can show under the result. */
-const faqData = {
+/* Who the site is, in the form search engines read: the organisation and the website. */
+const who = {
   "@context": "https://schema.org",
-  "@type": "FAQPage",
-  mainEntity: faqs.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })),
+  "@graph": [
+    {
+      "@type": "EducationalOrganization", "@id": `${site.url}/#org`, name: site.name, url: site.url, logo: abs("/icons/icon-512.png"), email: site.supportEmail, areaServed: "PK",
+      description: `${site.name} is an online question bank for Pakistani medical entry tests, with ${bankSize} original MCQs for the PMDC MDCAT, NUMS MDCAT and AKU test, a full explanation on every question, timed mocks and past papers.`,
+    },
+    { "@type": "WebSite", "@id": `${site.url}/#site`, name: site.name, url: site.url, inLanguage: "en", publisher: { "@id": `${site.url}/#org` } },
+  ],
 };
 
 const Check = () => (
@@ -90,9 +101,10 @@ export default function Home() {
           </div>
 
           <div className="x3-copy">
-            <h1>Practice, mock and track<span>your way to a seat</span></h1>
-            <p>MDCAT MCQs with an explanation on every answer.</p>
+            <h1>Practice MDCAT MCQs<span>your way to a seat</span></h1>
+            <p>{bankSize} MCQs for the PMDC MDCAT, NUMS and AKU test, with an explanation on every answer.</p>
             <a className="x3-btn x3-blue x3-big" href="/signup">Start free</a>
+            <small className="x3-proof">100 questions free. No card needed.</small>
           </div>
 
           <div className="fl fl-today" aria-hidden="true">
@@ -160,6 +172,10 @@ export default function Home() {
               </div>
               <div className="core"><Markhor height={52} /></div>
             </div>
+            <p className="x3-links">
+              {subjectPages.map((x) => <a key={x.slug} href={`/mdcat/${x.slug}`}>{x.name} MCQs</a>)}
+              <a href="/mdcat/syllabus">Syllabus</a>
+            </p>
           </div>
         </section>
 
@@ -267,30 +283,9 @@ export default function Home() {
         </section>
       </main>
 
-      <footer className="x3-foot">
-        <div className="x3-wrap">
-          <div className="x3-footin">
-            <div>
-              <Logo href="#top" size={22} />
-              <p>Start practicing before<br />MDCAT {site.season}.</p>
-            </div>
-            <ul>
-              <li><b>Product</b></li>
-              <li><a href="#features">Features</a></li>
-              <li><a href="#pricing">Pricing</a></li>
-              <li><a href="/signin">Sign in</a></li>
-            </ul>
-            <ul>
-              <li><b>Legal</b></li>
-              <li><a href="/privacy">Privacy</a></li>
-              <li><a href="/terms">Terms</a></li>
-              <li><a href="/refunds">Refunds</a></li>
-            </ul>
-          </div>
-          <p className="legal">Not affiliated with PMDC, NUMS or any university. © {new Date().getFullYear()} {site.name}</p>
-        </div>
-      </footer>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqData).replace(/</g, "\\u003c") }} />
+      <PublicFooter home="#top" />
+      <script type="application/ld+json" dangerouslySetInnerHTML={ld(faqData(faqs))} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={ld(who)} />
       <Ahead />
     </div>
   );

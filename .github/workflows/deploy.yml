@@ -42,5 +42,28 @@ jobs:
         if: github.ref_name == 'main'
         continue-on-error: true
         run: npx wrangler d1 migrations apply mdcat-qbank --remote
+      # Before the deploy, note whether the list of public pages differs from the one that is live.
+      - name: Compare the page list with the live one
+        if: github.ref_name == 'main'
+        id: pages
+        continue-on-error: true
+        run: |
+          curl -fsS --max-time 20 https://markhorprep.com/sitemap.xml -o live-sitemap.xml || true
+          if cmp -s live-sitemap.xml out/sitemap.xml; then echo "changed=false" >> "$GITHUB_OUTPUT"; else echo "changed=true" >> "$GITHUB_OUTPUT"; fi
       - name: Deploy
         run: npx wrangler pages deploy --project-name=mdcat-qbank --branch="${GITHUB_REF_NAME}" --commit-dirty=true
+      # IndexNow: tells Bing and the other search engines that take part which pages to read again, so new and
+      # changed pages show up in hours instead of days. The key is public by design (public/<key>.txt proves the
+      # site sent it). Only when the page list changed, and never fails the deploy.
+      - name: Tell search engines the pages changed
+        if: github.ref_name == 'main' && steps.pages.outputs.changed == 'true'
+        continue-on-error: true
+        run: |
+          node -e '
+            const urls = require("fs").readFileSync("out/urls.txt", "utf8").trim().split("\n");
+            const key = "12023f8437abe7d0dad51076e6c30e94";
+            fetch("https://api.indexnow.org/indexnow", {
+              method: "POST", headers: { "content-type": "application/json; charset=utf-8" },
+              body: JSON.stringify({ host: "markhorprep.com", key, keyLocation: `https://markhorprep.com/${key}.txt`, urlList: urls }),
+            }).then((r) => console.log("IndexNow:", r.status, urls.length, "pages"));
+          '
