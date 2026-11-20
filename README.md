@@ -33,7 +33,7 @@ It needs two repository secrets (Settings > Secrets and variables > Actions):
 - `CLOUDFLARE_API_TOKEN`: a token with Cloudflare Pages Edit permission
 - `CLOUDFLARE_ACCOUNT_ID`
 
-The sign-in API uses the D1 database `mdcat-qbank` (bound in `wrangler.toml`). The token also needs D1 Edit so the workflow can apply `migrations/`. Provider secrets are set on the Pages project; see [docs/auth-setup.md](docs/auth-setup.md).
+The sign-in API uses the D1 database `mdcat-qbank-eu` (bound in `wrangler.toml`). The token also needs D1 Edit so the workflow can apply `migrations/`. Provider secrets are set on the Pages project; see [docs/auth-setup.md](docs/auth-setup.md).
 
 To run the site with its API locally: `cp .dev.vars.example .dev.vars && npm run preview` (http://localhost:8788).
 

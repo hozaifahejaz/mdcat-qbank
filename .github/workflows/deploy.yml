@@ -41,7 +41,7 @@ jobs:
       - name: Apply database migrations
         if: github.ref_name == 'main'
         continue-on-error: true
-        run: npx wrangler d1 migrations apply mdcat-qbank --remote
+        run: npx wrangler d1 migrations apply mdcat-qbank-eu --remote
       # Before the deploy, note whether the list of public pages differs from the one that is live.
       - name: Compare the page list with the live one
         if: github.ref_name == 'main'
