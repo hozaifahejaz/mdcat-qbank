@@ -10,13 +10,11 @@ export const onRequest: PagesFunction<Env> = async ({ request, env }) => {
     const d: number[] = [];
     for (let i = 0; i < 4; i++) { const a = Date.now(); await env.DB.prepare("SELECT 1").first(); d.push(Date.now() - a); }
     out.d1 = d;
-    for (const r of regions) {
+    for (const k of ["T_WEUR", "T_EEUR"] as const) {
+      const db = (env as unknown as Record<string, D1Database>)[k];
       const t: number[] = [];
-      for (let i = 0; i < 3; i++) {
-        const a = Date.now();
-        try { await (await fetch(`https://dynamodb.${r}.amazonaws.com/?n=${i}${a}`, { signal: AbortSignal.timeout(3000) })).text(); t.push(Date.now() - a); } catch { t.push(-1); }
-      }
-      out[r] = t;
+      for (let i = 0; i < 6; i++) { const a = Date.now(); await db.prepare("SELECT 1").first(); t.push(Date.now() - a); }
+      out[k] = t;
     }
     out.colo = (request as unknown as { cf?: { colo?: string } }).cf?.colo;
     return new Response(JSON.stringify(out), { headers: { "content-type": "application/json", "cache-control": "no-store" } });

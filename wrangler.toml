@@ -10,3 +10,13 @@ binding = "DB"
 database_name = "mdcat-qbank"
 database_id = "f909e867-fab8-4834-a715-e9dc75b3a4af"
 migrations_dir = "migrations"
+
+[[d1_databases]]
+binding = "T_WEUR"
+database_name = "latency-test-weur"
+database_id = "aba1eecf-f1a2-4382-9df2-cd7dc246dee2"
+
+[[d1_databases]]
+binding = "T_EEUR"
+database_name = "latency-test-eeur"
+database_id = "466c1133-d44c-4ac4-998f-0f85676a2003"
