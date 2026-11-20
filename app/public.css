@@ -105,3 +105,10 @@
 .pub-scroll { overflow-x: auto; max-width: 100%; border-radius: 16px; box-shadow: var(--x-shadow); }
 .pub-scroll .pub-table { min-width: 620px; box-shadow: none; }
 .calc .pair > span { padding-top: 20px; }
+
+/* Subject and test marks */
+.pub-mark { display: grid; place-items: center; flex: none; justify-self: start; width: 42px; height: 42px; border-radius: 12px; }
+.pub-mark.sm { width: 28px; height: 28px; border-radius: 8px; }
+.pub-mark.lg { width: 56px; height: 56px; border-radius: 16px; }
+.pub .tile .tl { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.pub h2.with-mark { display: flex; align-items: center; gap: 10px; }
