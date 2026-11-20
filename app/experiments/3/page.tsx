@@ -77,7 +77,7 @@ export default function Experiment3() {
           </div>
 
           <div className="x3-copy">
-            <h1>Practise, mock and track<span>your way to a seat</span></h1>
+            <h1>Practice, mock and track<span>your way to a seat</span></h1>
             <p>MDCAT MCQs with an explanation on every answer.</p>
             <a className="x3-btn x3-blue x3-big" href="/signup">Start free</a>
           </div>
@@ -101,7 +101,7 @@ export default function Experiment3() {
           <div className="x3-wrap">
             <div className="x3-head">
               <span className="x3-tag">Features</span>
-              <h2>Practise the way <span className="hl">the paper asks.</span></h2>
+              <h2>Practice the way <span className="hl">the paper asks.</span></h2>
             </div>
             <div className="x3-cards">
               <article className="x3-card">
@@ -256,7 +256,7 @@ export default function Experiment3() {
           <div className="x3-footin">
             <div>
               <Logo href="#top" size={22} />
-              <p>Start practising before<br />MDCAT {site.season}.</p>
+              <p>Start practicing before<br />MDCAT {site.season}.</p>
             </div>
             <ul>
               <li><b>Product</b></li>

@@ -25,7 +25,7 @@ const faqs = [
   { q: "Where do the questions come from?", a: "Every question is written for this bank from the PMDC syllabus and the textbooks it's based on, then checked against the textbook. Past-paper questions are rebuilt in our own words with our own explanations. Nothing is copied from academy books or other apps." },
   { q: "What if I find a mistake?", a: "Tap \"Report\" on the question. A reviewer checks every report, and if we were wrong we fix the question for everyone." },
   { q: "How do I pay?", a: site.payments ? "JazzCash, Easypaisa, debit or credit card, or bank transfer. It's a one-time payment for the season, with no renewal." : "Payments open soon: JazzCash, Easypaisa, debit or credit card, or bank transfer, as a one-time payment with no renewal. The free questions are open now." },
-  { q: "Do you cover NUMS, AKU or other tests?", a: "Yes. One account covers PMDC MDCAT, NUMS MDCAT and the AKU test, and you can also practise by FSc textbook chapter. Engineering and law tests come later." },
+  { q: "Do you cover NUMS, AKU or other tests?", a: "Yes. One account covers PMDC MDCAT, NUMS MDCAT and the AKU test, and you can also practice by FSc textbook chapter. Engineering and law tests come later." },
   { q: "Are you affiliated with PMDC?", a: `No. ${site.name} is independent and not affiliated with PMDC, NUMS or any university.` },
 ];
 
@@ -68,7 +68,7 @@ export default function Home() {
           <header className="hero">
             <div className="hero-copy">
               <span className="tag"><i />PMDC MDCAT · {site.season} season</span>
-              <h1>Practise the MCQs that <span>decide your seat.</span></h1>
+              <h1>Practice the MCQs that <span>decide your seat.</span></h1>
               <p className="sub muted">
                 Chapter-wise MDCAT questions, every one explained, and timed mocks built like the real paper.
               </p>
@@ -104,12 +104,12 @@ export default function Home() {
 
           <section id="how">
             <div className="center rv">
-              <h2>Practise, test, fix. Repeat until August.</h2>
+              <h2>Practice, test, fix. Repeat until August.</h2>
             </div>
             <div className="steps">
               <div className="step rv" style={{ background: "var(--sky)" }}>
                 <span className="n">1</span>
-                <h3>Practise by chapter</h3>
+                <h3>Practice by chapter</h3>
                 <p>Pick a subject or chapter and get the explanation after every question.</p>
               </div>
               <div className="step rv" style={{ background: "var(--mint)" }}>
@@ -233,7 +233,7 @@ export default function Home() {
           </section>
 
           <div className="final rv" id="join">
-            <h2>Start practising before MDCAT {site.season}.</h2>
+            <h2>Start practicing before MDCAT {site.season}.</h2>
             <p>Make a free account and try the questions.</p>
             <div className="ctas">
               <a className="pill pill-dark" href="/signup">Start free</a>

@@ -7,7 +7,7 @@ Last updated: October 2026
 Build a focused, practice-first question bank for PMDC MDCAT first, sold as a seasonal pass priced well below full coaching courses, then add NUMS and other university tests once the core bank and the analytics are working. The market is crowded with coaching brands selling live classes for Rs. 20,000 to 30,000+, so the opening is a cheaper, faster, better-explained MCQ tool that students use alongside their academy, not instead of it.
 
 - **Launch exam:** PMDC MDCAT (180 MCQs, held once a year in August). It decides admission to almost every public and private medical college.
-- **Positioning:** "The best place to practise MDCAT MCQs", with an explanation on every question, chapter-wise drills tied to the PMDC syllabus, and full-length timed mocks. No live classes at launch.
+- **Positioning:** "The best place to practice MDCAT MCQs", with an explanation on every question, chapter-wise drills tied to the PMDC syllabus, and full-length timed mocks. No live classes at launch.
 - **Content:** Original questions written and reviewed by paid subject experts, plus past-paper questions reconstructed and re-explained. No copying from academy books or competitor apps.
 - **Price:** Around Rs. 2,500 to 4,000 for a season pass, with a free tier of a few hundred questions.
 - **Payments:** A Pakistani payment aggregator covering JazzCash, Easypaisa and cards in one integration, with manual transfer as a launch fallback.

@@ -110,7 +110,7 @@ export function Subjects({ data, onBank }: { data: Dashboard; onBank?: (bank: st
   const [pressed, setPressed] = useState<string | null>(null);
   const lit = pressed ?? bankId;
   const ahead = (id: string) => { if (id !== bankId) warm(`dashboard:${id}`, () => getDashboard(undefined, id), true); };
-  const practise = (subject: string, chapter?: string) => `/practice?${new URLSearchParams({ bank: bankId, subject, ...(chapter ? { chapter } : {}) })}`;
+  const practice = (subject: string, chapter?: string) => `/practice?${new URLSearchParams({ bank: bankId, subject, ...(chapter ? { chapter } : {}) })}`;
   return (
     <section className="box" aria-labelledby="subj-h">
       <div className="panel-h">
@@ -153,16 +153,16 @@ export function Subjects({ data, onBank }: { data: Dashboard; onBank?: (bank: st
                     return (
                       <Fragment key={c.chapter}>
                         {i > 0 && judged !== (list[i - 1]!.answered >= 3) && <p className="sj-sep muted small">Not enough answers yet</p>}
-                        <a className="sj-ch" href={practise(s.subject, c.chapter)}>
+                        <a className="sj-ch" href={practice(s.subject, c.chapter)}>
                           <span className="sj-ch-name">{c.chapter}</span>
                           <span className="muted sj-ch-n">{c.answered} of {c.available}</span>
                           <span className="sj-ch-acc">{judged ? <b className={band(cacc).cls}>{cacc}%</b> : <span className="muted">–</span>}</span>
-                          <span className="sj-ch-go">Practise<Icon name="chevron" size={14} /></span>
+                          <span className="sj-ch-go">Practice<Icon name="chevron" size={14} /></span>
                         </a>
                       </Fragment>
                     );
                   })}
-                  <a className="dpill light small" href={practise(s.subject)}>Practise all of {s.subject}</a>
+                  <a className="dpill light small" href={practice(s.subject)}>Practice all of {s.subject}</a>
                 </div>
               )}
             </li>

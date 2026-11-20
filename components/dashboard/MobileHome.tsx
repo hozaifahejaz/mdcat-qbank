@@ -14,7 +14,7 @@ export default function MobileHome({ data }: { data: Dashboard }) {
     <div className="dgrid m-home">
       {data.resume && <NextCard data={data} />}
       <section aria-labelledby="mh-start">
-        <h1 id="mh-start" className="m-home-h">Start practising</h1>
+        <h1 id="mh-start" className="m-home-h">Start practicing</h1>
         <BankButtons />
       </section>
       <WeekCard data={data} />

@@ -86,7 +86,7 @@
 .pk-no { margin-right: 6px; font-variant-numeric: tabular-nums; }
 @media (max-width: 480px) { .chapter-list { margin-left: 8px; } .book-row label { gap: 10px; } }
 @media (max-width: 480px) { .picklist label { grid-template-columns: 18px minmax(0, 1fr) auto; } .pk-n { display: none; } }
-/* Create a test: what to practise on the left, how on the right with Start. One column on small screens. */
+/* Create a test: what to practice on the left, how on the right with Start. One column on small screens. */
 .setup-grid { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(320px, 1fr); grid-template-rows: auto 1fr; grid-template-areas: "b a" "b c"; gap: 16px; align-items: start; }
 .su-a { grid-area: a; } .su-b { grid-area: b; } .su-c { grid-area: c; position: sticky; top: 34px; }
 .setup { padding: 0 22px; display: grid; }
