@@ -6,7 +6,7 @@ import Empty from "@/components/app/Empty";
 import { friendlyError } from "@/lib/auth";
 import { type TicketList, type TicketView, deleteTicket, getTicket, last, listTickets, replyTicket, setTicketStatus, ticketsKey } from "@/lib/admin";
 import { planNames } from "@/lib/format";
-import { type TicketDetail, MESSAGE_MAX, topicLabel } from "@/lib/support";
+import { type TicketDetail, MESSAGE_MAX, TICKET_EMAILS, topicLabel } from "@/lib/support";
 import Thread, { when } from "@/components/support/Thread";
 import type { AccountUser } from "@/lib/user";
 
@@ -17,8 +17,8 @@ const views: { id: TicketView; label: string }[] = [
   { id: "all", label: "All" },
 ];
 
-/* /admin/tickets — messages from the contact page. Answer one and the answer is emailed to the person from the support
-   address; the whole conversation stays here. Admins only. */
+/* /admin/tickets — messages from the contact page. An answer shows on the person's ticket page (and is emailed to them
+   when TICKET_EMAILS is on); the whole conversation stays here. Admins only. */
 export default function Tickets({ user: me }: { user: AccountUser }) {
   const [view, setView] = useState<TicketView>("waiting");
   const [q, setQ] = useState("");
@@ -43,7 +43,7 @@ export default function Tickets({ user: me }: { user: AccountUser }) {
   const rows = data?.tickets ?? null;
   return (
     <div className="dgrid">
-      <PageHead title="Support tickets" sub="Messages from the contact page. Your answers are emailed from the support address." />
+      <PageHead title="Support tickets" sub={TICKET_EMAILS ? "Messages from the contact page. Your answers are emailed from the support address." : "Messages from the contact page. Your answers show on the person's ticket page."} />
       <div className="q-head">
         <nav className="stage-tabs" aria-label="Show">
           {views.map((v) => (
@@ -141,9 +141,11 @@ function Detail({ id, me, onClose, onChanged }: { id: number; me: AccountUser; o
       <form className="usec" onSubmit={(e) => { e.preventDefault(); if (text.trim()) send(false); }}>
         <label className="fld">
           <span>Your answer to {t.name.split(" ")[0]}</span>
-          <textarea value={text} onChange={(e) => setText(e.target.value)} rows={5} maxLength={MESSAGE_MAX} disabled={busy} placeholder="Write your answer. It's emailed from the support address, signed by the team." />
+          <textarea value={text} onChange={(e) => setText(e.target.value)} rows={5} maxLength={MESSAGE_MAX} disabled={busy} placeholder={TICKET_EMAILS ? "Write your answer. It's emailed from the support address, signed by the team." : "Write your answer. It shows on their ticket page, signed by the team."} />
         </label>
-        <p className="muted small">Signed in as {me.name || me.email}. The email starts with &ldquo;Hi {t.name.split(" ")[0]},&rdquo; and links to this conversation, where they can answer.</p>
+        <p className="muted small">{TICKET_EMAILS
+          ? <>Signed in as {me.name || me.email}. The email starts with &ldquo;Hi {t.name.split(" ")[0]},&rdquo; and links to this conversation, where they can answer.</>
+          : <>No email is sent: they see your answer on their ticket page. To reach them now, <a className="link" href={`mailto:${t.email}?subject=${encodeURIComponent(`Your ticket #${t.id}`)}`}>email them from your inbox</a>.</>}</p>
         <div className="role-row">
           <button type="submit" className="dpill dark small" disabled={busy || text.trim().length < 10}>{busy ? "Sending…" : "Send answer"}</button>
           <button type="button" className="dpill light small" disabled={busy || text.trim().length < 10} onClick={() => send(true)}>Send and close</button>

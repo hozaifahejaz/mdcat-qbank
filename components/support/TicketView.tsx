@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { friendlyError } from "@/lib/auth";
-import { MESSAGE_MAX, MESSAGE_MIN, type PublicTicket, topicLabel } from "@/lib/support";
+import { MESSAGE_MAX, MESSAGE_MIN, TICKET_EMAILS, type PublicTicket, topicLabel } from "@/lib/support";
 import Thread from "@/components/support/Thread";
 
 /* /contact/ticket?t=… — one support conversation, opened from the link in the email (or ?id= for the signed-in
@@ -39,7 +39,7 @@ export default function TicketView() {
     try {
       await api("/api/support/ticket/reply", { body: { t: ref.t, id: ref.id ? Number(ref.id) : undefined, message: text } });
       setText("");
-      setNote("Sent. We'll reply by email.");
+      setNote(TICKET_EMAILS ? "Sent. We'll reply by email." : "Sent. Our answer will appear here.");
       await load();
     } catch (err) { setError(friendlyError(err)); }
     setBusy(false);

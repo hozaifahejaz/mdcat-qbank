@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Turnstile from "@/components/auth/Turnstile";
 import { api, getAuthConfig } from "@/lib/api";
 import { friendlyError } from "@/lib/auth";
-import { MESSAGE_MAX, MESSAGE_MIN, type TopicId, topicLabel, topics } from "@/lib/support";
+import { MESSAGE_MAX, MESSAGE_MIN, TICKET_EMAILS, type TopicId, topicLabel, topics } from "@/lib/support";
 import { getCurrentUser, lastUser } from "@/lib/user";
 import { when } from "@/components/support/Thread";
 
@@ -72,8 +72,10 @@ export default function ContactForm() {
     return (
       <div className="stack-16">
         <p className="note-good" role="status">
-          Message sent{sent.id ? <>, your ticket number is <b>#{sent.id}</b></> : ""}. We&apos;ll reply to <b>{sent.email}</b>, usually within one working day.
-          {sent.link && " Save your ticket's link below to see the conversation or add to it."}
+          Message sent{sent.id ? <>, your ticket number is <b>#{sent.id}</b></> : ""}.
+          {TICKET_EMAILS
+            ? <> We&apos;ll reply to <b>{sent.email}</b>, usually within one working day.{sent.link && " Save your ticket's link below to see the conversation or add to it."}</>
+            : <> Our answer will be on your ticket page, usually within one working day. {signedIn ? "You'll find it on this page, under your earlier messages." : "Open it below and bookmark it, so you can come back to it."}</>}
         </p>
         <div className="role-row">
           {sent.link && <a className="dpill dark small" href={sent.link}>See your ticket</a>}

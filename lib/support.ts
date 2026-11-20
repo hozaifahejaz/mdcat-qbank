@@ -11,6 +11,11 @@ export type TopicId = (typeof topics)[number]["id"];
 export const topicLabel = (id: string) => topics.find((t) => t.id === id)?.label ?? "Something else";
 export const isTopic = (v: unknown): v is TopicId => topics.some((t) => t.id === v);
 
+/* Email for tickets. Off for now, so the month's free sends are kept for sign-up and password emails: tickets only
+   show in the admin panel, and answers only on the person's ticket page. Set to true to email answers to the person
+   (from the support address) and to tell the support inbox about new tickets and follow-ups. */
+export const TICKET_EMAILS = false;
+
 export const MESSAGE_MIN = 10;
 export const MESSAGE_MAX = 5000;
 
