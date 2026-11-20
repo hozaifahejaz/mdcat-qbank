@@ -1,3 +1,4 @@
+import { PubMark } from "@/components/public/Mark";
 import Shell from "@/components/public/Shell";
 import { checkedText, mdcat, subjects } from "@/lib/public";
 import { pageMeta } from "@/lib/public-meta";
@@ -48,7 +49,7 @@ export default function Syllabus() {
 
       {subjects.map((s) => (
         <section key={s.slug}>
-          <h2>{s.name}: {s.chapters.length} chapters</h2>
+          <h2 className="with-mark"><PubMark subject={s.name} size="sm" />{s.name}: {s.chapters.length} chapters</h2>
           <div className="pub-grid">
             {s.chapters.map((c, i) => (
               <a key={c.slug} className="tile" href={`/mdcat/${s.slug}/${c.slug}`}><b>{i + 1}. {c.name}</b><em>{c.total} MCQs</em></a>

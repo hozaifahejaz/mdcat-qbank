@@ -1,3 +1,4 @@
+import { PubMark } from "@/components/public/Mark";
 import Shell from "@/components/public/Shell";
 import { bankById } from "@/lib/banks";
 import { checkedText, data, faqData, ld, round } from "@/lib/public";
@@ -26,6 +27,7 @@ export default function Aku() {
   return (
     <Shell trail={trail}>
       <header className="pub-head">
+        <PubMark exam="aku" size="lg" />
         <h1>AKU test preparation with MCQs and explanations</h1>
         <p className="lede">
           Aga Khan University holds its own admission test for MBBS: <b>100 MCQs in 2 hours</b>, made of a Science Achievement section (40 MCQs) and a Science and Mathematics Reasoning section (60 MCQs).
@@ -36,7 +38,7 @@ export default function Aku() {
 
       {bank.subjects.map((s) => (
         <section key={s.name}>
-          <h2>{s.name}: {s.chapters.length} chapters</h2>
+          <h2 className="with-mark"><PubMark subject={s.name} size="sm" />{s.name}: {s.chapters.length} chapters</h2>
           <div className="pub-grid">{s.chapters.map((c) => <div key={c} className="tile"><b>{c}</b></div>)}</div>
         </section>
       ))}

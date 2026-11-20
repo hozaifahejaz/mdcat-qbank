@@ -1,3 +1,4 @@
+import { PubMark } from "@/components/public/Mark";
 import Shell from "@/components/public/Shell";
 import { bankSize, checkedText, data, faqData, ld, mdcat, subjects } from "@/lib/public";
 import { pageMeta } from "@/lib/public-meta";
@@ -23,6 +24,7 @@ export default function Mdcat() {
   return (
     <Shell trail={trail}>
       <header className="pub-head">
+        <PubMark exam="mdcat" size="lg" />
         <h1>MDCAT MCQs for {site.season}, chapter by chapter</h1>
         <p className="lede">
           {site.name} is an online question bank for the PMDC MDCAT with <b>{bankSize} original MCQs</b>, each with a full explanation.
@@ -45,6 +47,7 @@ export default function Mdcat() {
       <div className="pub-grid">
         {subjects.map((s) => (
           <a key={s.slug} className="tile big" href={`/mdcat/${s.slug}`}>
+            <PubMark subject={s.name} />
             <b>{s.name} MCQs</b>
             <small>{s.count} of {mdcat.mcqs} questions in the paper · {s.chapters.length} chapters · {s.total.toLocaleString("en-GB")} practice MCQs</small>
           </a>
@@ -56,8 +59,8 @@ export default function Mdcat() {
         <a className="tile" href="/mdcat/syllabus"><b>Syllabus and paper pattern<small>Every chapter PMDC lists, and the marks per subject</small></b></a>
         <a className="tile" href="/mdcat/past-paper-2026"><b>MDCAT {data.paper.year} paper analysis<small>Which chapters the {data.paper.total} questions came from</small></b></a>
         <a className="tile" href="/mdcat/aggregate-calculator"><b>Aggregate calculator<small>Your merit from MDCAT, FSc and matric marks</small></b></a>
-        <a className="tile" href="/nums-mdcat"><b>NUMS MDCAT<small>The separate test for army medical colleges</small></b></a>
-        <a className="tile" href="/aku-test"><b>AKU test<small>Aga Khan University&apos;s own admission test</small></b></a>
+        <a className="tile" href="/nums-mdcat"><span className="tl"><PubMark exam="nums" size="sm" /><b>NUMS MDCAT<small>The separate test for army medical colleges</small></b></span></a>
+        <a className="tile" href="/aku-test"><span className="tl"><PubMark exam="aku" size="sm" /><b>AKU test<small>Aga Khan University&apos;s own admission test</small></b></span></a>
         <a className="tile" href="/guides"><b>Guides<small>Study plans and how to practice well</small></b></a>
       </div>
 

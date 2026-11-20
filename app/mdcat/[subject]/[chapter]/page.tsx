@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { PubMark } from "@/components/public/Mark";
 import Shell from "@/components/public/Shell";
 import Question from "@/components/public/Question";
 import { subjectBySlug, subjects } from "@/lib/public";
@@ -40,6 +41,7 @@ export default async function Chapter({ params }: { params: Params }) {
   return (
     <Shell trail={trail}>
       <header className="pub-head">
+        <PubMark subject={s.name} size="lg" />
         <h1>{c.name} MCQs for MDCAT</h1>
         <p className="lede">
           {c.name} is chapter {at + 1} of {s.chapters.length} in the PMDC MDCAT {s.name} syllabus.
