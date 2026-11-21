@@ -7,10 +7,12 @@ import { PublicFooter } from "@/components/public/Frame";
 import Experience from "@/components/experiment4/Experience";
 import { ExamProvider } from "@/components/experiment4/ExamState";
 import Pricing from "@/components/experiment8/Pricing";
+import AppStory from "@/components/experiment8/AppStory";
 import { bankSize, subjects as subjectPages } from "@/lib/public";
 import { site } from "@/lib/site";
 import "../../landing-new.css";
 import "../4/exp4.css";
+import "../7/exp7.css";
 import "./exp8.css";
 
 /* Landing page experiment 8: the live landing page with two parts swapped in from earlier experiments. The hero is
@@ -61,6 +63,7 @@ export default function Experiment8() {
           <ul>
             <li><a href="#subjects">Subjects</a></li>
             <li><a href="#pricing">Pricing</a></li>
+            <li><a href="#app">App</a></li>
             <li><a href="#faq">FAQ</a></li>
           </ul>
           <div className="x3-navend">
@@ -124,6 +127,8 @@ export default function Experiment8() {
 
         <Pricing payments={site.payments} />
 
+        <AppStory />
+
         <section id="faq" className="x3-sec">
           <div className="x3-wrap x3-faqwrap">
             <div className="x3-head">
@@ -137,16 +142,6 @@ export default function Experiment8() {
                   <p>{f.a}</p>
                 </details>
               ))}
-            </div>
-          </div>
-        </section>
-        <section className="x3-sec x8-end">
-          <div className="x3-wrap">
-            <div className="x3-card x8-endcard">
-              <span className="x8-endmark" aria-hidden="true"><Markhor height={56} /></span>
-              <h2>Start where you are.<br /><span className="mute">The first 100 questions are free.</span></h2>
-              <a className="x3-btn x3-blue x3-big" href="/signup">Start free</a>
-              <small>iOS and Android apps coming soon.</small>
             </div>
           </div>
         </section>
