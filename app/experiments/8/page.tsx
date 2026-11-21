@@ -74,6 +74,29 @@ export default function Experiment8() {
       <Experience />
 
       <main>
+        <section className="x3-sec" aria-labelledby="tests-h">
+          <div className="x3-wrap">
+            <div className="x3-head">
+              <span className="x3-tag">Tests</span>
+              <h2 id="tests-h">Three tests now.<br /><span className="mute">More every season.</span></h2>
+            </div>
+          </div>
+          <div className="x3-marquee">
+            <ul>
+              {[0, 1].map((copy) => tests.map((t) => (
+                <li key={copy + t.name} aria-hidden={copy === 1 || undefined} className="x3-card tcard">
+                  <span className="thead">
+                    <span className="tmark" style={t.c ? { color: t.c } : undefined}><ExamMark id={t.id} size={24} /></span>
+                    <span className={t.live ? "st live" : "st"}>{t.live ? "Live" : "Coming soon"}</span>
+                  </span>
+                  <b>{t.name}</b>
+                  <small>{t.field}</small>
+                </li>
+              )))}
+            </ul>
+          </div>
+        </section>
+
         <section id="subjects" className="x3-sec x3-grid">
           <div className="x3-wrap">
             <div className="x3-head">
@@ -96,29 +119,6 @@ export default function Experiment8() {
               {subjectPages.map((x) => <a key={x.slug} href={`/mdcat/${x.slug}`}>{x.name} MCQs</a>)}
               <a href="/mdcat/syllabus">Syllabus</a>
             </p>
-          </div>
-        </section>
-
-        <section className="x3-sec" aria-labelledby="tests-h">
-          <div className="x3-wrap">
-            <div className="x3-head">
-              <span className="x3-tag">Tests</span>
-              <h2 id="tests-h">Three tests now.<br /><span className="mute">More every season.</span></h2>
-            </div>
-          </div>
-          <div className="x3-marquee">
-            <ul>
-              {[0, 1].map((copy) => tests.map((t) => (
-                <li key={copy + t.name} aria-hidden={copy === 1 || undefined} className="x3-card tcard">
-                  <span className="thead">
-                    <span className="tmark" style={t.c ? { color: t.c } : undefined}><ExamMark id={t.id} size={24} /></span>
-                    <span className={t.live ? "st live" : "st"}>{t.live ? "Live" : "Coming soon"}</span>
-                  </span>
-                  <b>{t.name}</b>
-                  <small>{t.field}</small>
-                </li>
-              )))}
-            </ul>
           </div>
         </section>
 
