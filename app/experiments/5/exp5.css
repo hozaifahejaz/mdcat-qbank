@@ -1,0 +1,177 @@
+/* Sign-in experiment 5, "The ascent" (components/experiment5). Scoped under .x5. Motion is transform-only, never a fade,
+   and stops for people who ask for reduced motion. */
+.x5 {
+  --x-bg: #fafafa;
+  --x-card: #ffffff;
+  --x-ink: #0f1115;
+  --x-mute: #6b6f76;
+  --x-line: #e7e7ea;
+  --x-field: #f3f3f5;
+  --x-blue: #2f55f0;
+  --x-blue-ink: #ffffff;
+  /* The mountain at first light */
+  --m-sky-top: #c9d5ff;
+  --m-sky-bot: #ffe7d6;
+  --m-sun: #ffcca3;
+  --m-cloud: #ffffff;
+  --m-far: #d5d9ea;
+  --m-mid: #c2c7da;
+  --m-ridge: #efebe6;
+  --m-shade: #dcd6cf;
+  --m-near: #d2cbc3;
+  --m-lip: #ffffff;
+  --m-snow: #ffffff;
+  --m-trail: rgba(15, 17, 21, .28);
+  --m-markhor: #2f55f0;
+  --m-pole: #6b6f76;
+  --m-caption: rgba(15, 17, 21, .55);
+  background: var(--x-bg);
+  color: var(--x-ink);
+  min-height: 100dvh;
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(0, 1fr);
+}
+:root[data-theme="dark"] .x5 {
+  --x-bg: #0c0d0f;
+  --x-card: #16171a;
+  --x-ink: #f2f2f0;
+  --x-mute: #9a9ca3;
+  --x-line: #26272c;
+  --x-field: #16171a;
+  --x-blue: #5b78ff;
+  /* The mountain after dark */
+  --m-sky-top: #05070f;
+  --m-sky-bot: #1b2246;
+  --m-cloud: #1e2440;
+  --m-far: #161b2e;
+  --m-mid: #1d2339;
+  --m-ridge: #2b3352;
+  --m-shade: #232a45;
+  --m-near: #181d31;
+  --m-lip: #4a5478;
+  --m-snow: #8f9bc4;
+  --m-trail: rgba(255, 255, 255, .3);
+  --m-markhor: #6f86ff;
+  --m-pole: #8f9bc4;
+  --m-caption: rgba(255, 255, 255, .55);
+}
+.x5 h1, .x5 p { margin: 0; }
+.x5 a { color: inherit; text-decoration: none; }
+
+/* The scene: a rounded window on the left that stays put while the form side scrolls */
+.x5-scene { position: sticky; top: 0; height: 100dvh; padding: 12px; box-sizing: border-box; }
+.x5-svg { display: block; width: 100%; height: 100%; border-radius: 24px; overflow: hidden; }
+.x5-b { display: none; }
+.x5-sky-top { stop-color: var(--m-sky-top); }
+.x5-sky-bot { stop-color: var(--m-sky-bot); }
+.x5-sun { fill: var(--m-sun); }
+.x5-night { display: none; }
+:root[data-theme="dark"] .x5-night { display: inline; }
+:root[data-theme="dark"] .x5-sun { display: none; }
+.x5-star { fill: #fff; transform-box: fill-box; transform-origin: center; }
+.x5-star.tw { animation: x5-tw 4s ease-in-out infinite; }
+.x5-moon { fill: #e9edff; }
+.x5-cloud { fill: var(--m-cloud); }
+.x5-far { fill: var(--m-far); }
+.x5-mid { fill: var(--m-mid); }
+.x5-snow-far { fill: var(--m-snow); opacity: .9; }
+.x5-ridge { fill: var(--m-ridge); }
+.x5-shade { fill: var(--m-shade); }
+.x5-snow { fill: var(--m-snow); }
+.x5-near { fill: var(--m-near); }
+.x5-lip { fill: none; stroke: var(--m-lip); stroke-width: 3; stroke-linecap: round; }
+.x5-trail { fill: none; stroke: var(--m-trail); stroke-width: 3; stroke-linecap: round; stroke-dasharray: 1 10; }
+.x5-climbed { fill: none; stroke: var(--m-markhor); stroke-width: 3.5; stroke-linecap: round; stroke-dasharray: 3 3; transition: stroke-dashoffset .9s cubic-bezier(.45, 0, .2, 1); }
+.x5-pole { fill: var(--m-pole); }
+.x5-flag { fill: var(--m-markhor); transform-box: fill-box; transform-origin: right center; transform: scaleX(0); transition: transform .6s cubic-bezier(.3, 1.5, .5, 1) .55s; }
+.x5-flag.up { transform: scaleX(1); }
+.x5-markhor { fill: var(--m-markhor); }
+/* A hop: across steadily, up with a little lift past the ledge before settling on it, so the path arcs. */
+.x5-mx { transition: transform .7s cubic-bezier(.45, 0, .35, 1); }
+.x5-my { transition: transform .7s cubic-bezier(.3, 1.45, .55, 1); }
+.x5-slip { animation: x5-slip .5s ease-in-out; transform-box: fill-box; transform-origin: 50% 100%; }
+.x5-drift { animation: x5-drift 30s ease-in-out infinite alternate; }
+.x5-drift2 { animation: x5-drift 40s ease-in-out -14s infinite alternate-reverse; }
+@keyframes x5-drift { from { transform: translateX(-30px); } to { transform: translateX(30px); } }
+@keyframes x5-tw { 0%, 100% { transform: scale(1); } 50% { transform: scale(.35); } }
+@keyframes x5-slip { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-7px) rotate(-4deg); } 45% { transform: translateX(6px); } 70% { transform: translateX(-3px); } }
+
+/* The form side */
+.x5-side { min-height: 100dvh; display: grid; grid-template-rows: auto 1fr auto; padding-inline: 40px; box-sizing: border-box; }
+.x5-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-block: 24px; }
+.x5-logo { display: inline-flex; align-items: center; gap: 9px; font-weight: 800; letter-spacing: -0.03em; font-size: 1.0625rem; white-space: nowrap; }
+.x5 .theme-toggle { width: 40px; height: 40px; border-radius: 12px; background: transparent; box-shadow: none; color: var(--x-mute); }
+.x5 .theme-toggle:hover { color: var(--x-ink); background: var(--x-card); transform: none; }
+.x5-main { width: 100%; max-width: 380px; margin-inline: auto; align-self: center; display: grid; gap: 20px; padding-block: 24px 40px; }
+.x5-foot { padding-block: 0 24px; font-size: .75rem; color: var(--x-mute); text-align: center; }
+
+.x5-head { display: grid; gap: 8px; margin-bottom: 4px; }
+.x5-hello { font-size: .875rem; font-weight: 600; color: var(--x-blue); }
+.x5 h1 { font-size: clamp(2.125rem, 1.6rem + 1.6vw, 2.75rem); font-weight: 800; letter-spacing: -0.045em; line-height: 1.02; }
+.x5-lede { color: var(--x-mute); font-size: 1rem; line-height: 1.5; }
+
+.x5-already { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 10px 10px 16px; border-radius: 14px; background: color-mix(in srgb, var(--x-blue) 9%, transparent); font-size: .9375rem; }
+.x5-already button { border: 0; font: inherit; font-weight: 600; font-size: .875rem; height: 34px; padding-inline: 14px; border-radius: 10px; background: var(--x-blue); color: #fff; cursor: pointer; }
+
+.x5-google { position: relative; display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; height: 50px; border: 0; border-radius: 14px; background: var(--x-card); color: var(--x-ink); box-shadow: inset 0 0 0 1px var(--x-line), 0 1px 2px rgba(15,17,21,.04); font: inherit; font-weight: 600; font-size: .9375rem; cursor: pointer; transition: transform .15s, box-shadow .15s; }
+.x5-google:not(:disabled):hover { transform: translateY(-1px); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--x-ink) 18%, var(--x-line)), 0 6px 16px -8px rgba(15,17,21,.2); }
+.x5-google:disabled { cursor: default; }
+.x5-google em { position: absolute; right: 12px; font-style: normal; font-size: .6875rem; font-weight: 700; letter-spacing: .02em; color: var(--x-blue); background: color-mix(in srgb, var(--x-blue) 10%, transparent); padding: 3px 8px; border-radius: 99px; }
+@media (max-width: 380px) { .x5-google em { display: none; } }
+.x5-or { display: flex; align-items: center; gap: 12px; color: var(--x-mute); font-size: .8125rem; }
+.x5-or::before, .x5-or::after { content: ""; flex: 1; height: 1px; background: var(--x-line); }
+
+.x5-form { display: grid; gap: 16px; }
+.x5-field { position: relative; display: grid; gap: 7px; }
+.x5-field > span, .x5-row label { font-size: .8125rem; font-weight: 600; }
+.x5-row { display: flex; justify-content: space-between; align-items: baseline; }
+.x5-row a { font-size: .8125rem; font-weight: 600; color: var(--x-blue); }
+.x5-field input { width: 100%; box-sizing: border-box; height: 50px; border: 0; border-radius: 14px; padding-inline: 16px; font: inherit; font-size: 1rem; color: var(--x-ink); background: var(--x-field); box-shadow: inset 0 0 0 1px var(--x-line); transition: box-shadow .15s, background-color .15s; }
+.x5-field input::placeholder { color: color-mix(in srgb, var(--x-mute) 70%, transparent); }
+.x5-field input:focus { outline: none; background: var(--x-card); box-shadow: inset 0 0 0 1.5px var(--x-blue), 0 0 0 4px color-mix(in srgb, var(--x-blue) 14%, transparent); }
+.x5-field > input { padding-right: 44px; }
+/* A small check that pops in once the email looks complete: the same moment the markhor takes its first hop. */
+.x5-tick { position: absolute; right: 14px; bottom: 15px; width: 20px; height: 20px; border-radius: 50%; background: var(--x-blue); transform: scale(0); transition: transform .3s cubic-bezier(.3, 1.6, .5, 1); pointer-events: none; }
+.x5-tick::after { content: ""; position: absolute; left: 7px; top: 4px; width: 4px; height: 8px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+.x5-tick.on { transform: scale(1); }
+.x5-pw { position: relative; }
+.x5-pw input { padding-right: 68px; }
+.x5-pw button { position: absolute; right: 6px; top: 7px; height: 36px; padding-inline: 12px; border: 0; border-radius: 10px; background: transparent; color: var(--x-mute); font: inherit; font-size: .8125rem; font-weight: 600; cursor: pointer; }
+.x5-pw button:hover { color: var(--x-ink); }
+
+.x5-note { font-size: .875rem; line-height: 1.5; padding: 11px 14px; border-radius: 12px; }
+.x5-note.bad { background: var(--rose); color: var(--bad); }
+.x5-note.info { background: color-mix(in srgb, var(--x-blue) 10%, transparent); color: var(--x-blue); }
+.x5-link { border: 0; background: none; padding: 0; font: inherit; font-weight: 600; color: inherit; text-decoration: underline; cursor: pointer; }
+
+.x5-go { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; height: 52px; margin-top: 4px; border: 0; border-radius: 14px; background: var(--x-blue); color: #fff; font: inherit; font-weight: 700; font-size: 1rem; cursor: pointer; box-shadow: 0 10px 24px -12px color-mix(in srgb, var(--x-blue) 80%, transparent); transition: transform .15s; }
+.x5-go svg { transition: transform .2s; }
+.x5-go:not(:disabled):hover { transform: translateY(-1px); }
+.x5-go:not(:disabled):hover svg { transform: translateX(3px); }
+.x5-go:disabled { cursor: default; }
+
+.x5-new { text-align: center; font-size: .9375rem; color: var(--x-mute); }
+.x5-new a { color: var(--x-ink); font-weight: 700; }
+.x5-new a:hover { color: var(--x-blue); }
+
+.x5-after .center-state { min-height: 40dvh; }
+
+/* Tablets and phones: the mountain becomes a band at the top, the form below it */
+@media (max-width: 900px) {
+  .x5 { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto 1fr auto; }
+  .x5-scene { position: relative; height: auto; padding: 0 16px; }
+  .x5-w { display: none; }
+  .x5-b { display: block; height: auto; aspect-ratio: 16 / 10; max-height: 320px; border-radius: 20px; }
+  .x5-side { order: -1; display: contents; }
+  .x5-top { order: -1; padding: 16px 16px 12px; }
+  .x5-main { padding: 24px 16px 32px; max-width: 440px; }
+  .x5-foot { padding: 0 16px 24px; }
+}
+@media (max-width: 520px) {
+  .x5-main { gap: 18px; padding-top: 22px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .x5-mx, .x5-my, .x5-climbed, .x5-flag, .x5-tick { transition: none; }
+  .x5-slip, .x5-drift, .x5-drift2, .x5-star.tw { animation: none; }
+}
