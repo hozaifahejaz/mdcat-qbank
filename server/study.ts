@@ -1,5 +1,5 @@
 import { normalisePhone } from "../lib/phone";
-import { bankById } from "../lib/banks";
+import { REASONING, bankById } from "../lib/banks";
 import { mockFormat, mockFormats, NEG_MARK, paper } from "../lib/site";
 import { REPORT_HIDE, bankCounts, chaptersOf, subjectTotals } from "./counts";
 import { uuid } from "./crypto";
@@ -436,7 +436,7 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
       title = `${format.name} ${mockNo}`;
       if (me.paid) {
         picks.push(format.id === "mdcat" ? idsBySubjectStmt(c.db, "")
-          : c.db.prepare(`SELECT DISTINCT id, subject FROM bank_served WHERE bank = ? AND open_reports < ${REPORT_HIDE} ORDER BY id`).bind(format.id));
+          : c.db.prepare(`SELECT DISTINCT id, subject, chapter FROM bank_served WHERE bank = ? AND open_reports < ${REPORT_HIDE} ORDER BY id`).bind(format.id));
         // The mock's questions as kept from its first sitting (migration 0059).
         picks.push(c.db.prepare("SELECT question_ids FROM mock_sets WHERE bank = ? AND mock_no = ?").bind(format.id, mockNo));
       }
@@ -516,7 +516,7 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
 
     let keepMock: D1PreparedStatement | null = null;
     if (kind === "mock") {
-      const pool = found[0] as { id: string; subject: string }[];
+      const pool = found[0] as { id: string; subject: string; chapter?: string }[];
       const kept = (found[1]![0] as { question_ids: string } | undefined)?.question_ids;
       if (kept) {
         // The same questions as every earlier sitting, less any taken down since.
@@ -529,7 +529,20 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
         if (drawn.some((d, k) => d.length < format.split[k]!.count)) throw fail(409, "not_ready", "Full mocks open once the bank has enough questions in every subject.");
         // A paper with a marked-down first part (AKU) opens with each subject's share of it, then the rest.
         const lead = format.split.map((p) => ("first" in p ? p.first : 0));
-        ids = format.negFirst ? [...drawn.flatMap((d, k) => d.slice(0, lead[k])), ...drawn.flatMap((d, k) => d.slice(lead[k]))] : drawn.flat();
+        if (format.negFirst) {
+          // AKU: the first part is ordinary subject questions; the reasoning part takes each science's reasoning
+          // questions first and tops up with ordinary ones only if the bank runs short.
+          const plain = (s: string) => pool.filter((r) => r.subject === s && r.chapter !== REASONING).map((r) => r.id);
+          const thinking = (s: string) => pool.filter((r) => r.subject === s && r.chapter === REASONING).map((r) => r.id);
+          const parts = format.split.map((p, k) => {
+            const mixed = shuffle(plain(p.subject), seeded(mockNo! * 101 + k + salt));
+            const first = mixed.slice(0, lead[k]);
+            const rest = [...shuffle(thinking(p.subject), seeded(mockNo! * 211 + k + salt)), ...mixed.slice(lead[k]!)].slice(0, p.count - lead[k]!);
+            return { first, rest };
+          });
+          if (parts.some((x, k) => x.first.length + x.rest.length < format.split[k]!.count)) throw fail(409, "not_ready", "Full mocks open once the bank has enough questions in every subject.");
+          ids = [...parts.flatMap((x) => x.first), ...parts.flatMap((x) => x.rest)];
+        } else ids = drawn.flat();
         keepMock = c.db.prepare("INSERT OR IGNORE INTO mock_sets (bank, mock_no, question_ids, made_at) VALUES (?, ?, ?, ?)").bind(format.id, mockNo, JSON.stringify(ids), Date.now());
       }
     } else if (kind === "mini-mock") {
