@@ -15,3 +15,6 @@
 .x8-appintro { min-height: 76vh; padding-block: 40px; }
 .x8-appintro h2 { font-size: clamp(2.4rem, 1rem + 3.6vw, 4rem); }
 @media (max-width: 960px) { .x8-appintro { min-height: 0; padding-block: 48px; } }
+
+/* Orbit: a coloured dot for subjects that have no mark yet */
+.x8-dot { display: block; width: 8px; height: 8px; border-radius: 50%; }
