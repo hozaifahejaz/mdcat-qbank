@@ -164,7 +164,7 @@ export default function Ascent({ mode = "signin" }: { mode?: Mode }) {
       <div className="x5-head">
         <p className="x5-hello">{up ? "Start free" : hello || "\u00a0"}</p>
         <h1>{up ? "Create your account" : "Welcome back"}</h1>
-        <p className="x5-lede">{up ? "100 questions free, each with a full explanation. No card needed." : "Sign in and pick up where you left off."}</p>
+        {!up && <p className="x5-lede">Sign in and pick up where you left off.</p>}
       </div>
 
       {already && (
