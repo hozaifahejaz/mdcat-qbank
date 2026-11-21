@@ -1,6 +1,6 @@
 import { normalisePhone } from "../lib/phone";
 import { bankById } from "../lib/banks";
-import { paper } from "../lib/site";
+import { mockFormat, mockFormats, paper } from "../lib/site";
 import { REPORT_HIDE, bankCounts, chaptersOf, subjectTotals } from "./counts";
 import { uuid } from "./crypto";
 import { requireActiveSession } from "./devices";
@@ -304,7 +304,7 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
   /* How many questions each chapter has for this student, which tests are open to them, and their past papers. */
   "GET /api/study/catalog": async (c) => {
     const me = await student(c, false);
-    // ?bank= picks whose chapters to count (lib/banks.ts); mocks and past papers are always MDCAT.
+    // ?bank= picks whose chapters to count (lib/banks.ts); past papers are always MDCAT.
     const bank = bankById(new URL(c.request.url).searchParams.get("bank"))?.id ?? "mdcat";
     // The bank's own numbers come from the kept counts; only this student's rows are read here.
     const [counts, [mini, mine]] = await Promise.all([
@@ -333,7 +333,10 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
       chapters: rows,
       papers: counts.papers.map((p) => ({ year: p.year, count: p.n })),
       mocks: MOCKS,
-      mockReady: paper.every((p) => bySubject(p.subject, "total") >= p.count),
+      // The NUMS mock draws on the NUMS bank's own chapters; every other bank shows the MDCAT mocks.
+      mockReady: bank === "nums"
+        ? mockFormats.nums.split.every((p) => rows.filter((r) => r.subject === p.subject).reduce((n, r) => n + r.total, 0) >= p.count)
+        : paper.every((p) => bySubject(p.subject, "total") >= p.count),
       miniReady: subjects.reduce((n, s) => n + bySubject(s, "open"), 0) >= 10,
       miniUsed: !!lastMini,
       // A started mini mock that isn't finished yet, to resume.
@@ -422,14 +425,20 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
     let title = str(b.title, 120);
     let mockNo: number | null = null;
     let year: number | null = null;
+    const format = mockFormat(b.bank);
     const asked = custom && Array.isArray(b.ids) ? b.ids.filter((x): x is string => typeof x === "string").slice(0, 200) : [];
 
     // Which questions the test will hold depends only on what was asked, so that lookup rides in the first trip too.
     const picks: D1PreparedStatement[] = [];
     if (kind === "mock") {
       mockNo = Math.min(MOCKS, Math.max(1, Number(b.mock) || 1));
-      title = `Full mock ${mockNo}`;
-      if (me.paid) picks.push(idsBySubjectStmt(c.db, ""));
+      title = `${format.name} ${mockNo}`;
+      if (me.paid) {
+        picks.push(format.id === "mdcat" ? idsBySubjectStmt(c.db, "")
+          : c.db.prepare(`SELECT DISTINCT id, subject FROM bank_served WHERE bank = ? AND open_reports < ${REPORT_HIDE} ORDER BY id`).bind(format.id));
+        // The mock's questions as kept from its first sitting (migration 0059).
+        picks.push(c.db.prepare("SELECT question_ids FROM mock_sets WHERE bank = ? AND mock_no = ?").bind(format.id, mockNo));
+      }
     } else if (kind === "mini-mock") {
       title = "Mini mock";
       picks.push(idsBySubjectStmt(c.db, me.pool));
@@ -504,10 +513,20 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
       throw fail(402, "needs_pass", kind === "mock" ? "Full mocks come with a paid plan. Your free mini mock is on the Mocks page." : "Past papers come with a paid plan.");
     }
 
+    let keepMock: D1PreparedStatement | null = null;
     if (kind === "mock") {
-      const by = bySubject(found[0]!);
-      if (paper.some((p) => (by.get(p.subject)?.length ?? 0) < p.count)) throw fail(409, "not_ready", "Full mocks open once the bank has enough questions in every subject.");
-      ids = paper.flatMap((p, k) => shuffle(by.get(p.subject)!, seeded(mockNo! * 101 + k)).slice(0, p.count));
+      const pool = found[0] as { id: string; subject: string }[];
+      const kept = (found[1]![0] as { question_ids: string } | undefined)?.question_ids;
+      if (kept) {
+        // The same questions as every earlier sitting, less any taken down since.
+        const live = new Set(pool.map((r) => r.id));
+        ids = parse<string[]>(kept, []).filter((x) => live.has(x));
+      } else {
+        const by = bySubject(pool);
+        if (format.split.some((p) => (by.get(p.subject)?.length ?? 0) < p.count)) throw fail(409, "not_ready", "Full mocks open once the bank has enough questions in every subject.");
+        ids = format.split.flatMap((p, k) => shuffle(by.get(p.subject)!, seeded(mockNo! * 101 + k + (format.id === "mdcat" ? 0 : 5000))).slice(0, p.count));
+        keepMock = c.db.prepare("INSERT OR IGNORE INTO mock_sets (bank, mock_no, question_ids, made_at) VALUES (?, ?, ?, ?)").bind(format.id, mockNo, JSON.stringify(ids), Date.now());
+      }
     } else if (kind === "mini-mock") {
       if (!me.paid && found[1]!.length) throw fail(402, "needs_pass", "You've used your free mini mock. A paid plan opens every full mock.");
       const by = bySubject(found[0]!);
@@ -534,7 +553,8 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
       }
     }
     // Timed tests get a minute a question; the mock is the real paper's 3 hours for 180.
-    const deadline = clock ? now + ids.length * 60 * 1000 : null;
+    // A full mock gets its paper's own time (NUMS: 150 questions in 2 hours 45 minutes).
+    const deadline = !clock ? null : kind === "mock" ? now + format.minutes * 60 * 1000 : now + ids.length * 60 * 1000;
     // The same trip that saves the test also reads its questions, so the player opens without asking again.
     const made = await c.db.batch([
       c.db.prepare(`INSERT INTO attempts (id, user_id, kind, mode, title, question_ids, mock_no, paper, started_at, deadline_at, total)
@@ -543,6 +563,7 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
       c.db.prepare("SELECT * FROM served WHERE id IN (SELECT value FROM json_each(?))").bind(JSON.stringify(ids)),
       c.db.prepare("SELECT question_id FROM bookmarks WHERE user_id = ?").bind(me.id),
       ...(me.staff ? [] : [spend(c.db, `given:${me.id}`, ids.length, DAY), hit(c.db, `start:${me.id}`, HOUR)]),
+      ...(keepMock ? [keepMock] : []),
     ]);
     const wanted = Number(b.count) || 0;
     const a: AttemptRow = { id, user_id: me.id, kind, mode, title, question_ids: "", mock_no: mockNo, paper: year, started_at: now, deadline_at: deadline, finished_at: null, seconds: null, score: null, total: ids.length };

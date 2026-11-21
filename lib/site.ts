@@ -40,6 +40,24 @@ export const paper = [
   { subject: "Logical Reasoning", count: 9, tone: "var(--lemon)", solid: "#c9a400" },
 ];
 
+/* The full mocks a student can sit, by the paper they copy: how many questions from each subject and how long.
+   NUMS is its 150-MCQ subject paper (NUMS notice for 2026): 2 hours 45 minutes, no Logical Reasoning. */
+export const mockFormats = {
+  mdcat: { id: "mdcat", name: "Full mock", label: "MDCAT", minutes: 180, split: paper },
+  nums: {
+    id: "nums", name: "NUMS mock", label: "NUMS", minutes: 165,
+    split: [
+      { ...paper[0]!, count: 55 },
+      { ...paper[1]!, count: 40 },
+      { ...paper[2]!, count: 40 },
+      { ...paper[3]!, count: 15 },
+    ],
+  },
+} as const;
+export type MockFormatId = keyof typeof mockFormats;
+export const mockFormat = (id: unknown) => mockFormats[id === "nums" ? "nums" : "mdcat"];
+export const hoursText = (minutes: number) => minutes % 60 ? `${Math.floor(minutes / 60)} h ${minutes % 60} min` : `${minutes / 60} hours`;
+
 /* Where Help links go: WhatsApp when there's a number, otherwise the contact form (each message becomes a support ticket). */
 export const supportHref = site.whatsapp ? `https://wa.me/${site.whatsapp}` : "/contact";
 export const whatsappHref = site.whatsapp ? `https://wa.me/${site.whatsapp}` : "";
