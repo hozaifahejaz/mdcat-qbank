@@ -22,3 +22,12 @@
   .x8-chips button:hover { transform: none; }
   .x8-plans > * { animation: none; }
 }
+
+/* Close (from experiment 7): markhor, one line, Start free and the apps line, in place of the apps card */
+.x8-endcard { display: grid; justify-items: center; gap: 22px; padding: 64px 28px; text-align: center; }
+.x8-endcard h2 { font-size: clamp(2rem, 1.2rem + 2.6vw, 3.25rem); font-weight: 800; letter-spacing: -0.04em; line-height: 1.05; }
+.x8-endcard h2 .mute { color: var(--x-faint); }
+.x8-endcard small { color: var(--x-mute); font-size: .875rem; }
+.x8-endmark svg { animation: x8-hop 2.6s ease-in-out infinite; }
+@keyframes x8-hop { 50% { transform: translateY(-4px); } }
+@media (prefers-reduced-motion: reduce) { .x8-endmark svg { animation: none; } }

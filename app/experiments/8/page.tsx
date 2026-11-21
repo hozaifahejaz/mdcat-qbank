@@ -124,21 +124,6 @@ export default function Experiment8() {
 
         <Pricing payments={site.payments} />
 
-        <section className="x3-sec">
-          <div className="x3-wrap">
-            <div className="x3-apps x3-card">
-              <div>
-                <span className="x3-tag">Apps</span>
-                <h2>iOS and Android apps<br /><span className="mute">coming soon.</span></h2>
-              </div>
-              <div className="stores" aria-hidden="true">
-                <span><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M16.4 12.6c0-2.4 2-3.5 2-3.6-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.2-2.8.8-3.5.8-.7 0-1.8-.8-3-.8-1.5 0-3 .9-3.8 2.3-1.6 2.8-.4 7 1.2 9.3.8 1.1 1.7 2.4 2.9 2.3 1.2 0 1.6-.7 3-.7s1.8.7 3 .7c1.3 0 2.1-1.1 2.8-2.3.9-1.3 1.3-2.6 1.3-2.6s-2.5-1-2.5-3.6zM14.1 5.5c.6-.8 1.1-1.9 1-3-.9 0-2.1.6-2.7 1.4-.6.7-1.1 1.8-1 2.9 1 .1 2.1-.5 2.7-1.3z" /></svg>iOS<em>Soon</em></span>
-                <span><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 9.5H6.5a1 1 0 0 0-1 1V17a1 1 0 0 0 1 1h1v2.5a1.25 1.25 0 0 0 2.5 0V18h4v2.5a1.25 1.25 0 0 0 2.5 0V18h1a1 1 0 0 0 1-1v-6.5a1 1 0 0 0-1-1zM4 9.5a1.25 1.25 0 0 0-1.25 1.25v5a1.25 1.25 0 0 0 2.5 0v-5A1.25 1.25 0 0 0 4 9.5zm16 0a1.25 1.25 0 0 0-1.25 1.25v5a1.25 1.25 0 0 0 2.5 0v-5A1.25 1.25 0 0 0 20 9.5zM15.2 4.6l1-1.6a.3.3 0 0 0-.5-.3l-1 1.6a6.2 6.2 0 0 0-5.4 0l-1-1.6a.3.3 0 0 0-.5.3l1 1.6A5.3 5.3 0 0 0 6.5 8.7h11a5.3 5.3 0 0 0-2.3-4.1zM9.5 7a.6.6 0 1 1 0-1.2.6.6 0 0 1 0 1.2zm5 0a.6.6 0 1 1 0-1.2.6.6 0 0 1 0 1.2z" /></svg>Android<em>Soon</em></span>
-              </div>
-            </div>
-          </div>
-        </section>
-
         <section id="faq" className="x3-sec">
           <div className="x3-wrap x3-faqwrap">
             <div className="x3-head">
@@ -152,6 +137,16 @@ export default function Experiment8() {
                   <p>{f.a}</p>
                 </details>
               ))}
+            </div>
+          </div>
+        </section>
+        <section className="x3-sec x8-end">
+          <div className="x3-wrap">
+            <div className="x3-card x8-endcard">
+              <span className="x8-endmark" aria-hidden="true"><Markhor height={56} /></span>
+              <h2>Start where you are.<br /><span className="mute">The first 100 questions are free.</span></h2>
+              <a className="x3-btn x3-blue x3-big" href="/signup">Start free</a>
+              <small>iOS and Android apps coming soon.</small>
             </div>
           </div>
         </section>
