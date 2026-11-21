@@ -1,4 +1,4 @@
-/* Sign-in experiment 5 and sign-up experiment 6, "The ascent" (components/experiment5). Scoped under .x5. Motion is transform-only, never a fade,
+/* The sign-in and sign-up pages, "The ascent" (components/auth/Ascent.tsx, Ridge.tsx). Scoped under .x5. Motion is transform-only, never a fade,
    and stops for people who ask for reduced motion. */
 .x5 {
   --x-bg: #fafafa;
@@ -110,8 +110,6 @@
 .x5 h1 { font-size: clamp(2.125rem, 1.6rem + 1.6vw, 2.75rem); font-weight: 800; letter-spacing: -0.045em; line-height: 1.02; }
 .x5-lede { color: var(--x-mute); font-size: 1rem; line-height: 1.5; }
 
-.x5-already { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 10px 10px 16px; border-radius: 14px; background: color-mix(in srgb, var(--x-blue) 9%, transparent); font-size: .9375rem; }
-.x5-already button { border: 0; font: inherit; font-weight: 600; font-size: .875rem; height: 34px; padding-inline: 14px; border-radius: 10px; background: var(--x-blue); color: #fff; cursor: pointer; }
 
 .x5-google { position: relative; display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; height: 50px; border: 0; border-radius: 14px; background: var(--x-card); color: var(--x-ink); box-shadow: inset 0 0 0 1px var(--x-line), 0 1px 2px rgba(15,17,21,.04); font: inherit; font-weight: 600; font-size: .9375rem; cursor: pointer; transition: transform .15s, box-shadow .15s; }
 .x5-google:not(:disabled):hover { transform: translateY(-1px); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--x-ink) 18%, var(--x-line)), 0 6px 16px -8px rgba(15,17,21,.2); }
@@ -176,7 +174,7 @@
   .x5-slip, .x5-drift, .x5-drift2, .x5-star.tw { animation: none; }
 }
 
-/* Sign-up (experiment 6): the password rule reads as a hint, then turns to a go-ahead once met */
+/* Sign-up: the password rule reads as a hint, then turns to a go-ahead once met */
 .x5-need { font-size: .8125rem; font-weight: 600; color: var(--x-mute); }
 .x5-need.ok { color: var(--good); }
 .x5-fine { font-size: .8125rem; line-height: 1.5; color: var(--x-mute); text-align: center; }

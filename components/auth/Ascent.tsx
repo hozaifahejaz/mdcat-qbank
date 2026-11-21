@@ -5,23 +5,23 @@ import { useRouter } from "next/navigation";
 import { ApiError, type AuthConfig, api, getAuthConfig, lastAuthConfig } from "@/lib/api";
 import { type Entered, friendlyError, readNext, signInError, thisDevice } from "@/lib/auth";
 import { inAppPath, whenShown } from "@/lib/paths";
-import { type AccountUser, getCurrentUser } from "@/lib/user";
+import { getCurrentUser } from "@/lib/user";
 import { site } from "@/lib/site";
 import { Markhor } from "@/components/Logo";
 import ThemeToggle from "@/components/ThemeToggle";
 import AfterSignIn from "@/components/auth/AfterSignIn";
 import NotConfigured from "@/components/auth/NotConfigured";
 import Turnstile from "@/components/auth/Turnstile";
-import Ridge, { SIGN_IN, SIGN_UP } from "@/components/experiment5/Ridge";
+import Ridge, { SIGN_IN, SIGN_UP } from "@/components/auth/Ridge";
 
-/* Sign-in and sign-up experiments 5 and 6 (app/experiments/5, /6). The page is a mountain: each part of the form is
+/* The sign-in and sign-up pages (/signin, /signup), "The ascent". The page is a mountain: each part of the form is
    a ledge the markhor climbs to, so it shows how far along you are without a word of instruction. Underneath it is the
    live sign-in: /api/auth/signin or /api/auth/signup with this device in the same request, Google through
    /api/auth/oauth/google (which also creates the account), then AfterSignIn for the device check and the way in. */
 
 type Mode = "signin" | "signup";
-// Where each page sends someone who wants the other one, while both are experiments.
-const OTHER = { signin: "/experiments/6", signup: "/experiments/5" };
+// Where each page sends someone who wants the other one.
+const OTHER = { signin: "/signup", signup: "/signin" };
 
 const LAST = "x5-last-method";
 const looksLikeEmail = (s: string) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(s.trim());
@@ -40,7 +40,6 @@ export default function Ascent({ mode = "signin" }: { mode?: Mode }) {
   const [config, setConfig] = useState<AuthConfig | null>(site.signIn);
   const [hello, setHello] = useState("");
   const [last, setLast] = useState<"google" | "email" | null>(null);
-  const [already, setAlready] = useState<AccountUser | null>(null);
   const [entered, setEntered] = useState<Entered | null>(null);
 
   const [name, setName] = useState("");
@@ -69,8 +68,8 @@ export default function Ascent({ mode = "signin" }: { mode?: Mode }) {
     if (params.get("error")) setError(signInError(params.get("error")!));
     setConfig(lastAuthConfig());
     getAuthConfig().then(setConfig);
-    // Already signed in: say so and offer the way in, rather than leaving the page at once.
-    whenShown(() => getCurrentUser().then((u) => u && setAlready(u)));
+    // Already signed in: straight on to the page, which makes this the active device, so only once really opened.
+    whenShown(() => getCurrentUser().then((u) => { if (u) setEntered((e) => e ?? { user: u }); }));
   }, [router]);
 
   const remember = (m: "google" | "email") => { try { localStorage.setItem(LAST, m); } catch {} };
@@ -167,12 +166,6 @@ export default function Ascent({ mode = "signin" }: { mode?: Mode }) {
         {!up && <p className="x5-lede">Sign in and pick up where you left off.</p>}
       </div>
 
-      {already && (
-        <div className="x5-already">
-          <span>Signed in as <b>{already.name.split(" ")[0]}</b></span>
-          <button type="button" onClick={() => setEntered({ user: already })}>Continue</button>
-        </div>
-      )}
 
       {config.google && (
         <>
