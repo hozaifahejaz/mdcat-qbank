@@ -1,14 +1,18 @@
 import { MARKHOR } from "@/components/Logo";
 
-export type Step = 0 | 1 | 2 | 3;
+/* A place the markhor can stand: where its hooves rest, how far along the trail that is (0 to 1), and the ledge's lip. */
+export type Stop = { x: number; y: number; along: number; lip?: string };
+
+const BASE: Stop = { x: 134, y: 695, along: 0, lip: "M102 700 168 692" };
+const SUMMIT: Stop = { x: 600, y: 354, along: 1 };
+/* Sign in: two ledges between the base and the summit (email, password). Sign up has one more (name, email, password). */
+export const SIGN_IN: Stop[] = [BASE, { x: 296, y: 594, along: 1 / 3, lip: "M270 598 322 591" }, { x: 443, y: 484, along: 2 / 3, lip: "M420 488 466 481" }, SUMMIT];
+export const SIGN_UP: Stop[] = [BASE, SIGN_IN[1], SIGN_IN[2], { x: 514, y: 434, along: 0.82, lip: "M498 438 530 432" }, SUMMIT];
 
 /* The scene beside the sign-in form: a Karakoram ridge at first light (at night in the dark theme) with three ledges
    and a summit. The markhor stands on the ledge for each part of signing in that is done, and a flag unfurls on the
    summit once the account is opening. Every move is a transform (a hop: across at one pace, up at another, so it
    arcs), never a fade, and stops for people who ask for reduced motion (exp5.css). */
-
-// Where the markhor's hooves rest on each ledge, in the drawing's units.
-const LEDGES: [number, number][] = [[134, 695], [296, 594], [443, 484], [600, 354]];
 
 /* The logo is the markhor's head and shaggy chest; on the mountain it needs the rest of it. Back, rump, a short tail and
    four legs, drawn in the logo's own units so they join its neck, behind it. */
@@ -24,20 +28,23 @@ const STARS: [number, number, number][] = [
 
 /* Drawn twice: the tall window beside the form on wide screens, and a band cropped to the ridge above it on phones.
    CSS shows one (exp5.css). */
-export default function Ridge({ step, slip }: { step: Step; slip: number }) {
+type Props = { stops: Stop[]; at: number; slip: number };
+
+export default function Ridge(p: Props) {
   return (
     <>
-      <Drawing id="w" box="0 0 800 800" step={step} slip={slip} />
-      <Drawing id="b" box="40 262 720 450" step={step} slip={slip} />
+      <Drawing id="w" box="0 0 800 800" {...p} />
+      <Drawing id="b" box="40 262 720 450" {...p} />
     </>
   );
 }
 
-function Drawing({ id, box, step, slip }: { id: string; box: string; step: Step; slip: number }) {
-  const [x, y] = LEDGES[step];
+function Drawing({ id, box, stops, at, slip }: Props & { id: string; box: string }) {
+  const { x, y, along } = stops[at];
+  const top = at === stops.length - 1;
   return (
     <svg className={`x5-svg x5-${id}`} viewBox={box} preserveAspectRatio="xMidYMax slice" role="img"
-      aria-label={`A markhor climbing a mountain ridge, ${step === 3 ? "at the summit" : `on ledge ${step + 1} of 4`}`}>
+      aria-label={`A markhor climbing a mountain ridge, ${top ? "at the summit" : `on ledge ${at + 1} of ${stops.length}`}`}>
       <defs>
         <linearGradient id={`x5-sky-${id}`} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" className="x5-sky-top" />
@@ -70,16 +77,16 @@ function Drawing({ id, box, step, slip }: { id: string; box: string; step: Step;
       <path className="x5-mid" d="M0 604 90 562 170 590 262 522 350 580 432 540 520 602 620 562 700 590 800 552V800H0Z" />
 
       {/* The ridge: three flat ledges and the summit. */}
-      <path className="x5-ridge" d="M0 748 100 700 168 692 212 658 270 598 322 591 362 558 420 488 466 481 502 438 558 358 626 351 668 390 724 440 800 472V800H0Z" />
+      <path className="x5-ridge" d="M0 748 100 700 168 692 212 658 270 598 322 591 362 558 420 488 466 481 498 438 530 432 558 358 626 351 668 390 724 440 800 472V800H0Z" />
       <path className="x5-shade" d="M626 351 668 390 724 440 800 472V800H660L700 600 640 470Z" />
       <path className="x5-snow" d="M540 384 558 358 626 351 650 373 632 369 616 380 598 368 580 381 562 372Z" />
-      <path className="x5-lip" d="M102 700 168 692M270 598 322 591M420 488 466 481" />
+      <path className="x5-lip" d={stops.map((st) => st.lip ?? "").join("")} />
 
       <path className="x5-trail" d="M134 695C200 688 250 640 296 594S392 520 443 484 540 392 598 354" />
-      <path className="x5-climbed" pathLength="3" style={{ strokeDashoffset: 3 - step }} d="M134 695C200 688 250 640 296 594S392 520 443 484 540 392 598 354" />
+      <path className="x5-climbed" pathLength="1" style={{ strokeDashoffset: 1 - along }} d="M134 695C200 688 250 640 296 594S392 520 443 484 540 392 598 354" />
 
       <rect className="x5-pole" x="562" y="300" width="3.5" height="57" rx="1.5" />
-      <path className={`x5-flag${step === 3 ? " up" : ""}`} d="M562 302 524 313 562 324Z" />
+      <path className={`x5-flag${top ? " up" : ""}`} d="M562 302 524 313 562 324Z" />
 
       <g className="x5-mx" style={{ transform: `translateX(${x}px)` }}>
         <g className="x5-my" style={{ transform: `translateY(${y}px)` }}>
