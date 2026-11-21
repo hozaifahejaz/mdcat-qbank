@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Logo, { Markhor } from "@/components/Logo";
 import Ahead, { AheadReading } from "@/components/Ahead";
 import ThemeToggle from "@/components/ThemeToggle";
-import { BuildTest, MockLog } from "@/components/landing/Live";
 import { ExamMark, SubjectMark } from "@/components/Marks";
 import { PublicFooter } from "@/components/public/Frame";
 import Experience from "@/components/experiment4/Experience";
@@ -52,10 +51,6 @@ const faqs = [
   { q: "Does it work on a phone?", a: "Yes. The site is built for phones first and works in any browser. iOS and Android apps are coming soon." },
 ];
 
-const Check = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
-);
-
 export default function Experiment8() {
   return (
     <div className="x3 x4 x8" id="top">
@@ -64,7 +59,6 @@ export default function Experiment8() {
         <div className="x3-wrap x3-navin">
           <Logo href="#top" size={22} />
           <ul>
-            <li><a href="#features">Features</a></li>
             <li><a href="#subjects">Subjects</a></li>
             <li><a href="#pricing">Pricing</a></li>
             <li><a href="#faq">FAQ</a></li>
@@ -80,38 +74,6 @@ export default function Experiment8() {
       <Experience />
 
       <main>
-        <section id="features" className="x3-sec">
-          <div className="x3-wrap">
-            <div className="x3-head">
-              <span className="x3-tag">Features</span>
-              <h2>Practice the way <span className="hl">the paper asks.</span></h2>
-            </div>
-            <div className="x3-cards">
-              <article className="x3-card">
-                <h3>Every answer explained</h3>
-                <p>Not just the key. The reason.</p>
-                <div className="qmini" aria-hidden="true">
-                  <b>Which organelle makes most of a cell&apos;s ATP?</b>
-                  <span>Ribosome</span>
-                  <span className="ok">Mitochondrion <Check /></span>
-                  <span>Golgi body</span>
-                  <span>Lysosome</span>
-                </div>
-              </article>
-              <article className="x3-card">
-                <h3>Build a test</h3>
-                <p>Try it: turn subjects on or off.</p>
-                <BuildTest />
-              </article>
-              <article className="x3-card">
-                <h3>Timed mocks</h3>
-                <p>180 MCQs in 3 hours, like the real paper.</p>
-                <MockLog />
-              </article>
-            </div>
-          </div>
-        </section>
-
         <section id="subjects" className="x3-sec x3-grid">
           <div className="x3-wrap">
             <div className="x3-head">
