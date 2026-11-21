@@ -5,6 +5,7 @@ import { PublicFooter } from "@/components/public/Frame";
 import Experience from "@/components/experiment4/Experience";
 import { ExamProvider } from "@/components/experiment4/ExamState";
 import Climb from "@/components/experiment4/Climb";
+import Motion from "@/components/experiment4/Motion";
 import { Features, Pricing, Faq, End } from "@/components/experiment4/Sections";
 import { site } from "@/lib/site";
 import "../../landing-new.css";
@@ -34,6 +35,7 @@ export default function Experiment4() {
             <a className="x3-btn x3-dark" href="/signup">Start free</a>
           </div>
         </div>
+        <Motion />
       </nav>
 
         <main>
