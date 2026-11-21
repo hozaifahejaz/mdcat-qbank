@@ -2,22 +2,26 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Markhor } from "@/components/Logo";
+import { useArea, type Area } from "./ExamState";
 
 /* "The climb": how the site works, told as a markhor climbing to the summit. As the visitor scrolls through the steps,
    the markhor walks up the path and each step lights up. Transform and colour only, no fades; with reduced motion the
    markhor waits at the summit and every step is lit. */
 
-const steps = [
-  { h: "Pick your exam", p: "Your account shows your track and nothing else." },
-  { h: "Practice by chapter", p: "Every option explained, so you learn why, not just what." },
-  { h: "Sit the real paper", p: "Timed mocks with the same number of questions and the same clock." },
-  { h: "Fix your mistakes", p: "Every wrong answer waits in My mistakes for another try." },
+const list = (xs: string[]) => xs.length < 2 ? xs.join("") : `${xs.slice(0, -1).join(", ")} and ${xs[xs.length - 1]}`;
+const stepsFor = (a: Area) => [
+  { h: "Sign up free", p: `Choose ${a.name.toLowerCase()}, pick your tests and set your exam date.` },
+  { h: "Learn by chapter", p: `${list(a.page.subjects.slice(0, 3).map((s) => s.name))}, one chapter at a time, every answer explained.` },
+  { h: "Test yourself", p: "Mixed tests from the chapters you've finished, as long or short as you like." },
+  { h: "Sit the real paper", p: a.page.mock.line },
   { h: "Exam day", p: "Walk in having seen it all before." },
 ];
 const ROUTE = "M80 660 C 240 650 450 620 480 560 S 200 470 230 400 S 400 330 360 250 S 290 130 300 62";
 const stops = [0.04, 0.3, 0.55, 0.8, 1];
 
 export default function Climb() {
+  const { area } = useArea();
+  const steps = stepsFor(area);
   const box = useRef<HTMLDivElement>(null);
   const route = useRef<SVGPathElement>(null);
   const [p, setP] = useState(0);
@@ -51,7 +55,7 @@ export default function Climb() {
   const reached = (i: number) => p >= stops[i] - 0.02;
 
   return (
-    <section id="how" className="x3-sec x4-climb">
+    <section id="how" className="x3-sec x4-climb" style={{ ["--x4-c" as string]: area.colour }}>
       <div className="x3-wrap">
         <div className="x3-head">
           <span className="x3-tag">How it works</span>

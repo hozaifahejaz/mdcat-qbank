@@ -1,85 +1,77 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { allExams, tracks } from "@/lib/catalogue";
+import { Fragment, useEffect, useRef } from "react";
+import { tracks, type TrackId } from "@/lib/catalogue";
+import { useArea, type Area } from "./ExamState";
 import TrackMark from "./TrackMark";
+import { ExamMark } from "@/components/Marks";
 
-/* The heart of experiment 4: "I'm preparing for ___". Until the visitor touches it, the blank turns through a few exams
-   so they can see the page adapt. Picking an exam changes the card under it (paper pattern, start or get notified) and
-   the sample question below. Other parts of the page pick an exam by sending an "x4:pick" event with its id. */
+/* The heart of experiment 4: "I'm preparing for ___". The blank is an area (medical college, engineering university,
+   residency...). Until the visitor touches it, it turns through the areas so they can see the page adapt. Picking one
+   changes the test cards under it and every section below, which read the same choice from ExamState. */
 
-const tour = ["mdcat", "ecat", "fcps1", "css", "lat", "alevel", "hat", "sat"];
-const KEY = "x4-exam";
-const still = () => typeof window !== "undefined" && matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-export function pickExam(id: string) {
-  window.dispatchEvent(new CustomEvent("x4:pick", { detail: id }));
-}
-
-export default function Experience() {
-  const [id, setId] = useState("mdcat");
-  const [touched, setTouched] = useState(false);
-  const [open, setOpen] = useState(false);
-  const exam = allExams.find((e) => e.id === id) ?? allExams[0];
-  const track = exam.track;
-
-  const choose = (next: string, scroll = false) => {
-    setId(next);
-    setTouched(true);
-    setOpen(false);
-    try { localStorage.setItem(KEY, next); } catch {}
-    if (scroll) document.getElementById("top")?.scrollIntoView({ behavior: still() ? "auto" : "smooth" });
-  };
-
-  // A returning visitor sees the exam they picked last time.
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem(KEY);
-      if (saved && allExams.some((e) => e.id === saved)) { setId(saved); setTouched(true); }
-    } catch {}
-    const onPick = (e: Event) => choose((e as CustomEvent<string>).detail, true);
-    window.addEventListener("x4:pick", onPick);
-    return () => window.removeEventListener("x4:pick", onPick);
-  }, []);
-
-  // The tour, until the visitor touches anything.
-  useEffect(() => {
-    if (touched || open || still()) return;
-    const t = setTimeout(() => setId(tour[(tour.indexOf(id) + 1) % tour.length]), 2600);
-    return () => clearTimeout(t);
-  }, [id, touched, open]);
+/* soon: the live landing page passes it so tests and areas that aren't open yet say "Coming soon" (experiment 4
+   shows every area as done). */
+export default function Experience({ soon = false }: { soon?: boolean }) {
+  const { shown, touched, open, setOpen, choose } = useArea();
 
   return (
-    <>
-      <header className="x4-hero">
-        <div className="x3-wrap">
-          <p className="x4-kicker">Question banks for Pakistan&apos;s exams</p>
-          <h1>
-            I&apos;m preparing for
-            <span className="x4-pickwrap">
-              <button type="button" className="x4-pick" style={{ color: track.colour }} aria-haspopup="dialog" aria-expanded={open} onClick={() => { setTouched(true); setOpen(!open); }}>
-                <span key={exam.id} className="x4-word">{exam.name}</span>
-                <svg className="x4-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
-              </button>
-              {open && <Picker current={exam.id} onPick={(x) => choose(x)} onClose={() => setOpen(false)} />}
-            </span>
-          </h1>
-          {!touched && <p className="x4-hint">Tap the exam to choose yours</p>}
-          <ExamCard key={exam.id} exam={exam} />
-        </div>
-      </header>
-      <Try trackId={track.id} onTrack={(t) => { const first = tracks.find((x) => x.id === t)!.exams[0].id; setId(first); setTouched(true); }} />
-    </>
+    <header className="x4-hero" style={{ ["--x4-c" as string]: shown.colour }}>
+      <Contours />
+      <div className="x3-wrap">
+        <p className="x4-kicker">Question banks for Pakistan&apos;s exams</p>
+        <h1>
+          I&apos;m preparing for
+          <span className="x4-pickwrap">
+            <button type="button" className={touched ? "x4-pick" : "x4-pick idle"} style={{ color: shown.colour }} aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(!open)}>
+              <Phrase key={shown.id} text={shown.page.phrase} />
+              <svg className="x4-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+            </button>
+            {open && <Picker current={shown.id} onPick={choose} onClose={() => setOpen(false)} />}
+          </span>
+        </h1>
+        {!touched && <p className="x4-hint">Tap to choose yours</p>}
+        <AreaCard key={shown.id} area={shown} soon={soon} />
+      </div>
+    </header>
   );
 }
 
-function Picker({ current, onPick, onClose }: { current: string; onPick: (id: string) => void; onClose: () => void }) {
-  const [q, setQ] = useState("");
+/* The phrase arrives letter by letter, each letter sliding up out of a mask (no fade). */
+function Phrase({ text }: { text: string }) {
+  let k = 0;
+  return (
+    <span className="x4-word">
+      <span className="x4-sr">{text}</span>
+      {text.split(" ").map((w, i) => (
+        <Fragment key={i}>
+          {i > 0 && " "}
+          <span className="x4-wd" aria-hidden="true">
+            {[...w].map((ch, j) => <span key={j} style={{ ["--i" as string]: k++ }}>{ch}</span>)}
+          </span>
+        </Fragment>
+      ))}
+    </span>
+  );
+}
+
+/* Contour lines behind the hero, drawn in on load in the area's colour; the colour glides as the area changes. */
+function Contours() {
+  return (
+    <svg className="x4-contours" viewBox="0 0 1440 320" preserveAspectRatio="none" aria-hidden="true">
+      <path pathLength={1} d="M0 250 C 160 210 260 150 420 170 S 700 260 860 200 S 1120 90 1260 120 S 1400 170 1440 150" />
+      <path pathLength={1} d="M0 285 C 180 250 300 200 450 215 S 720 290 880 240 S 1130 140 1270 165 S 1400 210 1440 195" />
+      <path pathLength={1} d="M0 315 C 200 290 330 250 480 260 S 740 315 900 280 S 1140 190 1280 210 S 1400 250 1440 240" />
+    </svg>
+  );
+}
+
+function Picker({ current, onPick, onClose }: { current: string; onPick: (id: TrackId) => void; onClose: () => void }) {
   const box = useRef<HTMLDivElement>(null);
-  const input = useRef<HTMLInputElement>(null);
+  const first = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    input.current?.focus({ preventScroll: true });
+    first.current?.focus({ preventScroll: true });
     const key = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     const click = (e: MouseEvent) => {
       const t = e.target as HTMLElement;
@@ -90,153 +82,70 @@ function Picker({ current, onPick, onClose }: { current: string; onPick: (id: st
     return () => { document.removeEventListener("keydown", key); document.removeEventListener("mousedown", click); };
   }, [onClose]);
 
-  const needle = q.trim().toLowerCase();
-  const groups = useMemo(() => tracks
-    .map((t) => ({ ...t, exams: t.exams.filter((e) => !needle || `${e.name} ${e.body} ${t.name}`.toLowerCase().includes(needle)) }))
-    .filter((t) => t.exams.length), [needle]);
-
   return (
-    <div className="x4-picker x3-card" ref={box} role="dialog" aria-label="Choose your exam">
-      <label className="x4-search">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
-        <input ref={input} type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search, e.g. ECAT or FCPS" aria-label="Search exams" />
-      </label>
-      <div className="x4-pgroups">
-        {groups.map((t) => (
-          <div key={t.id} className="x4-pgroup">
-            <small><i style={{ background: t.colour }} />{t.name}</small>
-            <div>
-              {t.exams.map((e) => (
-                <button key={e.id} type="button" className={e.id === current ? "on" : ""} onClick={() => onPick(e.id)}>
-                  {e.name}{e.live && <em>Live</em>}
-                </button>
-              ))}
-            </div>
-          </div>
+    <div className="x4-picker x3-card" ref={box} role="dialog" aria-label="Choose what you're preparing for">
+      <div className="x4-areas">
+        {tracks.map((t, i) => (
+          <button key={t.id} ref={i === 0 ? first : undefined} type="button" className={t.id === current ? "on" : ""} style={{ ["--i" as string]: i }} onClick={() => onPick(t.id)}>
+            <span className="x4-tile" style={{ color: t.colour }}><TrackMark id={t.id} size={20} /></span>
+            <span><b>{t.name}</b><small>{t.exams.slice(0, 3).map((e) => e.name).join(", ")}{t.exams.length > 3 ? "…" : ""}</small></span>
+          </button>
         ))}
-        {groups.length === 0 && <p className="x4-none">Not on our list yet. Tell us at the contact page.</p>}
       </div>
     </div>
   );
 }
 
-type AnyExam = (typeof allExams)[number];
+/* The area's tests as a fan of admit tickets, each in its own colour: a number and its name above the tear line,
+   the paper and the clock (or who sets it) below it, and a band along the bottom split by the paper's parts.
+   Then one call to action with the main hero's proof line. */
+const palette = ["#11804a", "#2445ff", "#b06a00", "#8a63ff", "#d4483b", "#0f9fb5", "#c9a400"];
+const marks = new Set(["mdcat", "nums", "aku", "ecat", "net", "lat"]);
 
-function ExamCard({ exam }: { exam: AnyExam }) {
-  const t = exam.track;
-  const total = exam.pattern?.parts.reduce((s, p) => s + p.n, 0) ?? 0;
+/* The two facts printed on a ticket: the paper and the clock when we know the pattern, otherwise who sets it. */
+type AnyExam = Area["exams"][number];
+const facts = (e: AnyExam): [string, string][] => {
+  if (!e.pattern) return [["Set by", e.body]];
+  const [paper, time] = e.pattern.summary.split(" · ");
+  return time ? [["Paper", paper], ["Time", time]] : [["Paper", paper]];
+};
+
+function AreaCard({ area, soon }: { area: Area; soon: boolean }) {
+  const n = area.exams.length;
+  const start = Math.max(0, palette.indexOf(area.colour));
   return (
-    <div className="x4-card x3-card">
-      <div className="x4-cardhead">
-        <span className="x4-tile" style={{ color: t.colour }}><TrackMark id={t.id} size={22} /></span>
-        <div>
-          <b>{exam.name}</b>
-          <small>{t.name} · {exam.body}</small>
-        </div>
-        <em className={exam.live ? "x4-status live" : "x4-status"}>{exam.live ? "Live now" : "Opening soon"}</em>
+    <div className="x4-under">
+      <ul className="x4-fan" aria-label={`Tests in ${area.name}`}>
+        {area.exams.map((e, i) => {
+          const c = palette[(start + i) % palette.length];
+          const later = soon && !e.live;
+          return (
+            <li key={e.id} className={later ? "x4-ticket x4-later" : "x4-ticket"} style={{ ["--r" as string]: n > 5 ? `${i % 2 ? 1.5 : -1.5}deg` : `${(i - (n - 1) / 2) * 3}deg`, ["--d" as string]: `${i * 60}ms`, ["--c" as string]: c }}>
+              <div className="x4-tk-top">
+                <span className="x4-tk-row">
+                  <small>No. {String(i + 1).padStart(2, "0")}</small>
+                  <span className="x4-tk-mark">{marks.has(e.id) ? <ExamMark id={e.id} size={18} /> : <TrackMark id={area.id} size={18} />}</span>
+                </span>
+                <b>{e.name}</b>
+                {later && <em className="x4-soonstamp">Coming soon</em>}
+              </div>
+              <div className="x4-tk-cut" aria-hidden="true" />
+              <dl className="x4-tk-facts">
+                {facts(e).map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}
+              </dl>
+              <span className="x4-tk-band" aria-hidden="true">
+                {e.pattern
+                  ? e.pattern.parts.map((p, j) => <i key={p.name} style={{ flexGrow: p.n, background: `color-mix(in srgb, var(--c) ${100 - j * 16}%, var(--x-card))` }} />)
+                  : <i style={{ flexGrow: 1, background: "var(--c)" }} />}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+      <div className="x4-go">
+        <a className="x3-btn x3-blue x3-big" href="/signup">Start free</a>
+        <small className="x3-proof">{soon && !area.exams.some((e) => e.live) ? `${area.name} is coming soon. Pre-medical is open now, with 100 questions free.` : "100 questions free. No card needed."}</small>
       </div>
-
-      {exam.pattern ? (
-        <div className="x4-paper">
-          <p>The paper: <b>{exam.pattern.summary}</b></p>
-          <div className="x4-bar" aria-hidden="true">
-            {exam.pattern.parts.map((p, i) => (
-              <span key={p.name} style={{ flexGrow: p.n, background: `color-mix(in srgb, ${t.colour} ${100 - i * 15}%, var(--x-card))` }} />
-            ))}
-          </div>
-          <ul className="x4-legend">
-            {exam.pattern.parts.map((p, i) => (
-              <li key={p.name}><i style={{ background: `color-mix(in srgb, ${t.colour} ${100 - i * 15}%, var(--x-card))` }} />{p.name} <b>{p.n}</b></li>
-            ))}
-          </ul>
-          <span className="x4-sr">{exam.pattern.parts.map((p) => `${p.name} ${p.n}`).join(", ")} of {total}</span>
-        </div>
-      ) : (
-        <p className="x4-paper x4-mute">{exam.live ? "Chapter-wise practice, timed tests and mocks in its own pattern." : `We'll add ${exam.name} in its own pattern, chapter by chapter, when it opens.`}</p>
-      )}
-
-      {exam.live ? (
-        <div className="x4-ctas">
-          <a className="x3-btn x3-blue x3-big" href="/signup">Start {exam.name} free</a>
-          <a className="x4-link" href="#try">Try a question first</a>
-        </div>
-      ) : (
-        <Notify name={exam.name} />
-      )}
     </div>
-  );
-}
-
-function Notify({ name }: { name: string }) {
-  const [v, setV] = useState("");
-  const [state, setState] = useState<"idle" | "busy" | "done" | "error">("idle");
-  const [msg, setMsg] = useState("");
-  const send = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setState("busy");
-    try {
-      const r = await fetch("/api/waitlist", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ contact: v }) });
-      if (r.ok) { setState("done"); return; }
-      const j = await r.json().catch(() => ({}));
-      setMsg(j?.message || "That didn't work. Try again.");
-      setState("error");
-    } catch {
-      setMsg("No connection. Try again.");
-      setState("error");
-    }
-  };
-  if (state === "done") return <p className="x4-done">You&apos;re on the list. We&apos;ll tell you when {name} opens.</p>;
-  return (
-    <form className="x4-notify" onSubmit={send}>
-      <input value={v} onChange={(e) => setV(e.target.value)} placeholder="Email or mobile number" aria-label="Email or mobile number" required />
-      <button className="x3-btn x3-dark" disabled={state === "busy"}>Tell me when it opens</button>
-      {state === "error" && <small role="alert">{msg}</small>}
-    </form>
-  );
-}
-
-function Try({ trackId, onTrack }: { trackId: string; onTrack: (t: (typeof tracks)[number]["id"]) => void }) {
-  const t = tracks.find((x) => x.id === trackId)!;
-  const s = t.sample;
-  const [chosen, setChosen] = useState<number | null>(null);
-  useEffect(() => setChosen(null), [trackId]);
-  return (
-    <section id="try" className="x3-sec x4-try">
-      <div className="x3-wrap">
-        <div className="x3-head">
-          <span className="x3-tag">Try one</span>
-          <h2>One question.<br /><span className="mute">Every option explained.</span></h2>
-        </div>
-        <div className="x4-trytabs" role="tablist" aria-label="Pick a track">
-          {tracks.map((x) => (
-            <button key={x.id} type="button" role="tab" aria-selected={x.id === trackId} className={x.id === trackId ? "on" : ""} onClick={() => onTrack(x.id)}>
-              {x.name}
-            </button>
-          ))}
-        </div>
-        <div className="x4-q x3-card">
-          <small className="x4-qtag" style={{ color: t.colour }}>{s.tag}</small>
-          <p className="x4-stem">{s.stem}</p>
-          <div className="x4-opts">
-            {s.options.map((o, i) => {
-              const state = chosen === null ? "" : i === s.answer ? "ok" : i === chosen ? "no" : "dim";
-              return (
-                <button key={o} type="button" className={state} disabled={chosen !== null} onClick={() => setChosen(i)}>
-                  <i>{"ABCD"[i]}</i>
-                  <span>{o}</span>
-                  {chosen !== null && <small>{i === s.answer ? s.why : s.wrong[i]}</small>}
-                </button>
-              );
-            })}
-          </div>
-          {chosen !== null && (
-            <div className="x4-after">
-              <b>{chosen === s.answer ? "Correct." : "Not quite."}</b> That&apos;s how every question in the bank is explained.
-              <button type="button" className="x4-link" onClick={() => setChosen(null)}>Try again</button>
-            </div>
-          )}
-        </div>
-      </div>
-    </section>
   );
 }

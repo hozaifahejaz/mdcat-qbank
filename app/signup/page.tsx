@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
-import AuthPage from "@/components/auth/AuthPage";
+import Ascent from "@/components/auth/Ascent";
 import { site } from "@/lib/site";
 import "../auth.css";
+import "../ascent.css";
 
 export const metadata: Metadata = {
   title: `Create your account · ${site.name}`,
@@ -10,5 +11,5 @@ export const metadata: Metadata = {
 };
 
 export default function SignUpPage() {
-  return <AuthPage mode="signup" />;
+  return <Ascent mode="signup" />;
 }
