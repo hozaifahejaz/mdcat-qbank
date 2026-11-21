@@ -8,6 +8,7 @@ import { ExamProvider } from "@/components/experiment4/ExamState";
 import Pricing from "@/components/experiment8/Pricing";
 import AppStory from "@/components/experiment8/AppStory";
 import Orbit from "@/components/experiment8/Orbit";
+import HeroIcons from "@/components/experiment8/HeroIcons";
 import { bankSize, subjects as subjectPages } from "@/lib/public";
 import { site } from "@/lib/site";
 import "../../landing-new.css";
@@ -53,7 +54,10 @@ export default function Experiment8() {
         </div>
       </nav>
 
-      <Experience />
+      <div className="x8-herowrap">
+        <HeroIcons />
+        <Experience />
+      </div>
 
       <main>
         <section id="subjects" className="x3-sec x3-grid">
