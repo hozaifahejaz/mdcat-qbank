@@ -273,3 +273,150 @@
 .x4-tk-band { display: flex; gap: 2px; height: 6px; }
 @media (max-width: 640px) { .x4-ticket { flex: none; width: 172px; scroll-snap-align: start; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .x4-ticket { animation: none; transition: none; } }
+
+/* ───────────── Motion pass: every part of the page moves, by transform and colour only (no fades). ───────────── */
+@property --x4-c { syntax: "<color>"; inherits: true; initial-value: #2445ff; }
+@property --p { syntax: "<percentage>"; inherits: false; initial-value: 0%; }
+.x4, .x4-hero, .x4-app, .x4-climb { transition: --x4-c .7s ease; }
+.x4 { --x4-ease: cubic-bezier(.16, 1, .3, 1); --x4-spring: cubic-bezier(.34, 1.56, .64, 1); }
+@keyframes x4-rise { from { transform: translateY(56px); } }
+@keyframes x4-pop { from { transform: scale(.3); } }
+@keyframes x4-slide { from { transform: translateX(28px); } }
+
+/* Reading progress under the nav, in the area's colour */
+.x4-progress { position: absolute; left: 0; right: 0; bottom: -1px; height: 3px; background: var(--x4-c); transform-origin: left; transform: scaleX(0); pointer-events: none; }
+@supports (animation-timeline: scroll()) { .x4-progress { animation: x4-read linear both; animation-timeline: scroll(root); } }
+@keyframes x4-read { to { transform: scaleX(1); } }
+.x3-nav ul a { position: relative; }
+.x3-nav ul a::after { content: ""; position: absolute; left: 0; right: 0; bottom: -6px; height: 2px; border-radius: 2px; background: var(--x4-c); transform: scaleX(0); transform-origin: right; transition: transform .3s var(--x4-ease); }
+.x3-nav ul a:hover::after { transform: scaleX(1); transform-origin: left; }
+
+/* Hero: lines rise in on load, the phrase arrives letter by letter, contour lines draw in behind */
+.x4-hero { position: relative; isolation: isolate; }
+.x4-hero > .x3-wrap { position: relative; }
+.x4-kicker { animation: x4-rise .8s var(--x4-ease) backwards; }
+.x4-hero h1 { animation: x4-rise .9s var(--x4-ease) .08s backwards; }
+.x4-hint { animation: x4-rise .9s var(--x4-ease) .3s backwards; }
+.x4-word { animation: none; }
+.x4-wd { display: inline-block; white-space: nowrap; overflow: clip; overflow-clip-margin: .08em; padding-bottom: .08em; margin-bottom: -.08em; vertical-align: bottom; }
+.x4-wd > span { display: inline-block; animation: x4-letter .55s var(--x4-ease) calc(var(--i) * 22ms) backwards; }
+@keyframes x4-letter { from { transform: translateY(105%) rotate(6deg); } }
+.x4-pick { transition: color .7s ease, transform .2s var(--x4-ease); }
+.x4-pick:hover { transform: translateY(-2px); }
+.x4-pick.idle .x4-chev { animation: x4-nudge 1.4s ease-in-out infinite; }
+@keyframes x4-nudge { 50% { transform: translateY(18%); } }
+.x4-contours { position: absolute; z-index: -1; left: 0; right: 0; bottom: 0; width: 100%; height: 300px; pointer-events: none; }
+.x4-contours path { fill: none; stroke: color-mix(in srgb, var(--x4-c) 26%, transparent); stroke-width: 1.5; vector-effect: non-scaling-stroke; stroke-dasharray: 1; stroke-dashoffset: 1; animation: x4-draw 2.6s var(--x4-ease) forwards, x4-drift 14s ease-in-out infinite alternate; }
+.x4-contours path:nth-child(2) { animation-delay: .25s, -4s; stroke: color-mix(in srgb, var(--x4-c) 18%, transparent); }
+.x4-contours path:nth-child(3) { animation-delay: .5s, -9s; stroke: color-mix(in srgb, var(--x4-c) 12%, transparent); }
+@keyframes x4-draw { to { stroke-dashoffset: 0; } }
+@keyframes x4-drift { from { translate: -1.5% 0; } to { translate: 1.5% 6px; } }
+
+/* Picker opens by growing from the headline; its areas follow one by one */
+.x4-picker { transform-origin: 50% 0; animation: x4-open .32s var(--x4-ease); }
+@keyframes x4-open { from { transform: translateX(-50%) translateY(-10px) scale(.94); } }
+.x4-areas button { animation: x4-rise .45s var(--x4-ease) calc(var(--i) * 28ms) backwards; transition: transform .2s var(--x4-ease), box-shadow .2s; }
+.x4-areas button:hover { transform: translateX(3px); }
+.x4-areas button .x4-tile { transition: transform .3s var(--x4-spring); }
+.x4-areas button:hover .x4-tile { transform: rotate(-8deg) scale(1.08); }
+
+/* Tickets: dealt in, then they breathe; marks pop, bands fill */
+.x4-ticket { animation: x4-deal .6s var(--x4-ease) var(--d) both, x4-bob 6s ease-in-out calc(var(--d) * -9) infinite; }
+@keyframes x4-deal { from { transform: translateY(70px) rotate(calc(var(--r) * -3)) scale(.9); } }
+@keyframes x4-bob { 50% { translate: 0 -6px; } }
+.x4-ticket:hover { transform: rotate(0deg) translateY(-10px) scale(1.03); }
+.x4-tk-mark { animation: x4-pop .5s var(--x4-spring) calc(var(--d) + .25s) backwards; }
+.x4-ticket:hover .x4-tk-mark { transform: rotate(-10deg) scale(1.1); }
+.x4-tk-mark { transition: transform .3s var(--x4-spring); }
+.x4-tk-band i { transform-origin: left; animation: x4-fill .7s var(--x4-ease) calc(var(--d) + .35s) both; }
+.x4-go { animation: x4-rise .8s var(--x4-ease) .45s backwards; }
+.x4-go .x3-btn { position: relative; overflow: hidden; }
+.x4-go .x3-btn::after, .plan.best .x3-btn::after { content: ""; position: absolute; top: 0; bottom: 0; left: 0; width: 40%; background: linear-gradient(100deg, transparent, rgba(255,255,255,.35), transparent); transform: translateX(-120%) skewX(-18deg); animation: x4-sheen 4.5s ease-in-out 1.5s infinite; pointer-events: none; }
+@keyframes x4-sheen { 0%, 70% { transform: translateX(-120%) skewX(-18deg); } 100% { transform: translateX(330%) skewX(-18deg); } }
+
+/* Sections rise in as they scroll into view (armed only once the script runs, so nothing hides without it) */
+.x4[data-armed] .x3-sec:not([data-seen]) :is(.x3-head > *, .x4-app, .x4-mount, .x4-steps, .x3-plans > *, .x3-note, .x3-faq > *, .x4-end .x3-wrap > *) { transform: translateY(56px); }
+.x4[data-armed] .x3-sec:not([data-seen]) .x4-app { transform: perspective(1600px) rotateX(16deg) translateY(80px) scale(.94); }
+.x3-sec[data-seen] :is(.x3-head > *, .x4-mount, .x4-steps, .x3-note, .x4-end .x3-wrap > *) { animation: x4-rise .9s var(--x4-ease) backwards; }
+.x3-sec[data-seen] .x3-head > :nth-child(2) { animation-delay: .08s; }
+.x3-sec[data-seen] .x4-steps { animation-delay: .15s; }
+.x3-sec[data-seen] .x4-app { animation: x4-tilt 1.1s var(--x4-ease) .12s backwards; transform-origin: 50% 0; }
+@keyframes x4-tilt { from { transform: perspective(1600px) rotateX(16deg) translateY(80px) scale(.94); } }
+.x3-sec[data-seen] .x3-plans > * { animation: x4-rise .9s var(--x4-ease) backwards; }
+.x3-sec[data-seen] .x3-plans > :nth-child(1) { animation-delay: .18s; }
+.x3-sec[data-seen] .x3-plans > :nth-child(2) { animation: x4-best 1s var(--x4-ease) .06s backwards; }
+.x3-sec[data-seen] .x3-plans > :nth-child(3) { animation-delay: .3s; }
+@keyframes x4-best { from { transform: translateY(90px) scale(.9); } }
+.x3-sec[data-seen] .x3-note { animation-delay: .4s; }
+.x3-sec[data-seen] .x3-faq > * { animation: x4-rise .8s var(--x4-ease) backwards; }
+.x3-sec[data-seen] .x3-faq > :nth-child(2) { animation-delay: .06s; } .x3-sec[data-seen] .x3-faq > :nth-child(3) { animation-delay: .12s; } .x3-sec[data-seen] .x3-faq > :nth-child(4) { animation-delay: .18s; } .x3-sec[data-seen] .x3-faq > :nth-child(5) { animation-delay: .24s; }
+.x3-sec[data-seen].x4-end .x3-wrap > :nth-child(2) { animation-delay: .1s; } .x3-sec[data-seen].x4-end .x3-wrap > :nth-child(3) { animation-delay: .2s; } .x3-sec[data-seen].x4-end .x3-wrap > :nth-child(4) { animation-delay: .3s; }
+
+/* Inside your account: the active tab shows a timer until the next one; rows slide in one by one */
+.x4-appin nav button { position: relative; overflow: hidden; transition: background .25s, color .25s, transform .2s var(--x4-ease); }
+.x4-appin nav button:hover { transform: translateX(2px); }
+.x4-appin nav.auto button.on::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: 5px; height: 2px; border-radius: 2px; background: var(--x4-c); transform-origin: left; animation: x4-timer 4.2s linear both; }
+@keyframes x4-timer { from { transform: scaleX(0); } }
+.x4-appme .x4-tile { animation: x4-pop .5s var(--x4-spring); }
+.x4-pane { animation: none; }
+.x4-pane > h4 { animation: x4-slide .45s var(--x4-ease) backwards; }
+.x4-pane .x4-row, .x4-split > span { animation: x4-slide .5s var(--x4-ease) calc(.05s + var(--i) * 70ms) backwards; transition: transform .2s var(--x4-ease), box-shadow .2s; }
+.x4-pane .x4-row:hover { transform: translateX(4px); box-shadow: inset 0 0 0 1px var(--x4-c); }
+.x4-row u s { animation-delay: calc(.15s + var(--i, 0) * 70ms); animation-duration: 1s; }
+.x4-row.clear > i { animation: x4-pop .45s var(--x4-spring); }
+.x4-row button { transition: transform .2s var(--x4-spring); }
+.x4-row button:not(:disabled):hover { transform: scale(1.06); }
+.x4-row button:disabled { animation: x4-pop .4s var(--x4-spring); }
+.x4-mock { animation: x4-slide .5s var(--x4-ease) .05s backwards; }
+.x4-ring { animation: x4-sweep 1.2s var(--x4-ease) .15s backwards; }
+@keyframes x4-sweep { from { --p: 0%; } }
+.x4-chip { animation: x4-pop .5s var(--x4-spring) .8s backwards; }
+.x4-count { font-variant-numeric: tabular-nums; }
+
+/* The climb: the markhor hops along, each stop pops as it is reached, the lit step slides in */
+.x4-goat svg { animation: x4-hop .9s ease-in-out infinite; }
+@keyframes x4-hop { 50% { translate: 0 -4px; } }
+.x4-stop circle { transform-box: fill-box; transform-origin: center; }
+.x4-stop.on circle { animation: x4-pop .45s var(--x4-spring); }
+.x4-steps li > div { transition: transform .5s var(--x4-ease); }
+.x4-steps li:not(.on) > div { transform: translateX(-8px); }
+.x4-ridge, .x4-mount svg { transition: fill .7s, background .7s; }
+
+/* Pricing: the best plan floats a little; ticks pop in once the plans are seen */
+.x3-plans .plan { transition: transform .25s var(--x4-ease), box-shadow .25s; }
+.x3-plans .plan:not(.best):hover { transform: translateY(-6px); box-shadow: var(--x-shadow-lg); }
+.plan.best .x3-btn { position: relative; overflow: hidden; }
+.plan.best .bolt svg { animation: x4-hop 2.4s ease-in-out infinite; }
+.x3-sec[data-seen] .plan li svg { animation: x4-pop .45s var(--x4-spring) backwards; }
+.x3-sec[data-seen] .plan li:nth-child(1) svg { animation-delay: .6s; } .x3-sec[data-seen] .plan li:nth-child(2) svg { animation-delay: .7s; } .x3-sec[data-seen] .plan li:nth-child(3) svg { animation-delay: .8s; } .x3-sec[data-seen] .plan li:nth-child(4) svg { animation-delay: .9s; } .x3-sec[data-seen] .plan li:nth-child(5) svg { animation-delay: 1s; } .x3-sec[data-seen] .plan li:nth-child(6) svg { animation-delay: 1.1s; }
+.plan .early { display: inline-block; justify-self: start; animation: x4-pop .5s var(--x4-spring) .9s backwards; }
+
+/* FAQ: an opened answer slides down into place */
+.x3-faq details { transition: transform .2s var(--x4-ease); }
+.x3-faq details:hover { transform: translateX(4px); }
+.x3-faq details[open] p { animation: x4-drop .4s var(--x4-ease); }
+@keyframes x4-drop { from { transform: translateY(-12px); } }
+
+/* Closing: the ridge draws, the markhor bounds up to the summit and the flag goes up */
+.x4-summit { width: min(300px, 80vw); height: auto; overflow: visible; }
+.x4-sm-fill { fill: color-mix(in srgb, var(--x4-c) 10%, var(--x-bg)); transition: fill .7s; }
+.x4-sm-ridge { fill: none; stroke: var(--x4-c); stroke-width: 3; stroke-linejoin: round; stroke-dasharray: 1; }
+.x4-sm-flag path { stroke: var(--x-ink); stroke-width: 2.5; stroke-linecap: round; fill: none; }
+.x4-sm-flag .cloth { fill: var(--x4-c); stroke: none; transform-box: fill-box; transform-origin: left center; animation: x4-wave 1.8s ease-in-out infinite; }
+@keyframes x4-wave { 50% { transform: skewY(-8deg) scaleX(.9); } }
+.x4-sm-flag { transform-box: fill-box; transform-origin: 50% 100%; }
+.x3-sec[data-seen] .x4-sm-ridge { animation: x4-undraw 1.4s var(--x4-ease) .1s backwards; }
+@keyframes x4-undraw { from { stroke-dashoffset: 1; } }
+.x3-sec[data-seen] .x4-sm-goat { animation: x4-climbup 1.3s ease-in-out .5s backwards; }
+@keyframes x4-climbup { 0% { translate: -140px 90px; } 30% { translate: -95px 45px; } 45% { translate: -70px 62px; } 75% { translate: -22px -6px; } 88% { translate: 0 -10px; } 100% { translate: 0 0; } }
+.x3-sec[data-seen] .x4-sm-flag { animation: x4-raise .5s var(--x4-spring) 1.7s backwards; }
+@keyframes x4-raise { from { transform: scaleY(0); } }
+.x4-end .x3-btn { transition: transform .25s var(--x4-spring), box-shadow .25s; }
+.x4-end .x3-btn:hover { transform: translateY(-3px) scale(1.03); }
+
+@media (prefers-reduced-motion: reduce) {
+  .x4 *, .x4 *::before, .x4 *::after { animation: none !important; transition: none !important; }
+  .x4-contours path { stroke-dashoffset: 0; }
+  .x4-progress { display: none; }
+}
+@media (max-width: 640px) { .x4-fan { padding: 18px 16px 24px; margin-top: -10px; } }

@@ -3,6 +3,7 @@
 import { Markhor } from "@/components/Logo";
 import { Inside } from "./AreaLive";
 import { useArea, ChangeArea } from "./ExamState";
+import { Count } from "./Motion";
 
 /* Everything below the hero of experiment 4, written for the chosen area: a look inside the account, its own prices,
    FAQ and closing call. The area's tests are shown once, as the cards in the hero. */
@@ -55,7 +56,7 @@ export function Pricing({ payments }: { payments: boolean }) {
             <span className="bolt" aria-hidden="true"><Markhor height={22} /></span>
             <h3>3 months</h3>
             <p>Time to cover the whole syllabus.</p>
-            <div className="price"><small>Rs.</small>{three.toLocaleString("en-GB")}</div>
+            <div className="price"><small>Rs.</small><Count to={three} /></div>
             {save > 0 && <span className="early">Save {save}% on 3 single months</span>}
             <a className="x3-btn x3-white" href="/signup">Get 3 months</a>
             <ul>
@@ -66,7 +67,7 @@ export function Pricing({ payments }: { payments: boolean }) {
           <div className="x3-card plan">
             <h3>1 month</h3>
             <p>A last push before the paper.</p>
-            <div className="price"><small>Rs.</small>{month.toLocaleString("en-GB")}</div>
+            <div className="price"><small>Rs.</small><Count to={month} /></div>
             <a className="x3-btn x3-blue" href={buy("monthly")}>Get 1 month</a>
             <ul>
               <li><Check />Everything in 3 months</li>
@@ -111,6 +112,12 @@ export function End() {
   return (
     <section className="x3-sec x4-end">
       <div className="x3-wrap">
+        <svg className="x4-summit" viewBox="0 -60 320 210" aria-hidden="true">
+          <path className="x4-sm-fill" d="M0 150 L70 90 L110 112 L170 30 L220 80 L250 62 L320 150 Z" />
+          <path className="x4-sm-ridge" pathLength={1} d="M0 150 L70 90 L110 112 L170 30 L220 80 L250 62 L320 150" />
+          <g className="x4-sm-flag"><path d="M170 30 V-6" /><path className="cloth" d="M170 -6 L194 1 L170 8 Z" /></g>
+          <g className="x4-sm-goat"><g transform="translate(130 21)"><Markhor height={44} /></g></g>
+        </svg>
         <h2>Your summit is waiting.</h2>
         <a className="x3-btn x3-blue x3-big" href="/signup">Start free</a>
         <p><ChangeArea>Preparing for something else?</ChangeArea></p>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { Fragment, useEffect, useRef } from "react";
 import { tracks, type TrackId } from "@/lib/catalogue";
 import { useArea, type Area } from "./ExamState";
 import TrackMark from "./TrackMark";
@@ -14,14 +14,15 @@ export default function Experience() {
   const { shown, touched, open, setOpen, choose } = useArea();
 
   return (
-    <header className="x4-hero">
+    <header className="x4-hero" style={{ ["--x4-c" as string]: shown.colour }}>
+      <Contours />
       <div className="x3-wrap">
         <p className="x4-kicker">Question banks for Pakistan&apos;s exams</p>
         <h1>
           I&apos;m preparing for
           <span className="x4-pickwrap">
-            <button type="button" className="x4-pick" style={{ color: shown.colour }} aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(!open)}>
-              <span key={shown.id} className="x4-word">{shown.page.phrase}</span>
+            <button type="button" className={touched ? "x4-pick" : "x4-pick idle"} style={{ color: shown.colour }} aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(!open)}>
+              <Phrase key={shown.id} text={shown.page.phrase} />
               <svg className="x4-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
             </button>
             {open && <Picker current={shown.id} onPick={choose} onClose={() => setOpen(false)} />}
@@ -31,6 +32,35 @@ export default function Experience() {
         <AreaCard key={shown.id} area={shown} />
       </div>
     </header>
+  );
+}
+
+/* The phrase arrives letter by letter, each letter sliding up out of a mask (no fade). */
+function Phrase({ text }: { text: string }) {
+  let k = 0;
+  return (
+    <span className="x4-word">
+      <span className="x4-sr">{text}</span>
+      {text.split(" ").map((w, i) => (
+        <Fragment key={i}>
+          {i > 0 && " "}
+          <span className="x4-wd" aria-hidden="true">
+            {[...w].map((ch, j) => <span key={j} style={{ ["--i" as string]: k++ }}>{ch}</span>)}
+          </span>
+        </Fragment>
+      ))}
+    </span>
+  );
+}
+
+/* Contour lines behind the hero, drawn in on load in the area's colour; the colour glides as the area changes. */
+function Contours() {
+  return (
+    <svg className="x4-contours" viewBox="0 0 1440 320" preserveAspectRatio="none" aria-hidden="true">
+      <path pathLength={1} d="M0 250 C 160 210 260 150 420 170 S 700 260 860 200 S 1120 90 1260 120 S 1400 170 1440 150" />
+      <path pathLength={1} d="M0 285 C 180 250 300 200 450 215 S 720 290 880 240 S 1130 140 1270 165 S 1400 210 1440 195" />
+      <path pathLength={1} d="M0 315 C 200 290 330 250 480 260 S 740 315 900 280 S 1140 190 1280 210 S 1400 250 1440 240" />
+    </svg>
   );
 }
 
@@ -54,7 +84,7 @@ function Picker({ current, onPick, onClose }: { current: string; onPick: (id: Tr
     <div className="x4-picker x3-card" ref={box} role="dialog" aria-label="Choose what you're preparing for">
       <div className="x4-areas">
         {tracks.map((t, i) => (
-          <button key={t.id} ref={i === 0 ? first : undefined} type="button" className={t.id === current ? "on" : ""} onClick={() => onPick(t.id)}>
+          <button key={t.id} ref={i === 0 ? first : undefined} type="button" className={t.id === current ? "on" : ""} style={{ ["--i" as string]: i }} onClick={() => onPick(t.id)}>
             <span className="x4-tile" style={{ color: t.colour }}><TrackMark id={t.id} size={20} /></span>
             <span><b>{t.name}</b><small>{t.exams.slice(0, 3).map((e) => e.name).join(", ")}{t.exams.length > 3 ? "…" : ""}</small></span>
           </button>

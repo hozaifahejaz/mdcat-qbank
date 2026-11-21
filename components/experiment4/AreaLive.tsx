@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type { Area } from "./ExamState";
 import { still } from "./ExamState";
 import TrackMark from "./TrackMark";
+import { Count } from "./Motion";
 
 /* "Inside your account": one app window, filled with the chosen area, in place of a row of feature cards. Three tabs
    (Practice, Mocks, My mistakes) turn on their own until the visitor clicks one. Sample numbers only. */
@@ -40,7 +41,7 @@ export function Inside({ area }: { area: Area }) {
             <span className="x4-tile" style={{ color: area.colour }}><TrackMark id={area.id} size={18} /></span>
             <b>{area.name}</b>
           </div>
-          <nav role="tablist" aria-label="Inside your account">
+          <nav role="tablist" aria-label="Inside your account" className={auto && !still() ? "auto" : ""}>
             {tabs.map((t) => (
               <button key={t} type="button" role="tab" aria-selected={t === tab} className={t === tab ? "on" : ""} onClick={() => pick(t)}>{t}</button>
             ))}
@@ -52,10 +53,10 @@ export function Inside({ area }: { area: Area }) {
             <>
               <h4>Pick up where you left off</h4>
               {subjects.map((s, i) => (
-                <div key={s.name} className="x4-row">
+                <div key={s.name} className="x4-row" style={{ ["--i" as string]: i }}>
                   <i style={{ background: s.c }}>{short(s.name)}</i>
                   <span><b>{s.name}</b><u><s style={{ ["--w" as string]: done[i] / 100, background: s.c }} /></u></span>
-                  <em>{done[i]}%</em>
+                  <em><Count to={done[i]} ms={700} />%</em>
                 </div>
               ))}
             </>
@@ -64,7 +65,7 @@ export function Inside({ area }: { area: Area }) {
             <>
               <h4>Full mocks</h4>
               <div className="x4-mock">
-                <div className="x4-ring" style={{ ["--p" as string]: `${(score / total) * 100}%` }}><b>{score}</b><small>of {total}</small></div>
+                <div className="x4-ring" style={{ ["--p" as string]: `${(score / total) * 100}%` }}><b><Count to={score} /></b><small>of {total}</small></div>
                 <div>
                   <b>Last mock: {lead.name}</b>
                   <p>{area.page.mock.line}</p>
@@ -74,7 +75,7 @@ export function Inside({ area }: { area: Area }) {
               {lead.pattern && (
                 <div className="x4-split">
                   {lead.pattern.parts.slice(0, 5).map((p, i) => (
-                    <span key={p.name}><small>{p.name}</small><b>{Math.round(p.n * [0.82, 0.74, 0.69, 0.9, 0.8][i])}/{p.n}</b></span>
+                    <span key={p.name} style={{ ["--i" as string]: i }}><small>{p.name}</small><b>{Math.round(p.n * [0.82, 0.74, 0.69, 0.9, 0.8][i])}/{p.n}</b></span>
                   ))}
                 </div>
               )}
@@ -86,7 +87,7 @@ export function Inside({ area }: { area: Area }) {
               {subjects.slice(0, 4).map((s, i) => {
                 const n = cleared.includes(i) ? 0 : left[i];
                 return (
-                  <div key={s.name} className="x4-row">
+                  <div key={s.name} className={n ? "x4-row" : "x4-row clear"} style={{ ["--i" as string]: i }}>
                     <i style={{ background: s.c }}>{short(s.name)}</i>
                     <span><b>{s.name}</b><small>{n ? `${n} to retry` : "All cleared"}</small></span>
                     <button type="button" disabled={!n} onClick={() => { setAuto(false); setCleared([...cleared, i]); }}>{n ? "Retry" : "Done"}</button>
