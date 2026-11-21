@@ -14,7 +14,7 @@ import { getDashboard, type Dashboard as Data, type SubjectStat } from "@/lib/da
 import { band, day, fullDay, kindNames, pct, tz } from "@/lib/format";
 import { paper, site } from "@/lib/site";
 import { useNarrow } from "@/lib/narrow";
-import { watchCatalog } from "@/lib/study";
+import { testHref, watchCatalog } from "@/lib/study";
 import { fresh, keep } from "@/lib/cache";
 import { examDateFor } from "@/lib/prefs";
 import { type AccountUser, getCurrentUser, lastUser } from "@/lib/user";
@@ -113,6 +113,8 @@ export function Body({ data, name, free, coachHidden, onShowCoach, progress, onB
   const mockReady = useMockReady();
   const showMock = mockReady || !!lastMock;
   const examDate = examDateFor(data.examYear);
+  // A new account sees one thing to do and the banks, not a page of empty charts.
+  const brandNew = !progress && hasQuestions(data) && totals.answered === 0 && data.recent.length === 0 && !data.resume;
 
   return (
     <div className="dgrid home">
@@ -126,8 +128,20 @@ export function Body({ data, name, free, coachHidden, onShowCoach, progress, onB
       </section>
       )}
 
+      {brandNew && (
+        <section className="next-card" aria-label="Start practicing">
+          <div className="next-txt">
+            <span className="next-k">Start here</span>
+            <b>Your first 10 questions</b>
+            <span>Easy ones first, each with a full explanation. Your numbers show here once you have answered some.</span>
+          </div>
+          <div className="next-act">
+            <a className="dpill dark" href={testHref({ kind: "practice", count: 10, title: "Your first 10 questions" })}>Start</a>
+          </div>
+        </section>
+      )}
       {!progress && hasQuestions(data) && data.resume && <NextCard data={data} />}
-      {hasQuestions(data) && <GoalStrip data={data} onGoal={onGoal} cta={!progress && !data.resume} />}
+      {!brandNew && hasQuestions(data) && <GoalStrip data={data} onGoal={onGoal} cta={!progress && !data.resume} />}
 
       {!progress && (
         <section aria-labelledby="banks-h" className="home-banks">
@@ -136,6 +150,7 @@ export function Body({ data, name, free, coachHidden, onShowCoach, progress, onB
         </section>
       )}
 
+      {!brandNew && <>
       {!hasQuestions(data) && <p className="demo"><i />Questions coming soon. Your stats fill in as you practice.</p>}
 
       <section className="kpis" aria-label="Your numbers">
@@ -226,6 +241,7 @@ export function Body({ data, name, free, coachHidden, onShowCoach, progress, onB
         </div>
         </>}
       </section>
+      </>}
     </div>
   );
 }

@@ -183,7 +183,7 @@ function MockIntro() {
           <li>Answers and explanations open when you submit.</li>
           <li>If you switch devices, the test picks up where you left off.</li>
           {mini && <li>Free accounts get one mini mock.</li>}
-          {!mini && format.negFirst > 0 && <li>Questions 1 to {format.negFirst} are the Science Achievement part: a wrong answer takes off {NEG_MARK} marks, a blank takes off nothing. Questions {format.negFirst + 1} to {countOf(format)} have no penalty.</li>}
+          {!mini && format.negFirst > 0 && <li>Questions 1 to {format.negFirst} are Science Achievement (Biology, Chemistry, Physics): a wrong answer takes off {NEG_MARK} marks. Questions {format.negFirst + 1} to {countOf(format)} are Science and Mathematics Reasoning, with no negative marking. Attempt them in any order.</li>}
         </ul>
         {!catalog ? <button type="button" className="dpill dark block" disabled>Loading…</button>
           : !mini && !catalog.paid ? <a className="dpill dark block" href="/pricing">Full mocks come with a paid plan</a>

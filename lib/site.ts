@@ -55,8 +55,9 @@ export const mockFormats = {
     ],
   },
   /* AKU (admission information 2026-27): 100 MCQs in 2 hours. The first 40 are Science Achievement, where a wrong
-     answer costs 0.25; the other 60 are Science and Mathematics Reasoning with no penalty. AKU gives no subject
-     counts inside a section, so "first" and "rest" here are our own even split. */
+     answer costs 0.25; the other 60 are Science and Mathematics Reasoning with no penalty (AKU sample test paper 2026:
+     "100 questions in two Sections", any order). AKU gives no subject counts inside a section: Science Achievement is
+     split evenly over Biology, Chemistry and Physics, and the reasoning section is half science, half mathematics. */
   aku: {
     id: "aku", name: "AKU mock", label: "AKU", minutes: 120, negFirst: 40,
     split: [
