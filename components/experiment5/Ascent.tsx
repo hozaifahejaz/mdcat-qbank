@@ -12,12 +12,16 @@ import ThemeToggle from "@/components/ThemeToggle";
 import AfterSignIn from "@/components/auth/AfterSignIn";
 import NotConfigured from "@/components/auth/NotConfigured";
 import Turnstile from "@/components/auth/Turnstile";
-import Ridge, { type Step } from "@/components/experiment5/Ridge";
+import Ridge, { SIGN_IN, SIGN_UP } from "@/components/experiment5/Ridge";
 
-/* Sign-in experiment 5 (app/experiments/5). The page is a mountain: each part of signing in is a ledge the markhor
-   climbs to, so the form shows how far along you are without a word of instruction. The sign-in itself is the live
-   one: /api/auth/signin with this device in the same request, Google through /api/auth/oauth/google, then
-   AfterSignIn for the device check and the way in. */
+/* Sign-in and sign-up experiments 5 and 6 (app/experiments/5, /6). The page is a mountain: each part of the form is
+   a ledge the markhor climbs to, so it shows how far along you are without a word of instruction. Underneath it is the
+   live sign-in: /api/auth/signin or /api/auth/signup with this device in the same request, Google through
+   /api/auth/oauth/google (which also creates the account), then AfterSignIn for the device check and the way in. */
+
+type Mode = "signin" | "signup";
+// Where each page sends someone who wants the other one, while both are experiments.
+const OTHER = { signin: "/experiments/6", signup: "/experiments/5" };
 
 const LAST = "x5-last-method";
 const looksLikeEmail = (s: string) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(s.trim());
@@ -29,7 +33,8 @@ function greeting(h: number) {
   return "Studying late";
 }
 
-export default function Ascent() {
+export default function Ascent({ mode = "signin" }: { mode?: Mode }) {
+  const up = mode === "signup";
   const router = useRouter();
   const [next, setNext] = useState("/dashboard");
   const [config, setConfig] = useState<AuthConfig | null>(site.signIn);
@@ -38,7 +43,9 @@ export default function Ascent() {
   const [already, setAlready] = useState<AccountUser | null>(null);
   const [entered, setEntered] = useState<Entered | null>(null);
 
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [sentTo, setSentTo] = useState("");
   const [password, setPassword] = useState("");
   const [show, setShow] = useState(false);
   const [busy, setBusy] = useState<"email" | "google" | null>(null);
@@ -48,6 +55,7 @@ export default function Ascent() {
   const [captcha, setCaptcha] = useState("");
   const [captchaReset, setCaptchaReset] = useState(0);
   const [slip, setSlip] = useState(0);
+  const nameRef = useRef<HTMLInputElement>(null);
   const emailRef = useRef<HTMLInputElement>(null);
   const pwRef = useRef<HTMLInputElement>(null);
 
@@ -70,8 +78,15 @@ export default function Ascent() {
   const needCaptcha = Boolean(siteKey) && !captcha;
   const spend = () => { const t = captcha; setCaptchaReset((n) => n + 1); return t; };
 
-  // How far up the ridge: a ledge for a real-looking email, one for a password, the summit once signing in.
-  const step: Step = entered || busy ? 3 : looksLikeEmail(email) ? (password ? 2 : 1) : 0;
+  // How far up the ridge: a ledge for each field that is done, the summit once the account is opening (or, for a new
+  // account that has to confirm its email first, once the link is on its way).
+  const nameOk = name.trim().length >= 2;
+  const pwOk = up ? password.length >= 8 : password.length > 0;
+  const stops = up ? SIGN_UP : SIGN_IN;
+  const fields = up ? [nameOk, looksLikeEmail(email), pwOk] : [looksLikeEmail(email), pwOk];
+  let at = 0;
+  while (at < fields.length && fields[at]) at++;
+  if (entered || busy || sentTo) at = stops.length - 1;
 
   function fall(msg: string) {
     setError(msg);
@@ -82,12 +97,21 @@ export default function Ascent() {
     e.preventDefault();
     if (busy) return;
     setError(""); setInfo(""); setUnconfirmed(false);
-    if (!looksLikeEmail(email)) { emailRef.current?.focus(); return fall("Enter the email you signed up with."); }
-    if (!password) { pwRef.current?.focus(); return fall("Enter your password."); }
+    if (up && !nameOk) { nameRef.current?.focus(); return fall("Please enter your name."); }
+    if (!looksLikeEmail(email)) { emailRef.current?.focus(); return fall(up ? "Enter your email address." : "Enter the email you signed up with."); }
+    if (!pwOk) { pwRef.current?.focus(); return fall(up ? "Use at least 8 characters for your password." : "Enter your password."); }
     if (needCaptcha) return fall("Please complete the check above.");
     setBusy("email");
+    const addr = email.trim().toLowerCase();
     try {
-      const res = await api<Entered>("/api/auth/signin", { body: { email: email.trim().toLowerCase(), password, captcha: spend(), ...thisDevice() } });
+      if (up) {
+        const res = await api<{ status: string } & Entered>("/api/auth/signup", { body: { name: name.trim(), email: addr, password, next, captcha: spend(), ...thisDevice() } });
+        remember("email");
+        if (res.status === "signed_in") setEntered(res);
+        else { setSentTo(addr); setBusy(null); }
+        return;
+      }
+      const res = await api<Entered>("/api/auth/signin", { body: { email: addr, password, captcha: spend(), ...thisDevice() } });
       remember("email");
       setEntered(res);
       return;
@@ -102,7 +126,7 @@ export default function Ascent() {
     if (needCaptcha) return setError("Please complete the check above, then resend.");
     setError(""); setInfo("");
     try {
-      await api("/api/auth/resend-verification", { body: { email: email.trim().toLowerCase(), next, captcha: spend() } });
+      await api("/api/auth/resend-verification", { body: { email: (sentTo || email).trim().toLowerCase(), next, captcha: spend() } });
       setInfo("Sent again. It can take a minute, and check your spam folder.");
     } catch (err) {
       setError(friendlyError(err));
@@ -116,17 +140,31 @@ export default function Ascent() {
     window.location.assign(`/api/auth/oauth/google?next=${encodeURIComponent(next)}`);
   }
 
-  const signupHref = next === "/dashboard" ? "/signup" : `/signup?next=${encodeURIComponent(next)}`;
+  const otherHref = next === "/dashboard" ? OTHER[mode] : `${OTHER[mode]}?next=${encodeURIComponent(next)}`;
 
   let panel: React.ReactNode;
   if (entered) panel = <div className="x5-after"><AfterSignIn next={next} entered={entered} /></div>;
   else if (config === null) panel = <NotConfigured />;
+  else if (sentTo) panel = (
+    <>
+      <div className="x5-head">
+        <p className="x5-hello">One last step</p>
+        <h1>Check your inbox</h1>
+        <p className="x5-lede">We sent a link to <b>{sentTo}</b>. Open it to finish creating your account.</p>
+      </div>
+      <Turnstile siteKey={siteKey} onToken={setCaptcha} resetKey={captchaReset} />
+      {info && <p className="x5-note info" role="status">{info}</p>}
+      {error && <p className="x5-note bad" role="alert">{error}</p>}
+      <p className="x5-new">Nothing arrived? Check spam, or <button type="button" className="x5-link" onClick={resend}>send it again</button>.</p>
+      <p className="x5-new"><button type="button" className="x5-link" onClick={() => { setSentTo(""); setInfo(""); setError(""); }}>Use a different email</button></p>
+    </>
+  );
   else panel = (
     <>
       <div className="x5-head">
-        <p className="x5-hello">{hello || " "}</p>
-        <h1>Welcome back</h1>
-        <p className="x5-lede">Sign in and pick up where you left off.</p>
+        <p className="x5-hello">{up ? "Start free" : hello || "\u00a0"}</p>
+        <h1>{up ? "Create your account" : "Welcome back"}</h1>
+        {!up && <p className="x5-lede">Sign in and pick up where you left off.</p>}
       </div>
 
       {already && (
@@ -153,20 +191,27 @@ export default function Ascent() {
       )}
 
       <form className="x5-form" onSubmit={submit} noValidate>
+        {up && (
+          <label className="x5-field">
+            <span>Full name</span>
+            <input ref={nameRef} autoComplete="name" value={name} onChange={(e) => { setName(e.target.value); setError(""); }} placeholder="Ayesha Khan" required />
+            <i className={`x5-tick${nameOk ? " on" : ""}`} aria-hidden="true" />
+          </label>
+        )}
         <label className="x5-field">
           <span>Email</span>
           <input ref={emailRef} type="email" inputMode="email" autoComplete="email" value={email}
-            onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" required />
+            onChange={(e) => { setEmail(e.target.value); setError(""); }} placeholder="you@example.com" required />
           <i className={`x5-tick${looksLikeEmail(email) ? " on" : ""}`} aria-hidden="true" />
         </label>
         <div className="x5-field">
           <div className="x5-row">
             <label htmlFor="x5-pw">Password</label>
-            <a href="/forgot-password">Forgot?</a>
+            {up ? <span className={`x5-need${pwOk ? " ok" : ""}`}>{pwOk ? "Good to go" : "8 or more characters"}</span> : <a href="/forgot-password">Forgot?</a>}
           </div>
           <div className="x5-pw">
-            <input id="x5-pw" ref={pwRef} type={show ? "text" : "password"} autoComplete="current-password" value={password}
-              onChange={(e) => setPassword(e.target.value)} required />
+            <input id="x5-pw" ref={pwRef} type={show ? "text" : "password"} autoComplete={up ? "new-password" : "current-password"} minLength={up ? 8 : undefined} value={password}
+              onChange={(e) => { setPassword(e.target.value); setError(""); }} required />
             <button type="button" onClick={() => setShow(!show)} aria-label={show ? "Hide password" : "Show password"}>{show ? "Hide" : "Show"}</button>
           </div>
         </div>
@@ -179,19 +224,20 @@ export default function Ascent() {
         )}
         {info && <p className="x5-note info" role="status">{info}</p>}
         <button className="x5-go" disabled={busy !== null}>
-          {busy === "email" ? "Signing in…" : "Sign in"}
+          {busy === "email" ? (up ? "Creating your account…" : "Signing in…") : up ? "Create account" : "Sign in"}
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
         </button>
       </form>
 
-      <p className="x5-new">New to {site.name}? <a href={signupHref}>Create a free account</a></p>
+      {up && <p className="x5-fine">By creating an account you agree to our <a href="/terms" target="_blank">Terms</a> and <a href="/privacy" target="_blank">Privacy policy</a>.</p>}
+      <p className="x5-new">{up ? <>Already have an account? <a href={otherHref}>Sign in</a></> : <>New to {site.name}? <a href={otherHref}>Create a free account</a></>}</p>
     </>
   );
 
   return (
     <div className="x5">
       <div className="x5-scene">
-        <Ridge step={step} slip={slip} />
+        <Ridge stops={stops} at={at} slip={slip} />
       </div>
       <div className="x5-side">
         <header className="x5-top">

@@ -1,4 +1,4 @@
-/* Sign-in experiment 5, "The ascent" (components/experiment5). Scoped under .x5. Motion is transform-only, never a fade,
+/* Sign-in experiment 5 and sign-up experiment 6, "The ascent" (components/experiment5). Scoped under .x5. Motion is transform-only, never a fade,
    and stops for people who ask for reduced motion. */
 .x5 {
   --x-bg: #fafafa;
@@ -81,7 +81,7 @@
 .x5-near { fill: var(--m-near); }
 .x5-lip { fill: none; stroke: var(--m-lip); stroke-width: 3; stroke-linecap: round; }
 .x5-trail { fill: none; stroke: var(--m-trail); stroke-width: 3; stroke-linecap: round; stroke-dasharray: 1 10; }
-.x5-climbed { fill: none; stroke: var(--m-markhor); stroke-width: 3.5; stroke-linecap: round; stroke-dasharray: 3 3; transition: stroke-dashoffset .9s cubic-bezier(.45, 0, .2, 1); }
+.x5-climbed { fill: none; stroke: var(--m-markhor); stroke-width: 3.5; stroke-linecap: round; stroke-dasharray: 1 1; transition: stroke-dashoffset .9s cubic-bezier(.45, 0, .2, 1); }
 .x5-pole { fill: var(--m-pole); }
 .x5-flag { fill: var(--m-markhor); transform-box: fill-box; transform-origin: right center; transform: scaleX(0); transition: transform .6s cubic-bezier(.3, 1.5, .5, 1) .55s; }
 .x5-flag.up { transform: scaleX(1); }
@@ -175,3 +175,9 @@
   .x5-mx, .x5-my, .x5-climbed, .x5-flag, .x5-tick { transition: none; }
   .x5-slip, .x5-drift, .x5-drift2, .x5-star.tw { animation: none; }
 }
+
+/* Sign-up (experiment 6): the password rule reads as a hint, then turns to a go-ahead once met */
+.x5-need { font-size: .8125rem; font-weight: 600; color: var(--x-mute); }
+.x5-need.ok { color: var(--good); }
+.x5-fine { font-size: .8125rem; line-height: 1.5; color: var(--x-mute); text-align: center; }
+.x5-fine a { color: var(--x-ink); font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
