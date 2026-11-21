@@ -78,7 +78,7 @@ export function AppFrame({ active, title, user, aside, nav = studentNav, bare, h
   const chip = !user ? null
     : admin ? <span className="plan-chip">{roleNames[user.role]}</span>
     : user.plan === "free" ? <span className="plan-chip free">Free</span>
-    : <span className="plan-chip" title={planNames[user.plan]}>Pass</span>;
+    : <span className="plan-chip" title={planNames[user.plan]}>Paid</span>;
   /* From the student app to the admin panel for staff, and back again from the admin panel. */
   const switchLink = admin ? { href: "/dashboard", label: "Student view", icon: "home" } : isStaff(user?.role) ? { href: "/admin", label: "Admin panel", icon: "shield" } : null;
 
@@ -115,7 +115,7 @@ export function AppFrame({ active, title, user, aside, nav = studentNav, bare, h
           })}
         </nav>
         <div className="side-foot">
-          {!admin && user?.plan === "free" && <a className="dpill dark small" href="/pricing">Get the Season Pass</a>}
+          {!admin && user?.plan === "free" && <a className="dpill dark small" href="/pricing">Upgrade</a>}
           <ul>
             {switchLink && <li><a href={switchLink.href}><Icon name={switchLink.icon} />{switchLink.label}</a></li>}
             <li><a href={supportHref}><Icon name="help" />Help</a></li>
@@ -189,7 +189,7 @@ export function AppFrame({ active, title, user, aside, nav = studentNav, bare, h
               <li><a href={supportHref}><Icon name="help" />Help<span className="chev"><Icon name="chevron" size={16} /></span></a></li>
               <li><button type="button" className="danger" onClick={async () => { await signOut(); window.location.replace("/"); }}><Icon name="signout" />Sign out</button></li>
             </ul>
-            {!admin && user?.plan === "free" && <a className="dpill dark block" href="/pricing">Get the Season Pass</a>}
+            {!admin && user?.plan === "free" && <a className="dpill dark block" href="/pricing">Upgrade</a>}
           </div>
         </>
       )}

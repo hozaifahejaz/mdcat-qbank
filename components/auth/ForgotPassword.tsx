@@ -47,10 +47,10 @@ export default function ForgotPassword() {
         <div className="card auth-card">
           <div>
             <h1>Forgot your password?</h1>
-            <p className="lede">Reset links by email aren&apos;t switched on yet. Message us from the email address or phone number on your account and we&apos;ll reset it for you.</p>
+            <p className="lede">Reset links by email aren&apos;t switched on yet. Message us from the email address on your account and we&apos;ll reset it for you.</p>
           </div>
           <a className="pill pill-dark block" href={supportHref}>{site.whatsapp ? "Message us on WhatsApp" : "Contact support"}</a>
-          <p className="fine">Signed up with your phone number, Google or Apple? You don&apos;t need a password. <a href="/signin">Sign in that way</a> instead.</p>
+          <p className="fine">Signed up with Google? You don&apos;t need a password. <a href="/signin">Sign in that way</a> instead.</p>
         </div>
       </AuthFrame>
     );
@@ -76,7 +76,7 @@ export default function ForgotPassword() {
             <button className="pill pill-dark block" disabled={busy || !email}>{busy ? "Sending…" : "Send reset link"}</button>
           </form>
         )}
-        <p className="fine">Signed up with your phone number, Google or Apple? You don&apos;t need a password. <a href="/signin">Sign in that way</a> instead.</p>
+        <p className="fine">Signed up with Google? You don&apos;t need a password. <a href="/signin">Sign in that way</a> instead.</p>
       </div>
     </AuthFrame>
   );

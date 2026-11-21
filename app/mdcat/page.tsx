@@ -15,7 +15,7 @@ export const metadata = pageMeta({
 const faqs = [
   { q: "How many MCQs are in the MDCAT?", a: `The PMDC MDCAT has ${mdcat.mcqs} MCQs in ${mdcat.hours} hours: ${subjects.map((s) => `${s.name} ${s.count}`).join(", ")}. Each question carries one mark and there is no negative marking.` },
   { q: "Which subjects are in the MDCAT?", a: "Biology, Chemistry, Physics, English and Logical Reasoning. Biology is the largest part at 45% of the paper." },
-  { q: "Are these MCQs free?", a: "The sample questions on these pages are free to read. A free account opens 100 questions in the app with timed practice and progress tracking, and a Season Pass opens the whole bank." },
+  { q: "Are these MCQs free?", a: "The sample questions on these pages are free to read. A free account opens 100 questions in the app with timed practice and progress tracking, and a paid plan opens the whole bank." },
   { q: "Where do the questions come from?", a: "Every question is written for this bank from the PMDC syllabus and the FSc textbooks, then checked against the textbook. None are copied from other books or banks." },
 ];
 

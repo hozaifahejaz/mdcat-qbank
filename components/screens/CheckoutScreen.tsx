@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import AppShell from "@/components/app/AppShell";
 import PayLogo, { type Brand } from "@/components/app/PayLogo";
 import { formatPhone } from "@/lib/auth";
-import { type Method, methodNames, money, type PlanId, plans } from "@/lib/billing";
+import { isRenewal, type Method, methodNames, money, paidItems, type PlanId, plans, renewOff, renewPrice } from "@/lib/billing";
 import { site, supportHref } from "@/lib/site";
 import type { AccountUser } from "@/lib/user";
 
@@ -17,29 +17,29 @@ const methods: { id: Method; hint: string; brands: Brand[]; steps: string[] }[] 
     id: "jazzcash",
     hint: "Mobile account",
     brands: ["jazzcash"],
-    steps: ["Enter your JazzCash number", "Approve the request with your MPIN", "Your pass opens straight away"],
+    steps: ["Enter your JazzCash number", "Approve the request with your MPIN", "Your plan opens straight away"],
   },
   {
     id: "easypaisa",
     hint: "Mobile account",
     brands: ["easypaisa"],
-    steps: ["Enter your Easypaisa number", "Approve the request in the Easypaisa app", "Your pass opens straight away"],
+    steps: ["Enter your Easypaisa number", "Approve the request in the Easypaisa app", "Your plan opens straight away"],
   },
   {
     id: "card",
-    hint: "Any Pakistani or international card",
+    hint: "Visa, Mastercard or UnionPay",
     brands: ["visa", "mastercard", "unionpay"],
-    steps: ["Enter your card on the secure payment page", "Confirm with the code your bank sends", "Your pass opens straight away"],
+    steps: ["Enter your card on the secure payment page", "Confirm with the code your bank sends", "Your plan opens straight away"],
   },
   {
     id: "transfer",
     hint: "Any Pakistani bank",
     brands: ["raast"],
-    steps: ["Send the total to our Raast ID or IBAN", "Upload a screenshot of the transfer", "We open your pass once it's checked"],
+    steps: ["Send the total to our Raast ID or IBAN", "Upload a screenshot of the transfer", "We open your plan once it's checked"],
   },
 ];
 
-const included = ["The full question bank, every chapter", "MDCAT, NUMS and AKU banks", "Full-length timed mocks and past papers"];
+const included = paidItems.slice(0, 4);
 
 const icon = {
   tick: <path d="m5 12.5 4.5 4.5L19 7.5" />,
@@ -51,7 +51,7 @@ const Icon = ({ d, size = 16 }: { d: keyof typeof icon; size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{icon[d]}</svg>
 );
 
-/* /checkout?plan=season|monthly — the order and the ways to pay. Payments aren't open until the aggregator is
+/* /checkout?plan=season|monthly (3 months or 1 month) — the order and the ways to pay. Payments aren't open until the aggregator is
    connected, so picking a method only shows how it will work: nothing takes card or wallet details and the pay
    button stays off. */
 function Checkout({ user }: { user: AccountUser }) {
@@ -64,6 +64,9 @@ function Checkout({ user }: { user: AccountUser }) {
   }, []);
 
   const plan = plans[planId];
+  // Buying while a paid plan is running is a renewal, at the renewal discount.
+  const renewing = isRenewal(user.plan);
+  const total = renewing ? renewPrice(plan.price) : plan.price;
 
   return (
     <div className="dgrid checkout">
@@ -73,11 +76,11 @@ function Checkout({ user }: { user: AccountUser }) {
           <h1>Checkout</h1>
         </div>
       </section>
-      <p className="demo"><i />Payments aren&apos;t open yet. Nothing can be bought or charged.</p>
+      {!site.payments && <p className="demo"><i />Payments aren&apos;t open yet. Nothing can be bought or charged.</p>}
 
       <div className="cols">
         <section className="dcard panel" aria-labelledby="pay-h">
-          <h2 id="pay-h" className="panel-title">How would you like to pay?</h2>
+          <h2 id="pay-h" className="panel-title">{site.payments ? "How would you like to pay?" : "Ways you will be able to pay"}</h2>
           <div className="paylist" role="radiogroup" aria-labelledby="pay-h">
             {methods.map((m) => {
               const on = method === m.id;
@@ -91,7 +94,7 @@ function Checkout({ user }: { user: AccountUser }) {
                     </span>
                     <span className="payopt-logos">{m.brands.map((b) => <PayLogo key={b} brand={b} />)}</span>
                   </button>
-                  {on && (
+                  {on && site.payments && (
                     <ol className="paysteps">
                       {m.steps.map((s) => <li key={s}>{s}</li>)}
                     </ol>
@@ -100,11 +103,11 @@ function Checkout({ user }: { user: AccountUser }) {
               );
             })}
           </div>
-          <ul className="trust">
+          {site.payments && <ul className="trust">
             <li><Icon d="lock" />Paid through a licensed gateway. We never see your card or MPIN.</li>
             <li><Icon d="bolt" />Access opens the moment payment clears.</li>
-            <li><Icon d="receipt" />Receipt by SMS and email.</li>
-          </ul>
+            <li><Icon d="receipt" />Receipt by email.</li>
+          </ul>}
         </section>
 
         <aside className="dcard panel summary" aria-labelledby="sum-h">
@@ -116,17 +119,17 @@ function Checkout({ user }: { user: AccountUser }) {
                   <b>{plans[id].name}</b>
                   {id === "season" && <span className="badge good">Best value</span>}
                 </span>
-                <span>{money(plans[id].price)} {plans[id].per}</span>
+                <span>{money(renewing ? renewPrice(plans[id].price) : plans[id].price)} {plans[id].per}</span>
               </button>
             ))}
           </div>
           <ul className="ticks small-ticks">{included.map((x) => <li key={x}><Icon d="tick" />{x}</li>)}</ul>
           <dl className="sum">
-            <div><dt>{plan.name}</dt><dd>{money(plan.was ?? plan.price)}</dd></div>
-            {plan.was && <div className="up"><dt>Early bird</dt><dd>− {money(plan.was - plan.price)}</dd></div>}
-            <div className="total"><dt>Total</dt><dd>{money(plan.price)}</dd></div>
+            <div><dt>{plan.name}</dt><dd>{money(plan.price)}</dd></div>
+            {renewing && <div className="up"><dt>Renewal, {renewOff}% off</dt><dd>− {money(plan.price - total)}</dd></div>}
+            <div className="total"><dt>Total</dt><dd>{money(total)}</dd></div>
           </dl>
-          <button type="button" className="dpill dark block" disabled>Payments open soon</button>
+          <button type="button" className="dpill dark block" disabled>{site.payments ? `Pay ${money(total)}` : "Payments open soon"}</button>
           <p className="muted small">
             {plan.blurb}. Signed in as {user.phone ? formatPhone(user.phone) : user.email}.
           </p>

@@ -1,7 +1,7 @@
 {
   "name": "Markhor Prep",
   "short_name": "Markhor Prep",
-  "description": "MDCAT MCQs with full explanations, timed mocks and past papers.",
+  "description": "MDCAT, NUMS and AKU MCQs with full explanations, timed mocks and past papers.",
   "start_url": "/dashboard",
   "scope": "/",
   "display": "standalone",

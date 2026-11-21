@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import AppShell, { AccountTabs, PageHead } from "@/components/app/AppShell";
-import { getReceipts, methodNames, money, plans, type Receipt } from "@/lib/billing";
+import { getReceipts, isRenewal, methodNames, money, plans, type Receipt, renewOff, renewPrice } from "@/lib/billing";
 import { day, fullDay, planNames } from "@/lib/format";
 import { site, supportHref } from "@/lib/site";
 import type { AccountUser } from "@/lib/user";
@@ -37,22 +37,25 @@ function Billing({ user }: { user: AccountUser }) {
           <p className="plan-name">{planNames[user.plan]}</p>
           <p className="muted">
             {paid
-              ? <>Full access{user.planExpiresAt ? <> until <b>{fullDay(user.planExpiresAt)}</b></> : null}. One payment, no renewal.</>
-              : "100 free questions across every subject, one mini mock and basic stats."}
+              ? <>Full access{user.planExpiresAt ? <> until <b>{fullDay(user.planExpiresAt)}</b>. Nothing is charged automatically. Renew for {renewOff}% less</> : null}.</>
+              : "100 free questions, one mini mock and every answer explained."}
           </p>
           <div className="hello-ctas">
-            {user.plan !== "season" && <a className="dpill dark" href="/checkout?plan=season">{paid ? "Switch to" : "Get"} the Season Pass · {money(plans.season.price)}</a>}
+            {/* Lifetime access (no end date) has nothing to buy. */}
+            {!paid && <a className="dpill dark" href="/checkout?plan=season">Get 3 months · {money(plans.season.price)}</a>}
+            {!paid && <a className="dpill light" href="/checkout?plan=monthly">1 month · {money(plans.monthly.price)}</a>}
+            {isRenewal(user.plan) && user.planExpiresAt && <a className="dpill dark" href={`/checkout?plan=${user.plan}`}>Renew · {money(renewPrice(plans[user.plan as "season" | "monthly"].price))}</a>}
           </div>
         </section>
 
-        <section className="dcard panel" aria-labelledby="help-h">
+        {site.payments && <section className="dcard panel" aria-labelledby="help-h">
           <h2 id="help-h" className="panel-title">Paid but not showing?</h2>
           <p className="muted">Wallet and card payments switch your plan on straight away. Bank transfers are checked by hand first.</p>
-          <a className="link" href={site.whatsapp ? supportHref : "/contact?topic=payment"}>Message support with your receipt number</a>
-        </section>
+          <a className="link" href={site.whatsapp ? supportHref : "/contact?topic=payment"}>Message support</a>
+        </section>}
       </div>
 
-      <section className="dcard panel" aria-labelledby="rc-h">
+      {site.payments && <section className="dcard panel" aria-labelledby="rc-h">
         <div className="panel-h"><h2 id="rc-h">Receipts</h2></div>
         {receipts && !receipts.length ? (
           <p className="muted">No payments yet.</p>
@@ -78,7 +81,7 @@ function Billing({ user }: { user: AccountUser }) {
             </table>
           </div>
         )}
-      </section>
+      </section>}
     </div>
   );
 }

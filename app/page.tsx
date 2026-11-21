@@ -10,11 +10,11 @@ import AppStory from "@/components/experiment8/AppStory";
 import Orbit from "@/components/experiment8/Orbit";
 import HeroIcons from "@/components/experiment8/HeroIcons";
 import { abs, bankSize, faqData, ld, subjects as subjectPages } from "@/lib/public";
-import { site } from "@/lib/site";
+import { prices, site } from "@/lib/site";
 import "./landing-new.css";
-import "./experiments/4/exp4.css";
-import "./experiments/7/exp7.css";
-import "./experiments/8/exp8.css";
+import "./landing-hero.css";
+import "./landing-story.css";
+import "./landing-areas.css";
 
 /* The landing page (from experiment 8): the "I'm preparing for ___" hero with the area's tests as admit tickets, the
    subjects orbit, pricing and the app walkthrough, each following the area picked in the hero, then the FAQ. Anything
@@ -24,11 +24,11 @@ export const metadata: Metadata = { alternates: { canonical: "/" } };
 const faqs = [
   { q: "Is this a coaching course?", a: "No. It's a practice tool: MCQs, explanations, timed mocks and past papers, for a fraction of a course." },
   { q: "Is it free?", a: "100 questions are free with a full explanation on each, plus one mini mock. No card is needed. A paid plan opens the whole bank." },
-  { q: "How many questions are there?", a: `${bankSize} original MCQs across Biology, Chemistry, Physics, English and Logical Reasoning, sorted by chapter for the PMDC MDCAT, NUMS and AKU syllabi.` },
+  { q: "How many questions are there?", a: `${bankSize} original MCQs across Biology, Chemistry, Physics, English, Logical Reasoning and Mathematics, sorted by chapter for the PMDC MDCAT, NUMS and AKU syllabi.` },
   { q: "Where do the questions come from?", a: "Every question is written for this bank from the syllabus and its textbooks, then checked against the textbook." },
   { q: "Which tests do you cover?", a: "PMDC MDCAT, NUMS and the AKU test, plus FSc chapter practice. Engineering and law come later." },
   { q: "Does it follow the current syllabus?", a: "Yes. Questions are filed under the chapters of the PMDC MDCAT syllabus, with separate chapter lists for NUMS and AKU." },
-  { q: "How do I pay?", a: site.payments ? "JazzCash, Easypaisa, card or bank transfer. The 3-month plan renews for less." : "Payments open soon: JazzCash, Easypaisa, card or bank transfer. The 3-month plan renews for less. The free questions are open now." },
+  { q: "How do I pay?", a: site.payments ? `JazzCash, Easypaisa, card or bank transfer. Nothing is charged automatically, and renewing costs ${prices.renewOff}% less.` : `Payments open soon: JazzCash, Easypaisa, card or bank transfer. Nothing is charged automatically, and renewing costs ${prices.renewOff}% less. The free questions are open now.` },
   { q: "Does it work on a phone?", a: "Yes. The site is built for phones first and works in any browser. iOS and Android apps are coming soon." },
 ];
 

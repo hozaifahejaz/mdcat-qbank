@@ -60,7 +60,7 @@ export const offlineRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
   "POST /api/study/pack": async (c) => {
     const s = await requireActiveSession(c.db, c.request);
     const b = await body(c.request);
-    if (effectivePlan(s) === "free") throw fail(402, "needs_pass", "Offline practice comes with a pass.");
+    if (effectivePlan(s) === "free") throw fail(402, "needs_pass", "Offline practice comes with a paid plan.");
     const device = await appDevice(c, s, b.deviceKey);
     await checkIntegrity(c.env, {
       action: "pack", deviceKey: str(b.deviceKey, 64), token: b.integrity,

@@ -436,7 +436,7 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
       if (!me.paid) picks.push(c.db.prepare("SELECT 1 FROM attempts WHERE user_id = ? AND kind = 'mini-mock'").bind(me.id));
     } else if (kind === "past-paper") {
       year = Number(b.paper) || 0;
-      title = `PMDC MDCAT ${year}`;
+      title = `UHS MDCAT ${year}`;
       if (me.paid) picks.push(c.db.prepare(`SELECT id, subject FROM served WHERE paper = ? AND open_reports < ${REPORT_HIDE} ORDER BY id`).bind(year));
     } else {
       const count = Math.min(100, Math.max(1, Number(b.count) || 25));
@@ -498,7 +498,7 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
       if (running) throw fail(409, "open_test", `You still have ${running.title} running. Finish or submit it before starting another timed test.`, { attempt: running.id });
     }
     if ((kind === "mock" || kind === "past-paper") && !me.paid) {
-      throw fail(402, "needs_pass", kind === "mock" ? "Full mocks come with a pass. Your free mini mock is on the Mocks page." : "Past papers come with a pass.");
+      throw fail(402, "needs_pass", kind === "mock" ? "Full mocks come with a paid plan. Your free mini mock is on the Mocks page." : "Past papers come with a paid plan.");
     }
 
     if (kind === "mock") {
@@ -506,7 +506,7 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
       if (paper.some((p) => (by.get(p.subject)?.length ?? 0) < p.count)) throw fail(409, "not_ready", "Full mocks open once the bank has enough questions in every subject.");
       ids = paper.flatMap((p, k) => shuffle(by.get(p.subject)!, seeded(mockNo! * 101 + k)).slice(0, p.count));
     } else if (kind === "mini-mock") {
-      if (!me.paid && found[1]!.length) throw fail(402, "needs_pass", "You've used your free mini mock. A pass opens every full mock.");
+      if (!me.paid && found[1]!.length) throw fail(402, "needs_pass", "You've used your free mini mock. A paid plan opens every full mock.");
       const by = bySubject(found[0]!);
       ids = paper.flatMap((p, k) => shuffle(by.get(p.subject)!, seeded(7 + k)).slice(0, MINI_SPLIT[k]));
       if (ids.length < 10) throw fail(409, "not_ready", "The mini mock opens once the free set has a few more questions.");
@@ -517,7 +517,7 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
       const results = found[0] as { id: string; subject: string }[];
       ids = asked.length ? asked.filter((id) => results.some((r) => r.id === id)) : results.map((r) => r.id);
     }
-    if (!ids.length) throw fail(409, "empty", me.paid ? "No questions match that yet. Try more chapters, or All questions." : "No free questions match that yet. Try more chapters, or get a pass for the whole bank.");
+    if (!ids.length) throw fail(409, "empty", me.paid ? "No questions match that yet. Try more chapters, or All questions." : "No free questions match that yet. Try more chapters, or upgrade for the whole bank.");
 
     const id = uuid();
     const now = Date.now();

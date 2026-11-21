@@ -7,20 +7,20 @@ import "@/app/app.css";
 import "@/app/landing-new.css";
 import "@/app/public.css";
 
-export const metadata: Metadata = { title: `Terms · ${site.name}`, description: "The terms of using Markhor Prep: your account, passes, fair use and what happens when something goes wrong.", alternates: { canonical: "/terms" } };
+export const metadata: Metadata = { title: `Terms · ${site.name}`, description: "The terms of using Markhor Prep: your account, plans, fair use and what happens when something goes wrong.", alternates: { canonical: "/terms" } };
 
 export default function Page() {
   return (
-    <LegalPage title="Terms and conditions" updated="29 October 2026">
+    <LegalPage title="Terms and conditions" updated="21 November 2026">
       <p>These terms apply when you use {site.name} (the website and, once released, the apps). By creating an account you agree to them. If you are under 18, a parent or guardian should read them with you.</p>
 
       <h2>1. What {site.name} is</h2>
-      <p>{site.name} is an online question bank and mock-test service for students preparing for entrance exams in Pakistan, starting with the MDCAT. We are an independent service and are not part of, or endorsed by, PMDC or any university or exam board. We can&apos;t promise any particular score or admission result.</p>
+      <p>{site.name} is the name of the business that runs this service. It is an online question bank and mock-test service for students preparing for entrance exams in Pakistan, starting with the MDCAT. We are an independent service and are not part of, or endorsed by, PMDC or any university or exam board. We can&apos;t promise any particular score or admission result.</p>
 
       <h2>2. Your account</h2>
       <ul>
         <li>One account is for one person. Don&apos;t share your password or let anyone else use your account.</li>
-        <li>Give us a working email address or phone number so we can reach you about your account and payments.</li>
+        <li>Give us a working email address so we can reach you about your account and payments.</li>
         <li>You&apos;re responsible for what happens on your account. Tell us straight away if you think someone else has used it.</li>
       </ul>
 
@@ -31,15 +31,16 @@ export default function Page() {
         <li>You can remove a registered device yourself once every 30 days from your Account page. If you lose a device or need help sooner, contact support.</li>
       </ul>
 
-      <h2>4. Passes and payment</h2>
+      <h2>4. Plans and payment</h2>
       <ul>
-        <li>The free plan gives limited access. A paid pass unlocks the full bank, mocks and past papers for the period shown when you buy it: the Season Pass until the end of the current MDCAT season, or the one-month pass for 30 days.</li>
-        <li>Passes are one-off payments. Nothing renews automatically and we never charge you again without you buying again.</li>
+        <li>The free plan gives limited access. A paid plan unlocks the full bank, mocks and past papers for the period shown when you buy it: 30 days for the 1-month plan, or 90 days for the 3-month plan.</li>
+        <li>Plans are one-off payments. Nothing is charged automatically and we never charge you again without you buying again.</li>
+        <li>When you buy again while your plan is running, that is a renewal. A renewal costs 25% less than the listed price.</li>
         <li>Prices are in Pakistani rupees and are shown before you pay. Refunds follow our <a href="/refunds">Refund policy</a>.</li>
       </ul>
 
       <h2>5. Our content</h2>
-      <p>The questions, explanations, mocks and everything else on {site.name} are written for us and belong to us. Your pass lets you use them for your own study only. You may not:</p>
+      <p>The questions, explanations, mocks and everything else on {site.name} are written for us and belong to us. Your plan lets you use them for your own study only. You may not:</p>
       <ul>
         <li>copy, screenshot, record, download or share questions or explanations with others, whether free or paid;</li>
         <li>sell, publish or upload our content anywhere, including groups, channels, websites or other apps;</li>

@@ -31,6 +31,8 @@ export default function TestScreen() {
       let note = "";
       try {
         if (!id) {
+          // /test opened bare (a bookmark, a typed address) names no set to start: go and pick one.
+          if (![...params.keys()].length) return go("/practice", true);
           const started = await startTest(readTestHref(window.location.search));
           id = started.id;
           if (started.short) note = `Only ${started.count} question${started.count === 1 ? "" : "s"} match what you picked, so this set has ${started.count}.`;
@@ -45,7 +47,7 @@ export default function TestScreen() {
         const code = e instanceof ApiError ? e.code : "";
         setState({
           kind: "problem",
-          title: code === "open_test" ? "You have a test running" : code === "needs_pass" ? "This needs a pass" : code === "empty" || code === "not_ready" ? "Questions coming soon" : code === "not_found" ? "We couldn't find that test" : "This test didn't open",
+          title: code === "open_test" ? "You have a test running" : code === "needs_pass" ? "This needs a paid plan" : code === "empty" || code === "not_ready" ? "Questions coming soon" : code === "not_found" ? "We couldn't find that test" : "This test didn't open",
           text: friendlyError(e),
           pass: code === "needs_pass",
           resume: code === "open_test" && e instanceof ApiError && typeof e.extra.attempt === "string" ? e.extra.attempt : undefined,
@@ -62,7 +64,7 @@ export default function TestScreen() {
             <section className="dcard panel">
               <Empty title={state.title} text={state.text}>
                 <div className="hello-ctas">
-                  {state.pass && <a className="dpill dark small" href="/pricing">See passes</a>}
+                  {state.pass && <a className="dpill dark small" href="/pricing">See plans</a>}
                   {state.resume && <a className="dpill dark small" href={`/test?id=${encodeURIComponent(state.resume)}`}>Go to that test</a>}
                   <a className={`dpill ${state.pass || state.resume ? "light" : "dark"} small`} href="/dashboard">Back to dashboard</a>
                 </div>

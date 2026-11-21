@@ -30,9 +30,9 @@ export const kindNames: Record<TestResult["kind"], string> = {
 
 export const planNames: Record<StudentUser["plan"], string> = {
   free: "Free plan",
-  season: "MDCAT Season Pass",
-  bundle: "MDCAT + NUMS Bundle",
-  monthly: "One-month pass",
+  season: "3-month plan",
+  bundle: "Full access",
+  monthly: "1-month plan",
 };
 
 export const letters = ["A", "B", "C", "D", "E"];

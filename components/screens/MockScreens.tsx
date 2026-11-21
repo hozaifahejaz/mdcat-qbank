@@ -69,7 +69,7 @@ function Mocks({ user }: { user: AccountUser }) {
             {mini && <span className="badge good">Taken</span>}
           </div>
           {mini ? (
-            <p className="muted"><b>{mini.score}</b>/{mini.total} on {day(mini.date)}. <a className="link" href={`/review?id=${mini.id}`}>Review answers</a> · <a className="link" href="/pricing">Get a pass for every full mock</a></p>
+            <p className="muted"><b>{mini.score}</b>/{mini.total} on {day(mini.date)}. <a className="link" href={`/review?id=${mini.id}`}>Review answers</a> · <a className="link" href="/pricing">Upgrade for every full mock</a></p>
           ) : catalog.miniOpen ? (
             <>
               <p className="muted">You started your mini mock. Its clock keeps running, so finish it while you can.</p>
@@ -111,7 +111,7 @@ function Mocks({ user }: { user: AccountUser }) {
                   <p className="muted small">180 MCQs · 3 hours</p>
                   {paid
                     ? <a className={`dpill ${next ? "dark" : "light"} small`} href={`/mocks/new?n=${k + 1}`}>Start</a>
-                    : <a className="dpill light small" href="/pricing">With a pass</a>}
+                    : <a className="dpill light small" href="/pricing">With a paid plan</a>}
                 </>
               )}
             </article>
@@ -163,7 +163,7 @@ function MockIntro() {
           {mini && <li>Free accounts get one mini mock.</li>}
         </ul>
         {!catalog ? <button type="button" className="dpill dark block" disabled>Loading…</button>
-          : !mini && !catalog.paid ? <a className="dpill dark block" href="/pricing">Full mocks come with a pass</a>
+          : !mini && !catalog.paid ? <a className="dpill dark block" href="/pricing">Full mocks come with a paid plan</a>
           : ready ? <a className="dpill dark block" href={testHref(mini ? { kind: "mini-mock" } : { kind: "mock", mock: n })}>Start {mini ? "the mini mock" : "mock"}</a>
           : <button type="button" className="dpill dark block" disabled>Mocks open soon</button>}
         </div>
@@ -184,16 +184,16 @@ function PastPapers({ user }: { user: AccountUser }) {
   const paid = catalog?.paid ?? user.plan !== "free";
   return (
     <div className="dgrid">
-      <PageHead title="Past papers" sub="PMDC MDCAT papers, rebuilt in our own words with a full explanation on every question." />
+      <PageHead title="Past papers" sub="Real MDCAT papers, rebuilt in our own words with a full explanation on every question. No official answer key was published, so the keys here are worked out by us." />
       <section className="dcard panel">
-        {catalog && !papers.length && <Empty title="Past papers coming soon" text="PMDC MDCAT papers from recent years, each with a full explanation on every question." />}
+        {catalog && !papers.length && <Empty title="Past papers coming soon" text="Real MDCAT papers, each with a full explanation on every question." />}
         {papers.length > 0 && <ul className="pp">
           {papers.map(({ year: y, count }) => {
             const t = recent?.find((r) => r.kind === "past-paper" && r.title.endsWith(String(y)));
             return (
               <li key={y}>
                 <div>
-                  <b>PMDC MDCAT {y}</b>
+                  <b>UHS MDCAT {y}</b>
                   <span className="muted">{count} MCQ{count === 1 ? "" : "s"} · {count} minute{count === 1 ? "" : "s"}</span>
                 </div>
                 {t ? <span className="pp-score"><b>{t.score}</b>/{t.total} <span className="muted">· {day(t.date)}</span></span> : <span className="muted small">Not taken</span>}
@@ -201,7 +201,7 @@ function PastPapers({ user }: { user: AccountUser }) {
                   {t && <a className="link" href={`/review?id=${t.id}`}>Review</a>}
                   {paid
                     ? <a className="dpill light small" href={testHref({ kind: "past-paper", paper: y })}>{t ? "Retake" : "Start"}</a>
-                    : <a className="dpill light small" href="/pricing">With a pass</a>}
+                    : <a className="dpill light small" href="/pricing">With a paid plan</a>}
                 </div>
               </li>
             );

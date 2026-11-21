@@ -23,11 +23,12 @@ export const site = {
   examDate: "2027-08-15",
 };
 
+/* The two paid plans, as the landing page shows them for pre-medical (lib/track-pages.ts keeps the same numbers).
+   Buying again while a plan is running, or after it has ended, is a renewal and costs renewOff percent less. */
 export const prices = {
-  seasonPass: "2,999",
-  earlyBird: "1,999",
-  earlyBirdUntil: "March 2027",
+  three: "1,999",
   monthly: "799",
+  renewOff: 25,
 };
 
 /* The PMDC MDCAT paper: 180 MCQs in 3 hours. "tone" is the pastel chip, "solid" the bar colour in the paper split. */

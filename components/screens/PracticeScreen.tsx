@@ -280,18 +280,18 @@ function BankPractice({ bank, onBank }: { bank: Bank; onBank: (b: Bank) => void 
           <div className="chips big">
             {counts.map((c) => <button key={c} type="button" className="chip" aria-pressed={count === c} onClick={() => setCount(c)}>{c}</button>)}
           </div>
-          {catalog && !catalog.paid && locked > 0 && <p className="muted small">Free plan: {nf(pool)} of {nf(pool + locked)} questions here. <a className="link" href="/pricing">A pass opens them all.</a></p>}
+          {catalog && !catalog.paid && locked > 0 && <p className="muted small">Free plan: {nf(pool)} of {nf(pool + locked)} questions here. <a className="link" href="/pricing">A paid plan opens them all.</a></p>}
         </section>
 
       <div className="setup-go">
         <span className="setup-go-txt">
-          <b>{!catalog ? "…" : match ? `${nf(match)} questions` : pool ? "No questions match" : locked ? "With a pass" : "Coming soon"}</b>
+          <b>{!catalog ? "…" : match ? `${nf(match)} questions` : pool ? "No questions match" : locked ? "With a paid plan" : "Coming soon"}</b>
           <span className="muted">{summary}</span>
         </span>
         {!catalog ? <button type="button" className="dpill dark" disabled>Loading…</button>
           : match ? <a className="dpill dark" href={href}>Start {start} questions</a>
           : pool ? <button type="button" className="dpill dark" onClick={() => setPicked([])}>Use all questions</button>
-          : locked ? <a className="dpill dark" href="/pricing">Get a pass</a>
+          : locked ? <a className="dpill dark" href="/pricing">Upgrade</a>
           : <button type="button" className="dpill dark" disabled>Coming soon</button>}
       </div>
       </div>
@@ -311,7 +311,7 @@ function Switch({ label, on, onChange }: { label: string; on: boolean; onChange:
 /* A subject's or chapter's progress chip: accuracy once practiced, otherwise whether questions are there yet. */
 function Score({ ready, n, total, answered, correct }: { ready: boolean; n: number; total: number; answered: number; correct: number }) {
   if (!ready) return <span className="acc none" aria-hidden="true">…</span>;
-  if (!n) return <span className="acc none">{total ? "With a pass" : "Coming soon"}</span>;
+  if (!n) return <span className="acc none">{total ? "With a paid plan" : "Coming soon"}</span>;
   if (!answered) return <span className="acc none">Not started</span>;
   const p = pct(correct, answered);
   return <span className={`acc ${band(p).cls}`} title={`${band(p).word} · ${answered} answered`}>{p}%</span>;
