@@ -82,6 +82,10 @@ export default function Overview({ user }: { user: AccountUser }) {
               </li>
             );
           })}
+          {/* Subjects outside the MDCAT paper (AKU Mathematics): a count with no target bar. */}
+          {Object.entries(d.liveBySubject).filter(([name]) => !paper.some((p) => p.subject === name)).map(([name, n]) => (
+            <li key={name}><span>{name}</span><span className="meter" /><b>{n}</b></li>
+          ))}
         </ul>
         <p className="muted small">Bars fill at 20 questions per paper slot (for example 1,620 for Biology&apos;s 81), enough for every student to sit many mocks without repeats.</p>
       </section>

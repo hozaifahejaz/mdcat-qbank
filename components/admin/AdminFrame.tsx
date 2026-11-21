@@ -24,7 +24,6 @@ function adminNav(user: AccountUser): Nav {
       links: [
         { href: "/admin/users", label: "Users and plans", icon: "account", short: "Users" },
         { href: "/admin/tickets", label: "Support tickets", icon: "help", short: "Tickets" },
-        { href: "/admin/waitlist", label: "Waitlist", icon: "bell" },
         { href: "/admin/visitors", label: "Visitors", icon: "results" },
         { href: "/admin/reveal", label: "Reveal watermark", icon: "target", short: "Watermark" },
       ],

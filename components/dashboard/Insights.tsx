@@ -75,7 +75,7 @@ export function Stand({ data, free }: { data: Dashboard; free?: boolean }) {
         <h2>Bank covered</h2>
         <strong>{pct(t.answered, t.available)}<small>%</small></strong>
         <span className="meter" role="img" aria-label={`${pct(t.answered, t.available)}% of the ${bank.name} bank answered`}><i style={{ width: `${pct(t.answered, t.available)}%` }} /></span>
-        <p className="muted">{nf(t.answered)} of {nf(t.available)} {free ? "free" : bank.short} questions.{free ? <> <a className="link" href="/pricing">A pass opens the whole bank.</a></> : left > 0 && days > 0 && <> About <b>{nf(perDay)} a day</b> finishes it by the exam.</>}</p>
+        <p className="muted">{nf(t.answered)} of {nf(t.available)} {free ? "free" : bank.short} questions.{free ? <> <a className="link" href="/pricing">A paid plan opens the whole bank.</a></> : left > 0 && days > 0 && <> About <b>{nf(perDay)} a day</b> finishes it by the exam.</>}</p>
       </div>
       <div className="st-cell">
         <h2>Time per question</h2>

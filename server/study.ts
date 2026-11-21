@@ -1,6 +1,6 @@
 import { normalisePhone } from "../lib/phone";
-import { bankById } from "../lib/banks";
-import { paper } from "../lib/site";
+import { REASONING, bankById } from "../lib/banks";
+import { mockFormat, mockFormats, NEG_MARK, paper } from "../lib/site";
 import { REPORT_HIDE, bankCounts, chaptersOf, subjectTotals } from "./counts";
 import { uuid } from "./crypto";
 import { requireActiveSession } from "./devices";
@@ -40,7 +40,7 @@ export type Served = {
 export type AttemptRow = {
   id: string; user_id: string; kind: Kind; mode: Mode; title: string; question_ids: string; mock_no: number | null;
   paper: number | null; started_at: number; deadline_at: number | null; finished_at: number | null; seconds: number | null;
-  score: number | null; total: number;
+  score: number | null; total: number; neg_first?: number;
 };
 type AnswerRow = { idx: number; question_id: string; answer: number | null; flagged: number; checked: number; seconds: number | null };
 
@@ -104,10 +104,11 @@ const STALE_PRACTICE = 7 * DAY;
 export async function finish(db: D1Database, a: AttemptRow, at: number) {
   const end = a.deadline_at ? Math.min(at, a.deadline_at) : at;
   const marks = db
-    .prepare(`SELECT count(*) AS asked, sum(CASE WHEN a.answer = s.answer THEN 1 ELSE 0 END) AS right
-      FROM answers a JOIN served s ON s.id = a.question_id WHERE a.attempt_id = ? ${a.mode === "tutor" ? "AND a.checked = 1" : ""}`)
-    .bind(a.id);
-  type Marks = { asked: number; right: number | null };
+    .prepare(`SELECT count(*) AS asked, sum(CASE WHEN a.answer = s.answer THEN 1 ELSE 0 END) AS right,
+        sum(CASE WHEN a.idx < ?2 AND a.answer IS NOT NULL AND a.answer != s.answer THEN 1 ELSE 0 END) AS docked
+      FROM answers a JOIN served s ON s.id = a.question_id WHERE a.attempt_id = ?1 ${a.mode === "tutor" ? "AND a.checked = 1" : ""}`)
+    .bind(a.id, a.neg_first ?? 0);
+  type Marks = { asked: number; right: number | null; docked: number | null };
   const r = a.mode === "tutor" ? await marks.first<Marks>()
     : (await db.batch<Marks>([db.prepare("UPDATE answers SET counted_at = ? WHERE attempt_id = ? AND counted_at IS NULL").bind(end, a.id), marks]))[1]!.results[0];
   const total = a.mode === "tutor" ? r?.asked ?? 0 : a.total;
@@ -120,7 +121,7 @@ export async function finish(db: D1Database, a: AttemptRow, at: number) {
     return false;
   }
   await db.prepare("UPDATE attempts SET finished_at = ?, seconds = ?, score = ?, total = ? WHERE id = ? AND finished_at IS NULL")
-    .bind(end, Math.round((end - a.started_at) / 1000), r?.right ?? 0, total, a.id).run();
+    .bind(end, Math.round((end - a.started_at) / 1000), (r?.right ?? 0) - NEG_MARK * (r?.docked ?? 0), total, a.id).run();
   return true;
 }
 
@@ -304,7 +305,7 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
   /* How many questions each chapter has for this student, which tests are open to them, and their past papers. */
   "GET /api/study/catalog": async (c) => {
     const me = await student(c, false);
-    // ?bank= picks whose chapters to count (lib/banks.ts); mocks and past papers are always MDCAT.
+    // ?bank= picks whose chapters to count (lib/banks.ts); past papers are always MDCAT.
     const bank = bankById(new URL(c.request.url).searchParams.get("bank"))?.id ?? "mdcat";
     // The bank's own numbers come from the kept counts; only this student's rows are read here.
     const [counts, [mini, mine]] = await Promise.all([
@@ -333,7 +334,10 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
       chapters: rows,
       papers: counts.papers.map((p) => ({ year: p.year, count: p.n })),
       mocks: MOCKS,
-      mockReady: paper.every((p) => bySubject(p.subject, "total") >= p.count),
+      // The NUMS mock draws on the NUMS bank's own chapters; every other bank shows the MDCAT mocks.
+      mockReady: bank === "nums" || bank === "aku"
+        ? mockFormats[bank].split.every((p) => rows.filter((r) => r.subject === p.subject).reduce((n, r) => n + r.total, 0) >= p.count)
+        : paper.every((p) => bySubject(p.subject, "total") >= p.count),
       miniReady: subjects.reduce((n, s) => n + bySubject(s, "open"), 0) >= 10,
       miniUsed: !!lastMini,
       // A started mini mock that isn't finished yet, to resume.
@@ -422,21 +426,27 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
     let title = str(b.title, 120);
     let mockNo: number | null = null;
     let year: number | null = null;
+    const format = mockFormat(b.bank);
     const asked = custom && Array.isArray(b.ids) ? b.ids.filter((x): x is string => typeof x === "string").slice(0, 200) : [];
 
     // Which questions the test will hold depends only on what was asked, so that lookup rides in the first trip too.
     const picks: D1PreparedStatement[] = [];
     if (kind === "mock") {
       mockNo = Math.min(MOCKS, Math.max(1, Number(b.mock) || 1));
-      title = `Full mock ${mockNo}`;
-      if (me.paid) picks.push(idsBySubjectStmt(c.db, ""));
+      title = `${format.name} ${mockNo}`;
+      if (me.paid) {
+        picks.push(format.id === "mdcat" ? idsBySubjectStmt(c.db, "")
+          : c.db.prepare(`SELECT DISTINCT id, subject, chapter FROM bank_served WHERE bank = ? AND open_reports < ${REPORT_HIDE} ORDER BY id`).bind(format.id));
+        // The mock's questions as kept from its first sitting (migration 0059).
+        picks.push(c.db.prepare("SELECT question_ids FROM mock_sets WHERE bank = ? AND mock_no = ?").bind(format.id, mockNo));
+      }
     } else if (kind === "mini-mock") {
       title = "Mini mock";
       picks.push(idsBySubjectStmt(c.db, me.pool));
       if (!me.paid) picks.push(c.db.prepare("SELECT 1 FROM attempts WHERE user_id = ? AND kind = 'mini-mock'").bind(me.id));
     } else if (kind === "past-paper") {
       year = Number(b.paper) || 0;
-      title = `PMDC MDCAT ${year}`;
+      title = `UHS MDCAT ${year}`;
       if (me.paid) picks.push(c.db.prepare(`SELECT id, subject FROM served WHERE paper = ? AND open_reports < ${REPORT_HIDE} ORDER BY id`).bind(year));
     } else {
       const count = Math.min(100, Math.max(1, Number(b.count) || 25));
@@ -469,7 +479,10 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
           : several.length ? several.join(" + ") : "Mixed practice";
         if (bank.id !== "mdcat") title = `${bank.name} · ${title}`.slice(0, 120);
       }
-      picks.push(c.db.prepare(`SELECT DISTINCT id, subject FROM bank_served WHERE ${where.join(" AND ")} ORDER BY random() LIMIT ${asked.length ? 200 : count}`).bind(...args));
+      // A student's first few sets lead with easy questions, so the first minutes are wins, not a hard applied item.
+      const gentle = `CASE WHEN (SELECT count(*) FROM answers WHERE user_id = ? AND counted_at IS NOT NULL) < 20
+        THEN (SELECT CASE q.difficulty WHEN 'easy' THEN 0 WHEN 'moderate' THEN 1 ELSE 2 END FROM questions q WHERE q.id = bank_served.id) ELSE 0 END`;
+      picks.push(c.db.prepare(`SELECT DISTINCT id, subject FROM bank_served WHERE ${where.join(" AND ")} ORDER BY ${asked.length ? "" : `${gentle}, `}random() LIMIT ${asked.length ? 200 : count}`).bind(...args, ...(asked.length ? [] : [me.id])));
       title ||= "Practice";
     }
 
@@ -498,15 +511,42 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
       if (running) throw fail(409, "open_test", `You still have ${running.title} running. Finish or submit it before starting another timed test.`, { attempt: running.id });
     }
     if ((kind === "mock" || kind === "past-paper") && !me.paid) {
-      throw fail(402, "needs_pass", kind === "mock" ? "Full mocks come with a pass. Your free mini mock is on the Mocks page." : "Past papers come with a pass.");
+      throw fail(402, "needs_pass", kind === "mock" ? "Full mocks come with a paid plan. Your free mini mock is on the Mocks page." : "Past papers come with a paid plan.");
     }
 
+    let keepMock: D1PreparedStatement | null = null;
     if (kind === "mock") {
-      const by = bySubject(found[0]!);
-      if (paper.some((p) => (by.get(p.subject)?.length ?? 0) < p.count)) throw fail(409, "not_ready", "Full mocks open once the bank has enough questions in every subject.");
-      ids = paper.flatMap((p, k) => shuffle(by.get(p.subject)!, seeded(mockNo! * 101 + k)).slice(0, p.count));
+      const pool = found[0] as { id: string; subject: string; chapter?: string }[];
+      const kept = (found[1]![0] as { question_ids: string } | undefined)?.question_ids;
+      if (kept) {
+        // The same questions as every earlier sitting, less any taken down since.
+        const live = new Set(pool.map((r) => r.id));
+        ids = parse<string[]>(kept, []).filter((x) => live.has(x));
+      } else {
+        const of = (s: string) => pool.filter((r) => r.subject === s).map((r) => r.id);
+        const salt = format.id === "mdcat" ? 0 : format.id === "nums" ? 5000 : 9000;
+        const drawn = format.split.map((p, k) => shuffle(of(p.subject), seeded(mockNo! * 101 + k + salt)).slice(0, p.count));
+        if (drawn.some((d, k) => d.length < format.split[k]!.count)) throw fail(409, "not_ready", "Full mocks open once the bank has enough questions in every subject.");
+        // A paper with a marked-down first part (AKU) opens with each subject's share of it, then the rest.
+        const lead = format.split.map((p) => ("first" in p ? p.first : 0));
+        if (format.negFirst) {
+          // AKU: the first part is ordinary subject questions; the reasoning part takes each science's reasoning
+          // questions first and tops up with ordinary ones only if the bank runs short.
+          const plain = (s: string) => pool.filter((r) => r.subject === s && r.chapter !== REASONING).map((r) => r.id);
+          const thinking = (s: string) => pool.filter((r) => r.subject === s && r.chapter === REASONING).map((r) => r.id);
+          const parts = format.split.map((p, k) => {
+            const mixed = shuffle(plain(p.subject), seeded(mockNo! * 101 + k + salt));
+            const first = mixed.slice(0, lead[k]);
+            const rest = [...shuffle(thinking(p.subject), seeded(mockNo! * 211 + k + salt)), ...mixed.slice(lead[k]!)].slice(0, p.count - lead[k]!);
+            return { first, rest };
+          });
+          if (parts.some((x, k) => x.first.length + x.rest.length < format.split[k]!.count)) throw fail(409, "not_ready", "Full mocks open once the bank has enough questions in every subject.");
+          ids = [...parts.flatMap((x) => x.first), ...parts.flatMap((x) => x.rest)];
+        } else ids = drawn.flat();
+        keepMock = c.db.prepare("INSERT OR IGNORE INTO mock_sets (bank, mock_no, question_ids, made_at) VALUES (?, ?, ?, ?)").bind(format.id, mockNo, JSON.stringify(ids), Date.now());
+      }
     } else if (kind === "mini-mock") {
-      if (!me.paid && found[1]!.length) throw fail(402, "needs_pass", "You've used your free mini mock. A pass opens every full mock.");
+      if (!me.paid && found[1]!.length) throw fail(402, "needs_pass", "You've used your free mini mock. A paid plan opens every full mock.");
       const by = bySubject(found[0]!);
       ids = paper.flatMap((p, k) => shuffle(by.get(p.subject)!, seeded(7 + k)).slice(0, MINI_SPLIT[k]));
       if (ids.length < 10) throw fail(409, "not_ready", "The mini mock opens once the free set has a few more questions.");
@@ -517,7 +557,7 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
       const results = found[0] as { id: string; subject: string }[];
       ids = asked.length ? asked.filter((id) => results.some((r) => r.id === id)) : results.map((r) => r.id);
     }
-    if (!ids.length) throw fail(409, "empty", me.paid ? "No questions match that yet. Try more chapters, or All questions." : "No free questions match that yet. Try more chapters, or get a pass for the whole bank.");
+    if (!ids.length) throw fail(409, "empty", me.paid ? "No questions match that yet. Try more chapters, or All questions." : "No free questions match that yet. Try more chapters, or upgrade for the whole bank.");
 
     const id = uuid();
     const now = Date.now();
@@ -531,15 +571,17 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
       }
     }
     // Timed tests get a minute a question; the mock is the real paper's 3 hours for 180.
-    const deadline = clock ? now + ids.length * 60 * 1000 : null;
+    // A full mock gets its paper's own time (NUMS: 150 questions in 2 hours 45 minutes).
+    const deadline = !clock ? null : kind === "mock" ? now + format.minutes * 60 * 1000 : now + ids.length * 60 * 1000;
     // The same trip that saves the test also reads its questions, so the player opens without asking again.
     const made = await c.db.batch([
-      c.db.prepare(`INSERT INTO attempts (id, user_id, kind, mode, title, question_ids, mock_no, paper, started_at, deadline_at, total)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).bind(id, me.id, kind, mode, title, JSON.stringify(ids), mockNo, year, now, deadline, ids.length),
+      c.db.prepare(`INSERT INTO attempts (id, user_id, kind, mode, title, question_ids, mock_no, paper, started_at, deadline_at, total, neg_first)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).bind(id, me.id, kind, mode, title, JSON.stringify(ids), mockNo, year, now, deadline, ids.length, kind === "mock" ? format.negFirst : 0),
       c.db.prepare("INSERT INTO answers (attempt_id, idx, user_id, question_id) SELECT ?1, key, ?2, value FROM json_each(?3)").bind(id, me.id, JSON.stringify(ids)),
       c.db.prepare("SELECT * FROM served WHERE id IN (SELECT value FROM json_each(?))").bind(JSON.stringify(ids)),
       c.db.prepare("SELECT question_id FROM bookmarks WHERE user_id = ?").bind(me.id),
       ...(me.staff ? [] : [spend(c.db, `given:${me.id}`, ids.length, DAY), hit(c.db, `start:${me.id}`, HOUR)]),
+      ...(keepMock ? [keepMock] : []),
     ]);
     const wanted = Number(b.count) || 0;
     const a: AttemptRow = { id, user_id: me.id, kind, mode, title, question_ids: "", mock_no: mockNo, paper: year, started_at: now, deadline_at: deadline, finished_at: null, seconds: null, score: null, total: ids.length };
@@ -657,7 +699,7 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
           AND attempt_id = (SELECT id FROM attempts WHERE id = ?1 AND user_id = ?2 AND finished_at IS NULL AND mode != 'tutor')`).bind(id, me.id, now),
       // A practice set with nothing checked isn't a result, so it is left for the clean-up below.
       c.db.prepare(`UPDATE attempts SET finished_at = ${end}, seconds = CAST(round((${end} - started_at) / 1000.0) AS INTEGER),
-          score = coalesce((SELECT sum(CASE WHEN a.answer = s.answer THEN 1 ELSE 0 END) ${counts}), 0),
+          score = coalesce((SELECT sum(CASE WHEN a.answer = s.answer THEN 1.0 WHEN a.idx < attempts.neg_first AND a.answer IS NOT NULL THEN -${NEG_MARK} ELSE 0 END) ${counts}), 0),
           total = CASE WHEN mode = 'tutor' THEN (SELECT count(*) ${counts}) ELSE total END
         WHERE id = ?1 AND user_id = ?2 AND finished_at IS NULL AND (mode != 'tutor' OR EXISTS (SELECT 1 ${counts}))`).bind(id, me.id, now),
       ...reviewStmts(c.db, id, me.id),

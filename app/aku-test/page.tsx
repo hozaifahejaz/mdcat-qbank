@@ -19,7 +19,7 @@ const faqs = [
   { q: "Does AKU accept the MDCAT?", a: "Aga Khan University runs its own admission test for the MBBS programme. Check AKU's admission information for the current year's requirements, since they are set by the university and can change." },
   { q: "Is there negative marking in the AKU test?", a: "In AKU's admission information for 2026-27, the Science Achievement section deducts 0.25 marks for a wrong answer and the Science and Mathematics Reasoning section has no negative marking." },
   { q: "What should I practice for the AKU test?", a: "Science MCQs in Biology, Chemistry and Physics at FSc and A level standard, plus mathematics reasoning. The AKU bank here is arranged the same way." },
-  { q: "Is the AKU bank separate from the MDCAT bank?", a: "It is its own bank with its own chapter list, and it shares questions with the MDCAT bank where the content overlaps. One pass opens both." },
+  { q: "Is the AKU bank separate from the MDCAT bank?", a: "It is its own bank with its own chapter list, and it shares questions with the MDCAT bank where the content overlaps. One paid plan opens both." },
 ];
 
 export default function Aku() {

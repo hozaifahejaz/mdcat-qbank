@@ -48,7 +48,7 @@ export default async function Chapter({ params }: { params: Params }) {
           Below are <b>{c.samples.length} sample MCQs with answers and explanations</b>. The full bank has {c.total} questions on this chapter.
         </p>
         <div className="pub-acts">
-          <a className="x3-btn x3-blue" href="/signup">Practice all {c.total} questions</a>
+          <a className="x3-btn x3-blue" href="/signup">Practice this chapter free</a>
         </div>
       </header>
 

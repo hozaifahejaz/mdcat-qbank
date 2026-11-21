@@ -255,6 +255,25 @@ const routes: Record<string, (c: Ctx) => Promise<Response>> = {
     return signedIn(c.request, await createSession(c.db, userId, c.request));
   },
 
+  /* Change the password while signed in: the current one proves it's the owner. Other sessions are signed out; this one stays. */
+  "POST /api/auth/change-password": async (c) => {
+    const s = await requireSession(c.db, c.request);
+    const b = await body(c.request);
+    const pw = password(b.password);
+    await rateLimit(c.db, `changepw:${s.user_id}`, 10, HOUR);
+    const u = await userById(c.db, s.user_id);
+    if (!u) throw fail(401, "signed_out", "Please sign in.");
+    if (!u.password_hash) throw fail(400, "no_password", "This account signs in without a password.");
+    if (!(await verifyPassword(typeof b.current === "string" ? b.current : "", u.password_hash))) {
+      throw fail(401, "wrong_password", "Your current password isn't right.");
+    }
+    await c.db.batch([
+      c.db.prepare("UPDATE users SET password_hash = ? WHERE id = ?").bind(await hashPassword(pw), u.id),
+      c.db.prepare("DELETE FROM sessions WHERE user_id = ? AND id <> ?").bind(u.id, s.id),
+    ]);
+    return json({ ok: true });
+  },
+
   "POST /api/auth/phone/start": async (c) => {
     const b = await body(c.request);
     const phone = normalisePhone(str(b.phone, 40));

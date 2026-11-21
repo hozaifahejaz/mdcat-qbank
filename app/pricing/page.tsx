@@ -11,7 +11,7 @@ import "@/app/public.css";
 
 export const metadata: Metadata = {
   title: `Pricing · ${site.name}`,
-  description: "Start free with 100 MDCAT questions. One Season Pass opens the full question bank, timed mocks and past papers until the exam, with no renewal.",
+  description: "Start free with 100 questions. A 1-month or 3-month plan opens the full MDCAT, NUMS and AKU question bank, timed mocks and past papers, as one payment with no automatic charges.",
   alternates: { canonical: "/pricing" },
 };
 
@@ -19,8 +19,8 @@ export const metadata: Metadata = {
 const offers = {
   "@context": "https://schema.org",
   "@type": "Product",
-  name: `${site.name} ${plans.season.name}`,
-  description: "Full access to the MDCAT, NUMS and AKU question banks, timed mocks and past papers until the exam, as one payment with no renewal.",
+  name: `${site.name} question bank`,
+  description: "Full access to the MDCAT, NUMS and AKU question banks, timed mocks and past papers for 1 month or 3 months, as one payment with no automatic charges.",
   brand: { "@type": "Brand", name: site.name },
   image: abs("/og.png"),
   offers: [plans.season, plans.monthly].map((p) => ({

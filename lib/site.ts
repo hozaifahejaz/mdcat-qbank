@@ -23,11 +23,12 @@ export const site = {
   examDate: "2027-08-15",
 };
 
+/* The two paid plans, as the landing page shows them for pre-medical (lib/track-pages.ts keeps the same numbers).
+   Buying again while a plan is running, or after it has ended, is a renewal and costs renewOff percent less. */
 export const prices = {
-  seasonPass: "2,999",
-  earlyBird: "1,999",
-  earlyBirdUntil: "March 2027",
+  three: "1,999",
   monthly: "799",
+  renewOff: 25,
 };
 
 /* The PMDC MDCAT paper: 180 MCQs in 3 hours. "tone" is the pastel chip, "solid" the bar colour in the paper split. */
@@ -38,6 +39,39 @@ export const paper = [
   { subject: "English", count: 9, tone: "var(--lilac)", solid: "#8a63ff" },
   { subject: "Logical Reasoning", count: 9, tone: "var(--lemon)", solid: "#c9a400" },
 ];
+
+/* The full mocks a student can sit, by the paper they copy: how many questions from each subject and how long.
+   NUMS is its 150-MCQ subject paper (NUMS notice for 2026): 2 hours 45 minutes, no Logical Reasoning.
+   negFirst is how many of the first questions take marks off for a wrong answer. */
+export const mockFormats = {
+  mdcat: { id: "mdcat", name: "Full mock", label: "MDCAT", minutes: 180, negFirst: 0, split: paper },
+  nums: {
+    id: "nums", name: "NUMS mock", label: "NUMS", minutes: 165, negFirst: 0,
+    split: [
+      { ...paper[0]!, count: 55 },
+      { ...paper[1]!, count: 40 },
+      { ...paper[2]!, count: 40 },
+      { ...paper[3]!, count: 15 },
+    ],
+  },
+  /* AKU (admission information 2026-27): 100 MCQs in 2 hours. The first 40 are Science Achievement, where a wrong
+     answer costs 0.25; the other 60 are Science and Mathematics Reasoning with no penalty (AKU sample test paper 2026:
+     "100 questions in two Sections", any order). AKU gives no subject counts inside a section: Science Achievement is
+     split evenly over Biology, Chemistry and Physics, and the reasoning section is half science, half mathematics. */
+  aku: {
+    id: "aku", name: "AKU mock", label: "AKU", minutes: 120, negFirst: 40,
+    split: [
+      { ...paper[0]!, count: 24, first: 14 },
+      { ...paper[1]!, count: 23, first: 13 },
+      { ...paper[2]!, count: 23, first: 13 },
+      { subject: "Mathematics", count: 30, first: 0, tone: "var(--lemon)", solid: "#c9a400" },
+    ],
+  },
+} as const;
+export type MockFormatId = keyof typeof mockFormats;
+export const mockFormat = (id: unknown) => mockFormats[id === "nums" || id === "aku" ? id : "mdcat"];
+export const NEG_MARK = 0.25;
+export const hoursText = (minutes: number) => minutes % 60 ? `${Math.floor(minutes / 60)} h ${minutes % 60} min` : `${minutes / 60} hours`;
 
 /* Where Help links go: WhatsApp when there's a number, otherwise the contact form (each message becomes a support ticket). */
 export const supportHref = site.whatsapp ? `https://wa.me/${site.whatsapp}` : "/contact";

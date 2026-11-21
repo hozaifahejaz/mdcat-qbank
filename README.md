@@ -2,7 +2,7 @@
 
 A paid, practice-first question bank for Pakistani medical college entrance exams, starting with PMDC MDCAT and expanding to NUMS, AKU and private university tests.
 
-Students buy a season pass per exam and get chapter-wise practice, timed tests, full-length mocks that match the real paper, past papers, and analytics that show which chapters to fix next.
+Students buy a 1-month or 3-month plan and get chapter-wise practice, timed tests, full-length mocks that match the real paper, past papers, and analytics that show which chapters to fix next.
 
 ## Status
 

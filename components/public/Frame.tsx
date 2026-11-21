@@ -12,7 +12,7 @@ export function PublicFooter({ home = "/" }: { home?: string }) {
         <div className="x3-footin wide">
           <div>
             <Logo href={home} size={22} />
-            <p>Start practicing before<br />MDCAT {site.season}.</p>
+            <p>Start practicing<br />today.</p>
           </div>
           <ul>
             <li><b>Prepare</b></li>

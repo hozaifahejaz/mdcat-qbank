@@ -4,6 +4,7 @@ import { Markhor } from "@/components/Logo";
 import type { TrackId } from "@/lib/catalogue";
 import { trackPages } from "@/lib/track-pages";
 import { useArea } from "@/components/experiment4/ExamState";
+import { prices } from "@/lib/site";
 
 /* Pricing for landing experiment 8, taken from experiment 7: the three plans (Free, 3 months in the middle, 1 month),
    priced for the one area picked in the hero. No area chips here (Huzaifa 2026-11-21): to see another area's prices,
@@ -41,7 +42,7 @@ export default function Pricing({ payments, soon = false }: { payments: boolean;
             <div className="x3-card plan">
               <h3>Free</h3>
               <p>Try it first.</p>
-              <div className="price"><small>Rs.</small>0</div>
+              <div className="price"><small>Rs. </small>0</div>
               <a className="x3-btn x3-blue" href="/signup">Start free</a>
               <ul>
                 <li><Check />100 free questions</li>
@@ -53,22 +54,23 @@ export default function Pricing({ payments, soon = false }: { payments: boolean;
               <span className="bolt" aria-hidden="true"><Markhor height={22} /></span>
               <h3>3 months</h3>
               <p>Time to cover the whole syllabus.</p>
-              <div className="price"><small>Rs.</small>{rs(three)}</div>
+              <div className="price"><small>Rs. </small>{rs(three)}</div>
               <span className="early">Rs. {rs(Math.round(three / 3))} a month{save > 0 ? `, ${save}% less than monthly` : ""}</span>
-              <a className="x3-btn x3-white" href="/signup">Get 3 months</a>
+              <a className="x3-btn x3-white" href={buy("season")}>Get 3 months</a>
               <ul>
                 {page.perks.map((p) => <li key={p}><Check />{p}</li>)}
-                <li><Check />Renew for less when it ends</li>
+                <li><Check />Renew for {prices.renewOff}% less when it ends</li>
               </ul>
             </div>
             <div className="x3-card plan">
               <h3>1 month</h3>
               <p>A last push before the paper.</p>
-              <div className="price"><small>Rs.</small>{rs(month)}</div>
+              <div className="price"><small>Rs. </small>{rs(month)}</div>
               <a className="x3-btn x3-blue" href={buy("monthly")}>Get 1 month</a>
               <ul>
                 <li><Check />Everything in 3 months</li>
                 <li><Check />30 days of full access</li>
+                <li><Check />Renew for {prices.renewOff}% less when it ends</li>
               </ul>
             </div>
           </div>

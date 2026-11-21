@@ -60,7 +60,7 @@ export default function About() {
         </ol>
 
         <h2>What it costs</h2>
-        <p>100 questions are free with no card. A Season Pass is one payment that lasts until the MDCAT, with no renewal. See <a href="/pricing">pricing</a>.</p>
+        <p>100 questions are free with no card. A paid plan is one payment for 1 month or 3 months, with no automatic charges. See <a href="/pricing">pricing</a>.</p>
 
         <h2>Contact</h2>
         <p>Questions, corrections and feedback are welcome at <a href={`mailto:${site.supportEmail}`}>{site.supportEmail}</a>.</p>

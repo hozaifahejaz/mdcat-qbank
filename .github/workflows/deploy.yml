@@ -26,6 +26,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run typecheck
+      - run: npm test
       - run: npm run build
       - name: Check the Cloudflare settings are there
         run: |
@@ -39,6 +40,7 @@ jobs:
       # previews share the same database. Needs the API token to have "D1: Edit" (docs/auth-setup.md); if it
       # doesn't, the site still deploys and this step shows the error.
       - name: Apply database migrations
+        id: migrate
         if: github.ref_name == 'main'
         continue-on-error: true
         run: npx wrangler d1 migrations apply mdcat-qbank-eu --remote
@@ -67,3 +69,10 @@ jobs:
               body: JSON.stringify({ host: "markhorprep.com", key, keyLocation: `https://markhorprep.com/${key}.txt`, urlList: urls }),
             }).then((r) => console.log("IndexNow:", r.status, urls.length, "pages"));
           '
+      # The site deploys even when the database step fails, so that a small fix is never held back. This last step
+      # then turns the run red, so the failure is seen and the missing database change is applied by hand.
+      - name: Fail the run if the database changes did not apply
+        if: steps.migrate.outcome == 'failure'
+        run: |
+          echo "Database migrations failed. Apply them with: npx wrangler d1 migrations apply mdcat-qbank-eu --remote"
+          exit 1

@@ -39,7 +39,7 @@ function Body({ me }: { me: AccountUser }) {
       <PageHead title="Delete your account" />
       <section className="dcard panel">
         <p>This deletes your account, your test history, progress, bookmarks and devices. It can&apos;t be undone.</p>
-        {me.plan !== "free" && <p className="muted">Any time left on your pass is lost too.</p>}
+        {me.plan !== "free" && <p className="muted">Any time left on your paid plan is lost too.</p>}
         <form className="fld" onSubmit={submit}>
           {hasPassword && (
             <label className="fld">

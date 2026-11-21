@@ -298,6 +298,8 @@ export default function TestPlayer({ user, attempt, note }: Props) {
                 {clock(left)}
               </span>
             )}
+            {/* Timed tests and mocks can be ended from any question, not only from the last one. */}
+            {!tutor && <button type="button" className="pbtn pend" disabled={busy} onClick={finish}><span>End test</span></button>}
             <button type="button" className="pbtn ptext" onClick={nextSize} aria-label={`Text size: ${sizeNames[size]}. Change`} title="Text size">
               <span aria-hidden="true">A<small>A</small></span>
             </button>
@@ -315,13 +317,13 @@ export default function TestPlayer({ user, attempt, note }: Props) {
             <div className="qhead">
               <h1 className="qno">Question {i + 1}</h1>
               <span className="qacts">
-                <button type="button" className={`qact${flagged[i] ? " on" : ""}`} aria-pressed={flagged[i]} title="Come back to this question later" onClick={toggleFlag}>
+                <button type="button" className={`qact${flagged[i] ? " on" : ""}`} aria-pressed={flagged[i]} title="Flag this question to come back to it in this test" onClick={toggleFlag}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill={flagged[i] ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2.2" strokeLinejoin="round" aria-hidden="true"><path d="M5 21V4h11l-2 4 2 4H5" /></svg>
                   <span>{flagged[i] ? "Flagged" : "Flag"}</span>
                 </button>
-                <button type="button" className={`qact${marked ? " on" : ""}`} aria-pressed={marked} title={marked ? "Remove mark" : "Mark this question to find it again"} onClick={toggleMark}>
+                <button type="button" className={`qact${marked ? " on" : ""}`} aria-pressed={marked} title={marked ? "Remove this bookmark" : "Bookmark this question to find it again under My mistakes"} onClick={toggleMark}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill={marked ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2.2" strokeLinejoin="round" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4z" /></svg>
-                  <span>{marked ? "Marked" : "Mark"}</span>
+                  <span>{marked ? "Bookmarked" : "Bookmark"}</span>
                 </button>
               </span>
             </div>

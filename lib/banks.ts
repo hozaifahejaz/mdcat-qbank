@@ -223,6 +223,11 @@ const numsPhysics = [
   "Modern and nuclear physics",
 ];
 
+/* The AKU test's second section is Science and Mathematics Reasoning. Its science questions (a short account of an
+   experiment, a table of results or a described circuit or mechanism, then a question on it) sit in this chapter of
+   each science in the AKU bank, and fill the science half of that section in the AKU mock. */
+export const REASONING = "Science reasoning";
+
 /* AKU Mathematics. AKU publishes no maths syllabus: its MBBS test has a "Science and Mathematics Reasoning" section,
    and its only official maths material is the Mathematics Reasoning practice set on aku.edu. These chapters follow the
    question types in that set (quantity comparisons, data sufficiency, percentages, ratios and rates, data and box plots,
@@ -264,15 +269,15 @@ export const banks: Bank[] = [
       // Its first-year Biology also covers classification, bacteria and plant physiology (Biology 11 chapters 1, 2 and 8).
       {
         name: "Biology",
-        chapters: [...mdcatSyllabus.Biology, "Biodiversity and classification", "Bacteria", "Plant physiology", "Ecology"],
+        chapters: [...mdcatSyllabus.Biology, "Biodiversity and classification", "Bacteria", "Plant physiology", "Ecology", REASONING],
       },
       // Spectroscopy, environmental chemistry and lab techniques are off the PMDC syllabus but stay in AKU for now.
       {
         name: "Chemistry",
-        chapters: [...mdcatSyllabus.Chemistry, "Spectroscopy", "Environmental chemistry", "Experimental techniques and lab safety"],
+        chapters: [...mdcatSyllabus.Chemistry, "Spectroscopy", "Environmental chemistry", "Experimental techniques and lab safety", REASONING],
       },
       // AKU's Physics syllabus also has measurements and physics of solids (not on the PMDC MDCAT syllabus).
-      { name: "Physics", chapters: ["Measurements", ...mdcatSyllabus.Physics, "Physics of solids", "Physical optics"] },
+      { name: "Physics", chapters: ["Measurements", ...mdcatSyllabus.Physics, "Physics of solids", "Physical optics", REASONING] },
       // No English: the AKU MBBS test (2026-27) has only Science Achievement and Science & Mathematics Reasoning.
       { name: "Mathematics", chapters: akuMathematics },
     ],

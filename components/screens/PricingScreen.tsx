@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import PayLogo from "@/components/app/PayLogo";
 import { PublicFooter, PublicNav } from "@/components/public/Frame";
-import { money, plans } from "@/lib/billing";
-import { prices, site } from "@/lib/site";
+import { freeItems, money, paidItems, plans, renewOff } from "@/lib/billing";
+import { site } from "@/lib/site";
 import { lastUser } from "@/lib/user";
 
 const buy = (plan: string) => `/signup?next=${encodeURIComponent(`/checkout?plan=${plan}`)}`;
@@ -17,7 +17,7 @@ const cards = [
     name: "Free",
     price: 0,
     per: "",
-    items: ["100 free questions", "1 mini mock", "Basic stats"],
+    items: freeItems,
     cta: { label: "Start free", href: "/signup" },
     tone: "var(--card)",
   },
@@ -25,25 +25,24 @@ const cards = [
     id: "season",
     name: plans.season.name,
     price: plans.season.price,
-    was: plans.season.was,
     per: plans.season.per,
-    items: ["The full question bank, every chapter", "MDCAT, NUMS and AKU banks", "Full-length timed mocks", "Past papers by year", "Chapter-by-chapter dashboard"],
-    cta: { label: "Get the Season Pass", href: buy("season") },
+    items: [...paidItems, `Renew for ${renewOff}% less when it ends`],
+    cta: { label: "Get 3 months", href: buy("season") },
     tone: "var(--lilac)",
-    note: plans.season.was ? `Early-bird price until ${prices.earlyBirdUntil}` : plans.season.blurb,
+    note: `${money(Math.round(plans.season.price / 3))} a month, ${Math.round((1 - plans.season.price / (plans.monthly.price * 3)) * 100)}% less than monthly`,
   },
   {
     id: "monthly",
     name: plans.monthly.name,
     price: plans.monthly.price,
     per: plans.monthly.per,
-    items: ["Everything in the Season Pass", "30 days of full access", "No renewal: buy again only if you need more"],
-    cta: { label: "Get one month", href: buy("monthly") },
+    items: ["Everything in 3 months", "30 days of full access", `Renew for ${renewOff}% less when it ends`],
+    cta: { label: "Get 1 month", href: buy("monthly") },
     tone: "var(--card)",
   },
 ];
 
-/* /pricing — public. Plans from the plan's pricing table; Bundle (MDCAT + NUMS) is added when NUMS questions are. */
+/* /pricing — public. The same three plans as the landing page's pricing section (lib/billing.ts). */
 export default function PricingScreen() {
   // A student who is already signed in (the account as this browser last saw it) gets a way back in, not "Sign in".
   const [inside, setInside] = useState(false);
@@ -54,8 +53,8 @@ export default function PricingScreen() {
       <main className="dwrap">
         <div className="dgrid">
           <section className="price-head">
-            <h1>One pass. Every MDCAT question.</h1>
-            <p className="muted">Pay with JazzCash, Easypaisa or card.</p>
+            <h1>Pricing</h1>
+            <p className="muted">One payment, no automatic charges. {site.payments ? "Pay with JazzCash, Easypaisa or card." : "Payments open soon. The free questions are open now."}</p>
           </section>
           <section className="price-grid">
             {cards.map((c) => (
@@ -65,7 +64,6 @@ export default function PricingScreen() {
                   {c.id === "season" && <span className="badge good">Best value</span>}
                 </div>
                 <p className="price-n">
-                  {c.was && <s className="muted">{money(c.was)}</s>}
                   <b>{c.price ? money(c.price) : "Rs. 0"}</b>
                   {c.per && <span className="muted">{c.per}</span>}
                 </p>

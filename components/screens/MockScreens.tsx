@@ -5,7 +5,7 @@ import AppShell, { PageHead } from "@/components/app/AppShell";
 import Empty from "@/components/app/Empty";
 import type { TestResult } from "@/lib/dashboard-data";
 import { band, day, kindNames, pct } from "@/lib/format";
-import { paper } from "@/lib/site";
+import { hoursText, type MockFormatId, mockFormat, mockFormats, NEG_MARK } from "@/lib/site";
 import { type Catalog, testHref, watchCatalog, watchHistory } from "@/lib/study";
 import type { AccountUser } from "@/lib/user";
 
@@ -16,24 +16,32 @@ function useRecent() {
   return recent;
 }
 
-function useCatalog() {
+function useCatalog(bank: MockFormatId = "mdcat") {
   const [catalog, setCatalog] = useState<Catalog | null>(null);
-  useEffect(() => { watchCatalog("mdcat", setCatalog); }, []);
+  useEffect(() => {
+    let live = true;
+    watchCatalog(bank, (c) => { if (live) setCatalog(c); });
+    return () => { live = false; };
+  }, [bank]);
   return catalog;
 }
 
-function Split() {
+type Format = ReturnType<typeof mockFormat>;
+const countOf = (f: Format) => f.split.reduce((n, p) => n + p.count, 0);
+const BANK_KEY = "practice-bank";
+
+function Split({ format = mockFormats.mdcat }: { format?: Format }) {
   return (
-    <div className="split" role="img" aria-label={paper.map((p) => `${p.subject} ${p.count}`).join(", ")}>
-      {paper.map((p) => <i key={p.subject} style={{ flex: p.count, background: p.solid }} />)}
+    <div className="split" role="img" aria-label={format.split.map((p) => `${p.subject} ${p.count}`).join(", ")}>
+      {format.split.map((p) => <i key={p.subject} style={{ flex: p.count, background: p.solid }} />)}
     </div>
   );
 }
 
-function SplitLegend() {
+function SplitLegend({ format = mockFormats.mdcat }: { format?: Format }) {
   return (
     <ul className="split-legend">
-      {paper.map((p) => <li key={p.subject}><i style={{ background: p.solid }} />{p.subject} <b>{p.count}</b></li>)}
+      {format.split.map((p) => <li key={p.subject}><i style={{ background: p.solid }} />{p.subject} <b>{p.count}</b></li>)}
     </ul>
   );
 }
@@ -45,22 +53,33 @@ export function MocksScreen() {
 
 function Mocks({ user }: { user: AccountUser }) {
   const recent = useRecent();
-  const catalog = useCatalog();
+  // Opens on the paper practiced last: the NUMS mock for a NUMS student, the MDCAT mock for everyone else.
+  const [bank, setBank] = useState<MockFormatId>("mdcat");
+  useEffect(() => { try { const last = localStorage.getItem(BANK_KEY); if (last === "nums" || last === "aku") setBank(last); } catch {} }, []);
+  const format = mockFormats[bank];
+  const facts = `${countOf(format)} MCQs · ${hoursText(format.minutes)}`;
+  const catalog = useCatalog(bank);
   const taken = (recent ?? []).filter((t) => t.kind === "mock");
   const mini = (recent ?? []).find((t) => t.kind === "mini-mock");
   const byTitle = new Map(taken.map((t) => [t.title, t]));
   const paid = catalog?.paid ?? user.plan !== "free";
   const ready = !!catalog?.mockReady;
   const mocks = catalog?.mocks ?? 12;
-  const nextMock = Array.from({ length: mocks }, (_, k) => k + 1).find((k) => !byTitle.has(`Full mock ${k}`)) ?? 1;
+  const link = bank === "mdcat" ? "" : `&bank=${bank}`;
+  const nextMock = Array.from({ length: mocks }, (_, k) => k + 1).find((k) => !byTitle.has(`${format.name} ${k}`)) ?? 1;
   return (
     <div className="dgrid">
-      <PageHead title="Full mocks" sub="180 MCQs in 3 hours, split by subject like the real paper.">
-        {ready && paid && <a className="dpill dark" href={`/mocks/new?n=${nextMock}`}>Start the next mock</a>}
+      <PageHead title="Full mocks" sub={`${countOf(format)} MCQs in ${hoursText(format.minutes)}, split by subject like the real paper.`}>
+        {ready && paid && <a className="dpill dark" href={`/mocks/new?n=${nextMock}${link}`}>Start the next mock</a>}
       </PageHead>
       <section className="dcard panel">
-        <Split />
-        <SplitLegend />
+        <div className="chips" role="group" aria-label="Paper">
+          {Object.values(mockFormats).map((f) => (
+            <button key={f.id} type="button" className="chip" aria-pressed={bank === f.id} onClick={() => setBank(f.id)}>{f.label}</button>
+          ))}
+        </div>
+        <Split format={format} />
+        <SplitLegend format={format} />
       </section>
       {catalog && !paid && (
         <section className="dcard panel">
@@ -69,7 +88,7 @@ function Mocks({ user }: { user: AccountUser }) {
             {mini && <span className="badge good">Taken</span>}
           </div>
           {mini ? (
-            <p className="muted"><b>{mini.score}</b>/{mini.total} on {day(mini.date)}. <a className="link" href={`/review?id=${mini.id}`}>Review answers</a> · <a className="link" href="/pricing">Get a pass for every full mock</a></p>
+            <p className="muted"><b>{mini.score}</b>/{mini.total} on {day(mini.date)}. <a className="link" href={`/review?id=${mini.id}`}>Review answers</a> · <a className="link" href="/pricing">Upgrade for every full mock</a></p>
           ) : catalog.miniOpen ? (
             <>
               <p className="muted">You started your mini mock. Its clock keeps running, so finish it while you can.</p>
@@ -90,7 +109,7 @@ function Mocks({ user }: { user: AccountUser }) {
       )}
       {ready && <section className="mock-grid" aria-label="Mocks">
         {Array.from({ length: mocks }, (_, k) => {
-          const title = `Full mock ${k + 1}`;
+          const title = `${format.name} ${k + 1}`;
           const t = byTitle.get(title);
           const next = paid && k + 1 === nextMock;
           const p = t ? pct(t.score, t.total) : 0;
@@ -108,10 +127,10 @@ function Mocks({ user }: { user: AccountUser }) {
                 </>
               ) : (
                 <>
-                  <p className="muted small">180 MCQs · 3 hours</p>
+                  <p className="muted small">{facts}</p>
                   {paid
-                    ? <a className={`dpill ${next ? "dark" : "light"} small`} href={`/mocks/new?n=${k + 1}`}>Start</a>
-                    : <a className="dpill light small" href="/pricing">With a pass</a>}
+                    ? <a className={`dpill ${next ? "dark" : "light"} small`} href={`/mocks/new?n=${k + 1}${link}`}>Start</a>
+                    : <a className="dpill light small" href="/pricing">With a paid plan</a>}
                 </>
               )}
             </article>
@@ -130,28 +149,31 @@ export function MockIntroScreen() {
 function MockIntro() {
   const [n, setN] = useState(1);
   const [mini, setMini] = useState(false);
-  const catalog = useCatalog();
+  const [bank, setBank] = useState<MockFormatId>("mdcat");
+  const format = mockFormats[mini ? "mdcat" : bank];
+  const catalog = useCatalog(mini ? "mdcat" : bank);
   useEffect(() => {
     const p = new URLSearchParams(window.location.search);
     const v = Number(p.get("n"));
     if (v) setN(v);
     setMini(p.get("mini") === "1");
+    setBank(mockFormat(p.get("bank")).id);
   }, []);
-  const title = mini ? "Mini mock" : `Full mock ${n}`;
+  const title = mini ? "Mini mock" : `${format.name} ${n}`;
   const ready = mini ? catalog?.miniReady : catalog?.mockReady;
   return (
     <div className="dgrid">
       <section className="dcard intro">
         <div className="intro-col">
-        <span className="kind">{mini ? "Free mini mock" : "Full mock"}</span>
+        <span className="kind">{mini ? "Free mini mock" : `${format.label} full mock`}</span>
         <h1>{title}</h1>
         <div className="intro-facts">
-          <div><b>{mini ? 30 : 180}</b><span className="muted">MCQs</span></div>
-          <div><b>{mini ? "30 min" : "3 h"}</b><span className="muted">time limit</span></div>
-          <div><b>0</b><span className="muted">negative marks</span></div>
+          <div><b>{mini ? 30 : countOf(format)}</b><span className="muted">MCQs</span></div>
+          <div><b>{mini ? "30 min" : format.minutes % 60 ? `${format.minutes} min` : `${format.minutes / 60} h`}</b><span className="muted">time limit</span></div>
+          <div><b>{!mini && format.negFirst ? NEG_MARK : 0}</b><span className="muted">{!mini && format.negFirst ? `off per wrong answer, Q1 to ${format.negFirst}` : "negative marks"}</span></div>
         </div>
-        <Split />
-        <SplitLegend />
+        <Split format={format} />
+        <SplitLegend format={format} />
         </div>
         <div className="intro-col">
         <h2 className="panel-title">Before you start</h2>
@@ -161,10 +183,11 @@ function MockIntro() {
           <li>Answers and explanations open when you submit.</li>
           <li>If you switch devices, the test picks up where you left off.</li>
           {mini && <li>Free accounts get one mini mock.</li>}
+          {!mini && format.negFirst > 0 && <li>Questions 1 to {format.negFirst} are Science Achievement (Biology, Chemistry, Physics): a wrong answer takes off {NEG_MARK} marks. Questions {format.negFirst + 1} to {countOf(format)} are Science and Mathematics Reasoning, with no negative marking. Attempt them in any order.</li>}
         </ul>
         {!catalog ? <button type="button" className="dpill dark block" disabled>Loading…</button>
-          : !mini && !catalog.paid ? <a className="dpill dark block" href="/pricing">Full mocks come with a pass</a>
-          : ready ? <a className="dpill dark block" href={testHref(mini ? { kind: "mini-mock" } : { kind: "mock", mock: n })}>Start {mini ? "the mini mock" : "mock"}</a>
+          : !mini && !catalog.paid ? <a className="dpill dark block" href="/pricing">Full mocks come with a paid plan</a>
+          : ready ? <a className="dpill dark block" href={testHref(mini ? { kind: "mini-mock" } : { kind: "mock", mock: n, bank })}>Start {mini ? "the mini mock" : "mock"}</a>
           : <button type="button" className="dpill dark block" disabled>Mocks open soon</button>}
         </div>
       </section>
@@ -184,16 +207,16 @@ function PastPapers({ user }: { user: AccountUser }) {
   const paid = catalog?.paid ?? user.plan !== "free";
   return (
     <div className="dgrid">
-      <PageHead title="Past papers" sub="PMDC MDCAT papers, rebuilt in our own words with a full explanation on every question." />
+      <PageHead title="Past papers" sub="Real MDCAT papers, rebuilt in our own words with a full explanation on every question. No official answer key was published, so the keys here are worked out by us." />
       <section className="dcard panel">
-        {catalog && !papers.length && <Empty title="Past papers coming soon" text="PMDC MDCAT papers from recent years, each with a full explanation on every question." />}
+        {catalog && !papers.length && <Empty title="Past papers coming soon" text="Real MDCAT papers, each with a full explanation on every question." />}
         {papers.length > 0 && <ul className="pp">
           {papers.map(({ year: y, count }) => {
             const t = recent?.find((r) => r.kind === "past-paper" && r.title.endsWith(String(y)));
             return (
               <li key={y}>
                 <div>
-                  <b>PMDC MDCAT {y}</b>
+                  <b>UHS MDCAT {y}</b>
                   <span className="muted">{count} MCQ{count === 1 ? "" : "s"} · {count} minute{count === 1 ? "" : "s"}</span>
                 </div>
                 {t ? <span className="pp-score"><b>{t.score}</b>/{t.total} <span className="muted">· {day(t.date)}</span></span> : <span className="muted small">Not taken</span>}
@@ -201,7 +224,7 @@ function PastPapers({ user }: { user: AccountUser }) {
                   {t && <a className="link" href={`/review?id=${t.id}`}>Review</a>}
                   {paid
                     ? <a className="dpill light small" href={testHref({ kind: "past-paper", paper: y })}>{t ? "Retake" : "Start"}</a>
-                    : <a className="dpill light small" href="/pricing">With a pass</a>}
+                    : <a className="dpill light small" href="/pricing">With a paid plan</a>}
                 </div>
               </li>
             );

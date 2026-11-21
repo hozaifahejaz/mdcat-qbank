@@ -52,7 +52,7 @@ export default function Paper() {
 
       <p className="note">
         Each province sets its own MDCAT paper on the same PMDC syllabus, and this is the paper UHS published. The questions are rewritten in our own words, and the answers and explanations are our own working, since UHS published no answer key.
-        The full paper of {mdcat.mcqs} questions can be sat under the clock with a Season Pass.
+        The full paper of {mdcat.mcqs} questions can be sat under the clock with a paid plan.
       </p>
     </Shell>
   );

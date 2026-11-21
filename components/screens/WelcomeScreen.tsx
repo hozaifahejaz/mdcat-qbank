@@ -70,7 +70,7 @@ function Welcome({ user }: { user: AccountUser }) {
       </section>
 
       <section className="dcard panel wel-step" aria-labelledby="wel-test">
-        <h2 id="wel-test"><span className="wel-n">1</span>Which test are you preparing for?</h2>
+        <h2 id="wel-test"><span className="wel-n">1</span>What are you practicing for?</h2>
         <div className="wel-opts" role="radiogroup" aria-labelledby="wel-test">
           {choices.map((b) => (
             <button key={b.id} type="button" role="radio" aria-checked={bank === b.id} className="wel-opt" onClick={() => setBank(b.id)}>
