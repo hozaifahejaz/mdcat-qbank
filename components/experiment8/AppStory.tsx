@@ -51,7 +51,6 @@ export default function AppStory() {
       <div className="x3-wrap x7-storyin">
         <div className="x7-steps">
           <div className="x7-step x7-intro x8-appintro" data-step={0}>
-            <span className="x3-tag">The app</span>
             <h2>Practice that<span>explains itself.</span></h2>
             <p>Every chapter, every mock and every mistake in one place, with the reason behind every answer.</p>
             <small className="x3-proof">iOS and Android apps coming soon.</small>

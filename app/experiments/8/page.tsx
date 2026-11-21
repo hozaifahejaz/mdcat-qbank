@@ -28,7 +28,7 @@ const faqs = [
   { q: "Where do the questions come from?", a: "Every question is written for this bank from the syllabus and its textbooks, then checked against the textbook." },
   { q: "Which tests do you cover?", a: "PMDC MDCAT, NUMS and the AKU test, plus FSc chapter practice. Engineering and law come later." },
   { q: "Does it follow the current syllabus?", a: "Yes. Questions are filed under the chapters of the PMDC MDCAT syllabus, with separate chapter lists for NUMS and AKU." },
-  { q: "How do I pay?", a: site.payments ? "JazzCash, Easypaisa, card or bank transfer. One payment, no renewal." : "Payments open soon: JazzCash, Easypaisa, card or bank transfer, as one payment with no renewal. The free questions are open now." },
+  { q: "How do I pay?", a: site.payments ? "JazzCash, Easypaisa, card or bank transfer. The 3-month plan renews for less." : "Payments open soon: JazzCash, Easypaisa, card or bank transfer. The 3-month plan renews for less. The free questions are open now." },
   { q: "Does it work on a phone?", a: "Yes. The site is built for phones first and works in any browser. iOS and Android apps are coming soon." },
 ];
 
@@ -77,7 +77,6 @@ export default function Experiment8() {
         <section id="faq" className="x3-sec">
           <div className="x3-wrap x3-faqwrap">
             <div className="x3-head">
-              <span className="x3-tag">FAQ</span>
               <h2>Questions,<br /><span className="mute">answered.</span></h2>
             </div>
             <div className="x3-faq">

@@ -27,8 +27,7 @@ export default function Pricing({ payments, soon = false }: { payments: boolean;
     <section id="pricing" className="x3-sec">
       <div className="x3-wrap">
         <div className="x3-head">
-          <span className="x3-tag">Pricing · {area.name}</span>
-          <h2>Pay for your area.<br /><span className="mute">Nothing else.</span></h2>
+          <h2>Pricing</h2>
         </div>
         {later ? (
           <div className="x3-card x8-later" key={id}>
@@ -59,7 +58,7 @@ export default function Pricing({ payments, soon = false }: { payments: boolean;
               <a className="x3-btn x3-white" href="/signup">Get 3 months</a>
               <ul>
                 {page.perks.map((p) => <li key={p}><Check />{p}</li>)}
-                <li><Check />One payment, no renewal</li>
+                <li><Check />Renew for less when it ends</li>
               </ul>
             </div>
             <div className="x3-card plan">
@@ -69,7 +68,7 @@ export default function Pricing({ payments, soon = false }: { payments: boolean;
               <a className="x3-btn x3-blue" href={buy("monthly")}>Get 1 month</a>
               <ul>
                 <li><Check />Everything in 3 months</li>
-                <li><Check />30 days, no renewal</li>
+                <li><Check />30 days of full access</li>
               </ul>
             </div>
           </div>
