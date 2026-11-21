@@ -29,24 +29,19 @@
 .x8-later p { color: var(--x-mute); line-height: 1.55; max-width: 26em; }
 .x8-orbitsoon { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 10px; margin-top: 12px; color: var(--x-mute); font-size: .9375rem; text-align: center; }
 
-/* Floating icons on both sides of the hero, in the area's colour */
+/* One drawn object floating on each side of the hero, matching the area */
 .x8-herowrap { position: relative; }
 .x8-herowrap > .x4-hero { position: relative; z-index: 1; }
 .x8-floats { position: absolute; inset: 0; pointer-events: none; z-index: 0; }
-.x8-side { position: absolute; top: 0; width: 200px; height: 520px; }
-.x8-left { left: max(16px, calc(50% - 680px)); }
-.x8-right { right: max(16px, calc(50% - 680px)); }
-.x8-float { position: absolute; display: grid; place-items: center; animation: x8-in .7s var(--x8-ease) both; animation-delay: calc(var(--i) * 60ms); }
-.x8-bob { display: grid; place-items: center; width: 64px; height: 64px; border-radius: 18px; background: var(--x-card); box-shadow: var(--x-shadow-lg, 0 10px 30px rgba(0,0,0,.08)), inset 0 0 0 1px var(--x-line); animation: x8-bob 6s ease-in-out infinite; animation-delay: calc(var(--i) * -1.1s); }
-.x8-bob .mark { width: 28px; height: 28px; }
-.x8-left .x8-f0 { top: 70px; left: 20px; transform: rotate(-8deg); }
-.x8-left .x8-f1 { top: 190px; left: 120px; transform: rotate(6deg); }
-.x8-left .x8-f2 { top: 310px; left: 30px; transform: rotate(-4deg); }
-.x8-right .x8-f0 { top: 80px; right: 30px; transform: rotate(7deg); }
-.x8-right .x8-f1 { top: 205px; right: 125px; transform: rotate(-6deg); }
-.x8-right .x8-f2 { top: 320px; right: 20px; transform: rotate(5deg); }
-.x8-f1 .x8-bob { width: 56px; height: 56px; border-radius: 16px; }
-@keyframes x8-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
-@keyframes x8-in { from { scale: .4; translate: 0 18px; } }
+.x8-obj { position: absolute; top: 120px; width: clamp(150px, 13vw, 200px); aspect-ratio: 1; animation: x8-in .8s var(--x8-ease) both; }
+.x8-obj.x8-left { left: max(12px, calc(50% - 690px)); rotate: -10deg; }
+.x8-obj.x8-right { right: max(12px, calc(50% - 690px)); top: 150px; rotate: 9deg; animation-delay: .08s; }
+.x8-bob { display: block; width: 100%; height: 100%; filter: drop-shadow(0 18px 22px rgba(15, 23, 42, .16)); animation: x8-bob 7s ease-in-out infinite; }
+.x8-right .x8-bob { animation-delay: -3.5s; }
+.x8-spin { animation: x8-spin 24s linear infinite; }
+.x8-spin.x8-back { animation-direction: reverse; animation-duration: 14s; }
+@keyframes x8-bob { 0%, 100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-16px) rotate(3deg); } }
+@keyframes x8-spin { to { transform: rotate(360deg); } }
+@keyframes x8-in { from { scale: .5; translate: 0 30px; } }
 @media (max-width: 1180px) { .x8-floats { display: none; } }
-@media (prefers-reduced-motion: reduce) { .x8-float, .x8-bob { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .x8-obj, .x8-bob, .x8-spin { animation: none; } }
