@@ -88,7 +88,6 @@ export default function Home() {
         <section id="faq" className="x3-sec">
           <div className="x3-wrap x3-faqwrap">
             <div className="x3-head">
-              <span className="x3-tag">FAQ</span>
               <h2>Questions,<br /><span className="mute">answered.</span></h2>
             </div>
             <div className="x3-faq">

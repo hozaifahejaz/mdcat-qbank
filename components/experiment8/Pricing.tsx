@@ -27,8 +27,7 @@ export default function Pricing({ payments, soon = false }: { payments: boolean;
     <section id="pricing" className="x3-sec">
       <div className="x3-wrap">
         <div className="x3-head">
-          <span className="x3-tag">Pricing · {area.name}</span>
-          <h2>Pay for your area.<br /><span className="mute">Nothing else.</span></h2>
+          <h2>One payment.<br /><span className="mute">No renewal.</span></h2>
         </div>
         {later ? (
           <div className="x3-card x8-later" key={id}>
