@@ -29,15 +29,15 @@
 .x8-later p { color: var(--x-mute); line-height: 1.55; max-width: 26em; }
 .x8-orbitsoon { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 10px; margin-top: 12px; color: var(--x-mute); font-size: .9375rem; text-align: center; }
 
-/* One drawn object floating on each side of the hero: a line drawing in the area's colour on a soft tinted tile,
-   the same style as the subject and test marks */
+/* One drawn object floating on each side of the hero: a line drawing in the area's colour with a soft fill, the same
+   style as the subject and test marks, with no tile behind it */
 .x8-herowrap { position: relative; }
 .x8-herowrap > .x4-hero { position: relative; z-index: 1; }
 .x8-floats { position: absolute; inset: 0; pointer-events: none; z-index: 0; }
-.x8-obj { position: absolute; top: 150px; width: clamp(110px, 9.8vw, 140px); aspect-ratio: 1; animation: x8-in .8s var(--x8-ease) both; }
+.x8-obj { position: absolute; top: 150px; width: clamp(110px, 10vw, 144px); aspect-ratio: 1; animation: x8-in .8s var(--x8-ease) both; }
 .x8-obj.x8-left { left: max(24px, calc(50% - 620px)); rotate: -8deg; }
 .x8-obj.x8-right { right: max(24px, calc(50% - 620px)); top: 190px; rotate: 7deg; animation-delay: .08s; }
-.x8-bob { display: block; width: 100%; height: 100%; padding: 15%; border-radius: 30%; background: color-mix(in srgb, currentColor 9%, var(--x-card)); box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 16%, transparent), var(--x-shadow, 0 8px 24px rgba(15, 23, 42, .06)); animation: x8-bob 7s ease-in-out infinite; }
+.x8-bob { display: block; width: 100%; height: 100%; animation: x8-bob 7s ease-in-out infinite; }
 .x8-bob svg { display: block; overflow: visible; }
 .x8-right .x8-bob { animation-delay: -3.5s; }
 .x8-spin { animation: x8-spin 24s linear infinite; }
