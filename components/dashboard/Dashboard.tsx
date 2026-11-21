@@ -152,7 +152,7 @@ export function Body({ data, name, free, coachHidden, onShowCoach, progress, onB
         {showMock ? (
         <div className="kpi">
           <h2><span className="kpi-ic" style={{ color: "var(--warn)" }}><Icon name="mock" /></span>Latest mock</h2>
-          <strong>{lastMock ? <>{lastMock.score}<small>/180</small></> : "–"}</strong>
+          <strong>{lastMock ? <>{lastMock.score}<small>/{lastMock.total}</small></> : "–"}</strong>
           <p className="muted">
             {change !== null ? <><b className={change >= 0 ? "up" : "down"}>{change >= 0 ? "+" : ""}{change}</b> on the mock before</> : "Sit one to see your score"}
           </p>

@@ -5,7 +5,7 @@ import AppShell, { PageHead } from "@/components/app/AppShell";
 import Empty from "@/components/app/Empty";
 import type { TestResult } from "@/lib/dashboard-data";
 import { band, day, kindNames, pct } from "@/lib/format";
-import { hoursText, type MockFormatId, mockFormat, mockFormats } from "@/lib/site";
+import { hoursText, type MockFormatId, mockFormat, mockFormats, NEG_MARK } from "@/lib/site";
 import { type Catalog, testHref, watchCatalog, watchHistory } from "@/lib/study";
 import type { AccountUser } from "@/lib/user";
 
@@ -55,7 +55,7 @@ function Mocks({ user }: { user: AccountUser }) {
   const recent = useRecent();
   // Opens on the paper practiced last: the NUMS mock for a NUMS student, the MDCAT mock for everyone else.
   const [bank, setBank] = useState<MockFormatId>("mdcat");
-  useEffect(() => { try { if (localStorage.getItem(BANK_KEY) === "nums") setBank("nums"); } catch {} }, []);
+  useEffect(() => { try { const last = localStorage.getItem(BANK_KEY); if (last === "nums" || last === "aku") setBank(last); } catch {} }, []);
   const format = mockFormats[bank];
   const facts = `${countOf(format)} MCQs · ${hoursText(format.minutes)}`;
   const catalog = useCatalog(bank);
@@ -170,7 +170,7 @@ function MockIntro() {
         <div className="intro-facts">
           <div><b>{mini ? 30 : countOf(format)}</b><span className="muted">MCQs</span></div>
           <div><b>{mini ? "30 min" : format.minutes % 60 ? `${format.minutes} min` : `${format.minutes / 60} h`}</b><span className="muted">time limit</span></div>
-          <div><b>0</b><span className="muted">negative marks</span></div>
+          <div><b>{!mini && format.negFirst ? NEG_MARK : 0}</b><span className="muted">{!mini && format.negFirst ? `off per wrong answer, Q1 to ${format.negFirst}` : "negative marks"}</span></div>
         </div>
         <Split format={format} />
         <SplitLegend format={format} />
@@ -183,6 +183,7 @@ function MockIntro() {
           <li>Answers and explanations open when you submit.</li>
           <li>If you switch devices, the test picks up where you left off.</li>
           {mini && <li>Free accounts get one mini mock.</li>}
+          {!mini && format.negFirst > 0 && <li>Questions 1 to {format.negFirst} are the Science Achievement part: a wrong answer takes off {NEG_MARK} marks, a blank takes off nothing. Questions {format.negFirst + 1} to {countOf(format)} have no penalty.</li>}
         </ul>
         {!catalog ? <button type="button" className="dpill dark block" disabled>Loading…</button>
           : !mini && !catalog.paid ? <a className="dpill dark block" href="/pricing">Full mocks come with a paid plan</a>
