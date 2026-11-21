@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
-import Logo, { Markhor } from "@/components/Logo";
+import Logo from "@/components/Logo";
 import Ahead, { AheadReading } from "@/components/Ahead";
 import ThemeToggle from "@/components/ThemeToggle";
-import { ExamMark, SubjectMark } from "@/components/Marks";
 import { PublicFooter } from "@/components/public/Frame";
 import Experience from "@/components/experiment4/Experience";
 import { ExamProvider } from "@/components/experiment4/ExamState";
 import Pricing from "@/components/experiment8/Pricing";
 import AppStory from "@/components/experiment8/AppStory";
+import Orbit from "@/components/experiment8/Orbit";
 import { bankSize, subjects as subjectPages } from "@/lib/public";
 import { site } from "@/lib/site";
 import "../../landing-new.css";
@@ -20,18 +20,6 @@ import "./exp8.css";
    priced for the area picked in the hero, then its app walkthrough. Every other section is the live landing
    page's, unchanged. The live landing page at / is untouched. Noindex. */
 export const metadata: Metadata = { title: `Experiment 8 · ${site.name}`, robots: { index: false, follow: false } };
-
-const subjects = [
-  { name: "Biology", c: "#11804a" },
-  { name: "Chemistry", c: "#2445ff" },
-  { name: "Physics", c: "#b06a00" },
-  { name: "English", c: "#8a63ff" },
-  { name: "Logical Reasoning", c: "#c9a400" },
-];
-const outer = [
-  { name: "PMDC MDCAT", id: "mdcat" }, { name: "NUMS", id: "nums" }, { name: "AKU", id: "aku" }, { name: "Past papers" },
-  { name: "FSc Part 1", id: "fsc1" }, { name: "FSc Part 2", id: "fsc2" }, { name: "Timed mocks" }, { name: "My mistakes" },
-];
 
 const faqs = [
   { q: "Is this a coaching course?", a: "No. It's a practice tool: MCQs, explanations, timed mocks and past papers, for a fraction of a course." },
@@ -73,23 +61,12 @@ export default function Experiment8() {
             <div className="x3-head">
               <h2>Every subject.<br />One bank.</h2>
             </div>
-            <div className="orbit" aria-label="Subjects and banks">
-              <div className="orb r2">
-                {outer.map((o, i) => (
-                  <span key={o.name} className="sat" style={{ ["--a" as string]: `${(360 / outer.length) * i}deg` }}><i>{o.id && <ExamMark id={o.id} size={16} />}{o.name}</i></span>
-                ))}
-              </div>
-              <div className="orb r1">
-                {subjects.map((s, i) => (
-                  <span key={s.name} className="sat" style={{ ["--a" as string]: `${(360 / subjects.length) * i + 20}deg` }}><i><em style={{ color: s.c }}><SubjectMark subject={s.name} size={16} /></em>{s.name}</i></span>
-                ))}
-              </div>
-              <div className="core"><Markhor height={52} /></div>
-            </div>
-            <p className="x3-links">
-              {subjectPages.map((x) => <a key={x.slug} href={`/mdcat/${x.slug}`}>{x.name} MCQs</a>)}
-              <a href="/mdcat/syllabus">Syllabus</a>
-            </p>
+            <Orbit links={
+              <p className="x3-links">
+                {subjectPages.map((x) => <a key={x.slug} href={`/mdcat/${x.slug}`}>{x.name} MCQs</a>)}
+                <a href="/mdcat/syllabus">Syllabus</a>
+              </p>
+            } />
           </div>
         </section>
 
