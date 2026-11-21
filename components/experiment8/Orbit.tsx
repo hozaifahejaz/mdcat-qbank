@@ -17,7 +17,8 @@ const medicalOuter: Sat[] = [
 ];
 const markName = (s: string) => (s === "Maths" ? "Mathematics" : s);
 
-export default function Orbit({ links }: { links: React.ReactNode }) {
+/* soon: on the live landing an area with no open test says so under its orbit. */
+export default function Orbit({ links, soon = false }: { links: React.ReactNode; soon?: boolean }) {
   const { area } = useArea();
   const subjects = area.page.subjects;
   const outer: Sat[] = area.id === "medical" ? medicalOuter : [...area.exams.slice(0, 6).map((e) => ({ name: e.name, id: e.id })), ...tools];
@@ -41,6 +42,7 @@ export default function Orbit({ links }: { links: React.ReactNode }) {
         <div className="core"><Markhor height={52} /></div>
       </div>
       {area.id === "medical" && links}
+      {soon && !area.exams.some((e) => e.live) && <p className="x8-orbitsoon"><span className="x8-soonbadge">Coming soon</span>{area.name} subjects and tests are on the way.</p>}
     </>
   );
 }

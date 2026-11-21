@@ -20,7 +20,7 @@ const steps = [
 /* A small card that floats beside the phone, one per step, in the way the live landing floats cards around its
    headline: it names the detail worth noticing on that screen. */
 const floats = [
-  { t: "Every answer explained", s: "In every area" },
+  { t: "Every answer explained", s: "In every subject" },
   { t: "Syllabus order", s: "Pick up where you stopped" },
   { t: "Why B, and why not A, C, D", s: "A reason for each option" },
   { t: "Real count, real clock", s: "MDCAT: 180 MCQs in 3 hours" },

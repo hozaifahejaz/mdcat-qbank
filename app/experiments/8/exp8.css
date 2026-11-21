@@ -18,3 +18,13 @@
 
 /* Orbit: a coloured dot for subjects that have no mark yet */
 .x8-dot { display: block; width: 8px; height: 8px; border-radius: 50%; }
+
+/* Coming soon (live landing only): tickets for tests not open yet, the pricing card and the orbit line for an
+   area that isn't open yet */
+.x4-ticket.x4-later .x4-tk-top, .x4-ticket.x4-later .x4-tk-facts { filter: saturate(.35); }
+.x4-soonstamp { justify-self: start; font-style: normal; font-size: .6875rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; padding: 3px 8px; border-radius: 6px; color: var(--x-mute); background: var(--x-card); box-shadow: inset 0 0 0 1px var(--x-line); }
+.x8-soonbadge { display: inline-block; font-size: .75rem; font-weight: 700; padding: 4px 10px; border-radius: 999px; color: var(--x-mute); background: var(--x-bg); box-shadow: inset 0 0 0 1px var(--x-line); }
+.x8-later { max-width: 560px; margin: 8px auto 0; padding: 36px 28px; display: grid; justify-items: center; gap: 14px; text-align: center; animation: x8-lift .5s var(--x8-ease) backwards; }
+.x8-later h3 { font-size: clamp(1.5rem, 1.1rem + 1.2vw, 2rem); font-weight: 800; letter-spacing: -0.03em; }
+.x8-later p { color: var(--x-mute); line-height: 1.55; max-width: 26em; }
+.x8-orbitsoon { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 10px; margin-top: 12px; color: var(--x-mute); font-size: .9375rem; text-align: center; }

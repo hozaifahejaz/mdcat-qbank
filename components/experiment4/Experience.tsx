@@ -10,7 +10,9 @@ import { ExamMark } from "@/components/Marks";
    residency...). Until the visitor touches it, it turns through the areas so they can see the page adapt. Picking one
    changes the test cards under it and every section below, which read the same choice from ExamState. */
 
-export default function Experience() {
+/* soon: the live landing page passes it so tests and areas that aren't open yet say "Coming soon" (experiment 4
+   shows every area as done). */
+export default function Experience({ soon = false }: { soon?: boolean }) {
   const { shown, touched, open, setOpen, choose } = useArea();
 
   return (
@@ -29,7 +31,7 @@ export default function Experience() {
           </span>
         </h1>
         {!touched && <p className="x4-hint">Tap to choose yours</p>}
-        <AreaCard key={shown.id} area={shown} />
+        <AreaCard key={shown.id} area={shown} soon={soon} />
       </div>
     </header>
   );
@@ -108,7 +110,7 @@ const facts = (e: AnyExam): [string, string][] => {
   return time ? [["Paper", paper], ["Time", time]] : [["Paper", paper]];
 };
 
-function AreaCard({ area }: { area: Area }) {
+function AreaCard({ area, soon }: { area: Area; soon: boolean }) {
   const n = area.exams.length;
   const start = Math.max(0, palette.indexOf(area.colour));
   return (
@@ -116,14 +118,16 @@ function AreaCard({ area }: { area: Area }) {
       <ul className="x4-fan" aria-label={`Tests in ${area.name}`}>
         {area.exams.map((e, i) => {
           const c = palette[(start + i) % palette.length];
+          const later = soon && !e.live;
           return (
-            <li key={e.id} className="x4-ticket" style={{ ["--r" as string]: n > 5 ? `${i % 2 ? 1.5 : -1.5}deg` : `${(i - (n - 1) / 2) * 3}deg`, ["--d" as string]: `${i * 60}ms`, ["--c" as string]: c }}>
+            <li key={e.id} className={later ? "x4-ticket x4-later" : "x4-ticket"} style={{ ["--r" as string]: n > 5 ? `${i % 2 ? 1.5 : -1.5}deg` : `${(i - (n - 1) / 2) * 3}deg`, ["--d" as string]: `${i * 60}ms`, ["--c" as string]: c }}>
               <div className="x4-tk-top">
                 <span className="x4-tk-row">
                   <small>No. {String(i + 1).padStart(2, "0")}</small>
                   <span className="x4-tk-mark">{marks.has(e.id) ? <ExamMark id={e.id} size={18} /> : <TrackMark id={area.id} size={18} />}</span>
                 </span>
                 <b>{e.name}</b>
+                {later && <em className="x4-soonstamp">Coming soon</em>}
               </div>
               <div className="x4-tk-cut" aria-hidden="true" />
               <dl className="x4-tk-facts">
@@ -140,7 +144,7 @@ function AreaCard({ area }: { area: Area }) {
       </ul>
       <div className="x4-go">
         <a className="x3-btn x3-blue x3-big" href="/signup">Start free</a>
-        <small className="x3-proof">100 questions free. No card needed.</small>
+        <small className="x3-proof">{soon && !area.exams.some((e) => e.live) ? `${area.name} is coming soon. Pre-medical is open now, with 100 questions free.` : "100 questions free. No card needed."}</small>
       </div>
     </div>
   );
