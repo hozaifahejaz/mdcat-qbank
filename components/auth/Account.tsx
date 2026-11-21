@@ -23,6 +23,7 @@ function AccountBody({ me }: { me: AccountUser }) {
   const [saved, setSaved] = useState("");
   const [error, setError] = useState("");
   const [busyId, setBusyId] = useState("");
+  const [pw, setPw] = useState({ current: "", next: "", note: "", bad: "", busy: false });
 
   useEffect(() => {
     // The list as last seen shows at once; the fresh one follows.
@@ -41,6 +42,18 @@ function AccountBody({ me }: { me: AccountUser }) {
       setSaved("Saved.");
     } catch (err) {
       setError(friendlyError(err));
+    }
+  }
+
+  async function changePassword(e: React.FormEvent) {
+    e.preventDefault();
+    if (pw.next.length < 8) return setPw({ ...pw, note: "", bad: "Use at least 8 characters for your new password." });
+    setPw({ ...pw, note: "", bad: "", busy: true });
+    try {
+      await api("/api/auth/change-password", { body: { current: pw.current, password: pw.next } });
+      setPw({ current: "", next: "", note: "Password changed. Any other device is signed out.", bad: "", busy: false });
+    } catch (err) {
+      setPw({ ...pw, note: "", bad: friendlyError(err), busy: false });
     }
   }
 
@@ -82,6 +95,19 @@ function AccountBody({ me }: { me: AccountUser }) {
           </div>
           {saved && <span className="muted small" role="status">{saved}</span>}
         </form>
+        {user.methods.includes("email") && (
+          <form className="fld" onSubmit={changePassword}>
+            <span>Change password</span>
+            <input type="password" autoComplete="current-password" placeholder="Current password" aria-label="Current password" value={pw.current} onChange={(e) => setPw({ ...pw, current: e.target.value, note: "", bad: "" })} />
+            <div className="inline">
+              <input type="password" autoComplete="new-password" placeholder="New password" aria-label="New password" value={pw.next} onChange={(e) => setPw({ ...pw, next: e.target.value, note: "", bad: "" })} />
+              <button className="dpill dark small" disabled={pw.busy || !pw.current || !pw.next}>{pw.busy ? "Saving" : "Change"}</button>
+            </div>
+            {pw.note && <span className="muted small" role="status">{pw.note}</span>}
+            {pw.bad && <span className="note-bad" role="alert">{pw.bad}</span>}
+          </form>
+        )}
+        <p className="muted small">To change your email, <a className="link" href="/contact?topic=account">message support</a> from your current address.</p>
       </section>
 
       <section className="dcard panel">

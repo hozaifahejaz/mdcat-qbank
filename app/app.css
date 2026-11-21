@@ -719,3 +719,6 @@ dl.kpis.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .utable .badge { white-space: normal; height: auto; display: inline-block; line-height: 1.35; padding-block: 3px; border-radius: 8px; }
   .utable .link-row b, .utable .link-row .small { display: block; max-width: 36vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 }
+/* End test, in the top bar of timed tests and mocks. */
+.pbtn.pend { margin: 0; border: 1px solid var(--line); }
+@media (max-width: 420px) { .pbtn.pend { padding-inline: 8px; font-size: .8125rem; } }

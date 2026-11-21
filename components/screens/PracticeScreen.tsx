@@ -10,7 +10,7 @@ import { band, pct } from "@/lib/format";
 import { type Catalog, type ChapterPool, type Filter, type Pool, doneCount, filters, getPool, openCount, poolMatch, sumPools, testHref, totalCount, warmCatalog, warmPools, watchCatalog, watchPools } from "@/lib/study";
 
 const counts = [10, 25, 50, 100];
-const filterNames: Record<Filter, string> = { unused: "Unused", incorrect: "Incorrect", marked: "Marked", omitted: "Omitted", correct: "Correct" };
+const filterNames: Record<Filter, string> = { unused: "Unused", incorrect: "Incorrect", marked: "Bookmarked", omitted: "Omitted", correct: "Correct" };
 const nf = (n: number) => n.toLocaleString("en-GB");
 
 export default function PracticeScreen() {
@@ -122,6 +122,9 @@ function BankPractice({ bank, onBank }: { bank: Bank; onBank: (b: Bank) => void 
   const chosenChapters = sel.kind === "chapters" ? [...sel.set] : [];
   const pool = useMemo(() => openCount(catalog, chosenSubjects, chosenChapters), [catalog, sel]); // eslint-disable-line react-hooks/exhaustive-deps
   const locked = totalCount(catalog, chosenSubjects, chosenChapters) - pool;
+  // For a free account: the whole free set in this bank and how much of it is already answered.
+  const freeAll = catalog?.chapters.reduce((n, c) => n + c.open, 0) ?? 0;
+  const freeDone = Math.min(freeAll, catalog?.chapters.reduce((n, c) => n + c.answered, 0) ?? 0);
 
   function toggleSubject(s: string) {
     setTopic(null);
@@ -280,7 +283,7 @@ function BankPractice({ bank, onBank }: { bank: Bank; onBank: (b: Bank) => void 
           <div className="chips big">
             {counts.map((c) => <button key={c} type="button" className="chip" aria-pressed={count === c} onClick={() => setCount(c)}>{c}</button>)}
           </div>
-          {catalog && !catalog.paid && locked > 0 && <p className="muted small">Free plan: {nf(pool)} of {nf(pool + locked)} questions here. <a className="link" href="/pricing">A paid plan opens them all.</a></p>}
+          {catalog && !catalog.paid && locked > 0 && <p className="muted small">Free plan: {nf(pool)} of {nf(pool + locked)} questions here are open to you, and you have answered {nf(freeDone)} of your {nf(freeAll)} free questions. <a className="link" href="/pricing">A paid plan opens them all.</a></p>}
         </section>
 
       <div className="setup-go">

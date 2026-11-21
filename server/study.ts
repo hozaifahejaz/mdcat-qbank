@@ -469,7 +469,10 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
           : several.length ? several.join(" + ") : "Mixed practice";
         if (bank.id !== "mdcat") title = `${bank.name} · ${title}`.slice(0, 120);
       }
-      picks.push(c.db.prepare(`SELECT DISTINCT id, subject FROM bank_served WHERE ${where.join(" AND ")} ORDER BY random() LIMIT ${asked.length ? 200 : count}`).bind(...args));
+      // A student's first few sets lead with easy questions, so the first minutes are wins, not a hard applied item.
+      const gentle = `CASE WHEN (SELECT count(*) FROM answers WHERE user_id = ? AND counted_at IS NOT NULL) < 20
+        THEN (SELECT CASE q.difficulty WHEN 'easy' THEN 0 WHEN 'moderate' THEN 1 ELSE 2 END FROM questions q WHERE q.id = bank_served.id) ELSE 0 END`;
+      picks.push(c.db.prepare(`SELECT DISTINCT id, subject FROM bank_served WHERE ${where.join(" AND ")} ORDER BY ${asked.length ? "" : `${gentle}, `}random() LIMIT ${asked.length ? 200 : count}`).bind(...args, ...(asked.length ? [] : [me.id])));
       title ||= "Practice";
     }
 
