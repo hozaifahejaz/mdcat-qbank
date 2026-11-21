@@ -27,7 +27,7 @@ export default function Pricing({ payments, soon = false }: { payments: boolean;
     <section id="pricing" className="x3-sec">
       <div className="x3-wrap">
         <div className="x3-head">
-          <h2>Simple plans.<br /><span className="mute">Start free.</span></h2>
+          <h2>Pricing</h2>
         </div>
         {later ? (
           <div className="x3-card x8-later" key={id}>
