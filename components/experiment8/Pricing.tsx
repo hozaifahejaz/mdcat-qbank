@@ -1,14 +1,13 @@
 "use client";
 
 import { Markhor } from "@/components/Logo";
-import { tracks, type TrackId } from "@/lib/catalogue";
+import type { TrackId } from "@/lib/catalogue";
 import { trackPages } from "@/lib/track-pages";
 import { useArea } from "@/components/experiment4/ExamState";
-import TrackMark from "@/components/experiment4/TrackMark";
 
-/* Pricing for landing experiment 8, taken from experiment 7: area chips over the three plans (Free, 3 months in the
-   middle, 1 month), priced per area. It shares the area with the hero, so picking an area in either place shows the
-   same one in both. */
+/* Pricing for landing experiment 8, taken from experiment 7: the three plans (Free, 3 months in the middle, 1 month),
+   priced for the one area picked in the hero. No area chips here (Huzaifa 2026-11-21): to see another area's prices,
+   pick it in the hero. */
 
 const buy = (plan: string) => `/signup?next=${encodeURIComponent(`/checkout?plan=${plan}`)}`;
 const rs = (n: number) => n.toLocaleString("en-GB");
@@ -17,7 +16,7 @@ const Check = () => (
 );
 
 export default function Pricing({ payments }: { payments: boolean }) {
-  const { area, choose } = useArea();
+  const { area } = useArea();
   const id = area.id as TrackId;
   const page = trackPages[id];
   const { month, three } = page.price;
@@ -26,15 +25,8 @@ export default function Pricing({ payments }: { payments: boolean }) {
     <section id="pricing" className="x3-sec">
       <div className="x3-wrap">
         <div className="x3-head">
-          <span className="x3-tag">Pricing</span>
+          <span className="x3-tag">Pricing · {area.name}</span>
           <h2>Pay for your area.<br /><span className="mute">Nothing else.</span></h2>
-        </div>
-        <div className="x8-chips" role="tablist" aria-label="Area">
-          {tracks.map((x) => (
-            <button key={x.id} type="button" role="tab" aria-selected={x.id === id} className={x.id === id ? "on" : ""} style={{ ["--c" as string]: x.colour }} onClick={() => choose(x.id as TrackId)}>
-              <TrackMark id={x.id} size={16} />{x.name}
-            </button>
-          ))}
         </div>
         <div className="x3-plans x8-plans" key={id}>
           <div className="x3-card plan">

@@ -17,7 +17,7 @@ import "./exp8.css";
 
 /* Landing page experiment 8: the live landing page with two parts swapped in from earlier experiments. The hero is
    experiment 4's "I'm preparing for ___" with the area's tests as admit tickets, and the pricing is experiment 7's,
-   with area chips over the plans (it follows the area picked in the hero). Every other section is the live landing
+   priced for the area picked in the hero, then its app walkthrough. Every other section is the live landing
    page's, unchanged. The live landing page at / is untouched. Noindex. */
 export const metadata: Metadata = { title: `Experiment 8 · ${site.name}`, robots: { index: false, follow: false } };
 
@@ -31,15 +31,6 @@ const subjects = [
 const outer = [
   { name: "PMDC MDCAT", id: "mdcat" }, { name: "NUMS", id: "nums" }, { name: "AKU", id: "aku" }, { name: "Past papers" },
   { name: "FSc Part 1", id: "fsc1" }, { name: "FSc Part 2", id: "fsc2" }, { name: "Timed mocks" }, { name: "My mistakes" },
-];
-
-const tests = [
-  { name: "PMDC MDCAT", id: "mdcat", c: "#2f55f0", field: "Medical", live: true },
-  { name: "NUMS MDCAT", id: "nums", c: "#b06a00", field: "Medical", live: true },
-  { name: "AKU test", id: "aku", c: "#8a63ff", field: "Medical", live: true },
-  { name: "ECAT", id: "ecat", field: "Engineering" },
-  { name: "NUST NET", id: "net", field: "Engineering" },
-  { name: "LAT", id: "lat", field: "Law" },
 ];
 
 const faqs = [
@@ -77,29 +68,6 @@ export default function Experiment8() {
       <Experience />
 
       <main>
-        <section className="x3-sec" aria-labelledby="tests-h">
-          <div className="x3-wrap">
-            <div className="x3-head">
-              <span className="x3-tag">Tests</span>
-              <h2 id="tests-h">Three tests now.<br /><span className="mute">More every season.</span></h2>
-            </div>
-          </div>
-          <div className="x3-marquee">
-            <ul>
-              {[0, 1].map((copy) => tests.map((t) => (
-                <li key={copy + t.name} aria-hidden={copy === 1 || undefined} className="x3-card tcard">
-                  <span className="thead">
-                    <span className="tmark" style={t.c ? { color: t.c } : undefined}><ExamMark id={t.id} size={24} /></span>
-                    <span className={t.live ? "st live" : "st"}>{t.live ? "Live" : "Coming soon"}</span>
-                  </span>
-                  <b>{t.name}</b>
-                  <small>{t.field}</small>
-                </li>
-              )))}
-            </ul>
-          </div>
-        </section>
-
         <section id="subjects" className="x3-sec x3-grid">
           <div className="x3-wrap">
             <div className="x3-head">
