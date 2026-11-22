@@ -4,7 +4,7 @@ import type { Env } from "./env";
 import { HttpError, assertJson, assertSameOrigin, body, clientIp, fail, json, redirect, safeNext, str } from "./http";
 import { linkEmail, mailConfigured, sendMail } from "./mail";
 import { type Provider, appleConfigured, clearStateCookie, finishOAuth, googleConfigured, startOAuth, verifyGoogleIdToken } from "./oauth";
-import { hit, overLimit, peeked, rateLimit, usedStmt } from "./ratelimit";
+import { hit, overLimit, rateLimit } from "./ratelimit";
 import { type NewSession, type Session, appVersion, bearer, clearSessionCookie, createSession, forgetReusedSessions, getSession, isApp, newSession, note, requireSession, reuseSession, rotateSession } from "./session";
 import { adminRoutes } from "./admin";
 import { visitRoutes } from "./visits";
@@ -16,7 +16,7 @@ import { supportRoutes } from "./support";
 import { offlineRoutes, revokeDevicePacks, revokeUserPacks } from "./offline";
 import { checkCode, sendCode, smsConfigured } from "./sms";
 import { checkCaptcha } from "./turnstile";
-import { checkIntegrity } from "./integrity";
+import { checkIntegrity, integrityMode } from "./integrity";
 import { type UserRow, USER_COLUMNS, createUser, publicUser, publicUserById, userByEmail, userById, userByPhone, userForOAuth } from "./users";
 import { normalisePhone } from "../lib/phone";
 
@@ -32,10 +32,15 @@ const signedIn = (request: Request, s: NewSession, extra: Record<string, unknown
     : json({ ok: true, ...extra }, { headers: { "set-cookie": s.cookie } });
 
 /* Proof that a person, not a script, is signing in: Turnstile on the website; in the app, which can't show Turnstile,
-   Google's Play Integrity check (server/integrity.ts). */
+   Google's Play Integrity check (server/integrity.ts). Anyone can send the header that says "I am the app", so it only
+   stands in for Turnstile while Play Integrity is being enforced. Until then a request that claims to be the app goes
+   through Turnstile like any other (and Play Integrity, if in "log" mode, still notes what it sees). */
 async function humanCheck(c: Ctx, b: Record<string, unknown>): Promise<void> {
-  if (isApp(c.request)) await checkIntegrity(c.env, { action: "auth", deviceKey: str(b.deviceKey, 64), token: b.integrity });
-  else await checkCaptcha(c.env, b.captcha, c.ip);
+  if (isApp(c.request)) {
+    await checkIntegrity(c.env, { action: "auth", deviceKey: str(b.deviceKey, 64), token: b.integrity });
+    if (integrityMode(c.env) === "enforce") return;
+  }
+  await checkCaptcha(c.env, b.captcha, c.ip);
 }
 
 function password(v: unknown): string {
@@ -83,27 +88,43 @@ async function enter(c: Ctx, b: Record<string, unknown>, who: string | { user: U
   return signedIn(c.request, made.out, { ...extra, user: await publicUser(c.db, known.user, known.linked), device });
 }
 
-async function newToken(db: D1Database, userId: string, kind: "verify_email" | "reset_password", ttl: number): Promise<string> {
+/* The name and password someone typed when signing up again with an address nobody has confirmed yet. They wait on the
+   confirmation link (tokens.pending) and only replace the account's own once that link is opened, so a stranger who
+   types someone else's address can't change that account or sign it out. */
+type Pending = { name: string; hash: string };
+
+/* A new link, which ends the earlier ones of its kind. Without `pending` (a resend), the details waiting on the latest
+   earlier link move to the new one. */
+async function newToken(db: D1Database, userId: string, kind: "verify_email" | "reset_password", ttl: number, pending?: Pending): Promise<string> {
   const token = randomToken();
+  const id = await sha256(token);
+  const now = Date.now();
   await db.batch([
-    db.prepare("UPDATE tokens SET used_at = ? WHERE user_id = ? AND kind = ? AND used_at IS NULL").bind(Date.now(), userId, kind),
-    db.prepare("INSERT INTO tokens (id, user_id, kind, expires_at) VALUES (?, ?, ?, ?)").bind(await sha256(token), userId, kind, Date.now() + ttl),
+    db.prepare(`INSERT INTO tokens (id, user_id, kind, expires_at, pending) VALUES (?1, ?2, ?3, ?4,
+        coalesce(?5, (SELECT pending FROM tokens WHERE user_id = ?2 AND kind = ?3 AND used_at IS NULL AND expires_at > ?6 ORDER BY expires_at DESC LIMIT 1)))`)
+      .bind(id, userId, kind, now + ttl, pending ? JSON.stringify(pending) : null, now),
+    db.prepare("UPDATE tokens SET used_at = ? WHERE user_id = ? AND kind = ? AND used_at IS NULL AND id <> ?").bind(now, userId, kind, id),
   ]);
   return token;
 }
 
-async function useToken(db: D1Database, token: unknown, kind: "verify_email" | "reset_password"): Promise<string> {
+async function useToken(db: D1Database, token: unknown, kind: "verify_email" | "reset_password"): Promise<{ userId: string; pending: Pending | null }> {
   const id = await sha256(str(token, 200));
   const row = await db
-    .prepare("UPDATE tokens SET used_at = ?1 WHERE id = ?2 AND kind = ?3 AND used_at IS NULL AND expires_at > ?1 RETURNING user_id")
+    .prepare("UPDATE tokens SET used_at = ?1 WHERE id = ?2 AND kind = ?3 AND used_at IS NULL AND expires_at > ?1 RETURNING user_id, pending")
     .bind(Date.now(), id, kind)
-    .first<{ user_id: string }>();
+    .first<{ user_id: string; pending: string | null }>();
   if (!row) throw fail(400, "link_expired", kind === "verify_email" ? "This confirmation link has expired or was already used." : "This reset link has expired or was already used.");
-  return row.user_id;
+  let pending: Pending | null = null;
+  try {
+    const p = row.pending ? (JSON.parse(row.pending) as Partial<Pending>) : null;
+    if (p && typeof p.name === "string" && typeof p.hash === "string") pending = { name: p.name, hash: p.hash };
+  } catch {}
+  return { userId: row.user_id, pending };
 }
 
-async function sendVerifyEmail(c: Ctx, userId: string, to: string, next: string) {
-  const token = await newToken(c.db, userId, "verify_email", 24 * HOUR);
+async function sendVerifyEmail(c: Ctx, userId: string, to: string, next: string, pending?: Pending) {
+  const token = await newToken(c.db, userId, "verify_email", 24 * HOUR, pending);
   const url = `${c.origin}/auth/callback?verify=${encodeURIComponent(token)}&next=${encodeURIComponent(next)}`;
   const m = linkEmail("Confirm your email", "Tap the button to confirm your email and finish creating your account. The link works for 24 hours.", "Confirm my email", url);
   await sendMail(c.env, to, "Confirm your email", m.text, m.html);
@@ -162,18 +183,13 @@ const routes: Record<string, (c: Ctx) => Promise<Response>> = {
       return json({ status: "check_email" });
     }
     const hash = await hashPassword(pw);
-    let userId: string;
     if (existing) {
-      userId = existing.id;
-      // Nobody confirmed this address yet, so whoever signed up with it before loses their way in, sessions included.
-      await c.db.batch([
-        c.db.prepare("UPDATE users SET name = ?, password_hash = ?, active_session_id = NULL, active_device_id = NULL WHERE id = ?").bind(fullName, hash, userId),
-        c.db.prepare("DELETE FROM sessions WHERE user_id = ?").bind(userId),
-      ]);
+      // Nobody confirmed this address yet. The account is left exactly as it is: the new name and password ride on the
+      // confirmation link and take over only when whoever owns the inbox opens it (verify-email, below).
+      await sendVerifyEmail(c, existing.id, addr, next, { name: fullName, hash });
     } else {
-      userId = await createUser(c.db, { name: fullName, email: addr, passwordHash: hash });
+      await sendVerifyEmail(c, await createUser(c.db, { name: fullName, email: addr, passwordHash: hash }), addr, next);
     }
-    await sendVerifyEmail(c, userId, addr, next);
     return json({ status: "check_email" });
   },
 
@@ -191,8 +207,18 @@ const routes: Record<string, (c: Ctx) => Promise<Response>> = {
   "POST /api/auth/verify-email": async (c) => {
     const b = await body(c.request);
     await rateLimit(c.db, `verify:ip:${c.ip}`, 30, HOUR);
-    const userId = await useToken(c.db, b.token, "verify_email");
-    await c.db.prepare("UPDATE users SET email_verified_at = coalesce(email_verified_at, ?) WHERE id = ?").bind(Date.now(), userId).run();
+    const { userId, pending } = await useToken(c.db, b.token, "verify_email");
+    const confirm = c.db.prepare("UPDATE users SET email_verified_at = coalesce(email_verified_at, ?) WHERE id = ?").bind(Date.now(), userId);
+    if (pending) {
+      // The inbox's owner has spoken: the details from that sign-up are the account's now, and whoever signed up with
+      // this address before (while it was unconfirmed) loses their way in, sessions included.
+      await c.db.batch([
+        c.db.prepare("UPDATE users SET name = ?, password_hash = ?, active_session_id = NULL, active_device_id = NULL WHERE id = ? AND email_verified_at IS NULL").bind(pending.name, pending.hash, userId),
+        c.db.prepare("DELETE FROM sessions WHERE user_id = ? AND (SELECT email_verified_at FROM users WHERE id = ?) IS NULL").bind(userId, userId),
+        revokeUserPacks(c.db, userId),
+        confirm,
+      ]);
+    } else await confirm.run();
     return enter(c, b, userId);
   },
 
@@ -202,27 +228,33 @@ const routes: Record<string, (c: Ctx) => Promise<Response>> = {
     // Only wrong tries count. The tight limit is per address and email together, so someone guessing at an account
     // from elsewhere can't lock its owner out; the wider ones bound guessing from many addresses.
     const limits: [string, number, number][] = [[`signin:ip:${c.ip}`, 30, HOUR], [`signin:pair:${addr}:${c.ip}`, 5, HOUR / 4], [`signin:email:${addr}`, 40, HOUR]];
-    // One trip reads the three counters and the account, while the person-not-a-script check runs beside it.
+    // Every try is counted before the password is looked at, in the same trip that reads the account, so a burst of
+    // guesses sent at the same moment can't all slip in under the limit. A right password gives its count back.
     const [rows, human] = await Promise.all([
       c.db.batch([
-        ...limits.map(([key]) => usedStmt(c.db, key)),
+        ...limits.map(([key, , window]) => hit(c.db, key, window)),
         c.db.prepare(`SELECT ${USER_COLUMNS} FROM users WHERE email = ?`).bind(addr),
         c.db.prepare("SELECT provider FROM identities WHERE user_id = (SELECT id FROM users WHERE email = ?)").bind(addr),
       ]),
       // Its failure is reported after the counters have had their say, as before.
       humanCheck(c, b).then(() => null, (e: unknown) => e),
     ]);
-    limits.forEach(([, limit, window], k) => peeked(rows[k]!.results[0] as { count: number; window_start: number } | undefined, limit, window));
-    if (human) throw human;
+    const uncount = () => c.db.prepare("UPDATE rate_limits SET count = max(0, count - 1) WHERE key IN (?, ?, ?)").bind(...limits.map(([key]) => key));
+    // Past a limit, the try isn't looked at at all, and its counts are taken back: only tries that were looked at and
+    // found wrong stay counted, so hammering one address's limit can't use up the account's wider one and lock its owner out.
+    try {
+      limits.forEach(([, limit, window], k) => overLimit(rows[k]!.results[0] as { count: number; window_start: number } | undefined, limit, window));
+    } catch (e) {
+      await uncount().run();
+      throw e;
+    }
+    if (human) { await uncount().run(); throw human; }
     const u = rows[3]!.results[0] as UserRow | undefined;
     const ok = await verifyPassword(typeof b.password === "string" ? b.password : "", u?.password_hash ?? null);
-    if (!u || !ok) {
-      const counted = await c.db.batch(limits.map(([key, , window]) => hit(c.db, key, window)));
-      limits.forEach(([, limit, window], k) => overLimit(counted[k]!.results[0] as { count: number; window_start: number } | undefined, limit + 1, window));
-      throw fail(401, "invalid_credentials", "That email and password don't match. Check them, or reset your password.");
-    }
-    if (!u.email_verified_at && mailConfigured(c.env)) throw fail(403, "email_not_confirmed", "Please confirm your email first. We sent you a link when you signed up.");
-    return enter(c, b, { user: u, linked: rows[4]!.results as { provider: string }[] });
+    if (!u || !ok) throw fail(401, "invalid_credentials", "That email and password don't match. Check them, or reset your password.");
+    if (!u.email_verified_at && mailConfigured(c.env)) { await uncount().run(); throw fail(403, "email_not_confirmed", "Please confirm your email first. We sent you a link when you signed up."); }
+    const [res] = await Promise.all([enter(c, b, { user: u, linked: rows[4]!.results as { provider: string }[] }), uncount().run()]);
+    return res;
   },
 
   "POST /api/auth/forgot": async (c) => {
@@ -245,7 +277,7 @@ const routes: Record<string, (c: Ctx) => Promise<Response>> = {
     const b = await body(c.request);
     const pw = password(b.password);
     await rateLimit(c.db, `reset:ip:${c.ip}`, 20, HOUR);
-    const userId = await useToken(c.db, b.token, "reset_password");
+    const { userId } = await useToken(c.db, b.token, "reset_password");
     // A new password signs out every other session.
     await c.db.batch([
       c.db.prepare("UPDATE users SET password_hash = ?, email_verified_at = coalesce(email_verified_at, ?), active_session_id = NULL, active_device_id = NULL WHERE id = ?").bind(await hashPassword(pw), Date.now(), userId),

@@ -61,7 +61,17 @@ export function cookie(name: string, value: string, opts: { maxAge: number; same
   return `${name}=${encodeURIComponent(value)}; Path=/; HttpOnly; Secure; SameSite=${opts.sameSite ?? "Lax"}; Max-Age=${opts.maxAge}`;
 }
 
-export const clientIp = (request: Request) => request.headers.get("cf-connecting-ip") ?? "local";
+/* The visitor's address, as limits and counts key on it. An IPv6 visitor holds a whole /64 block (billions of
+   addresses to switch between), so those are cut down to the block: the first four groups. */
+export function ipKey(raw: string): string {
+  if (!raw.includes(":")) return raw;
+  const [head = "", tail] = raw.toLowerCase().split("::");
+  const front = head ? head.split(":") : [];
+  const back = tail ? tail.split(":") : [];
+  const groups = tail === undefined ? front : [...front, ...Array(Math.max(0, 8 - front.length - back.length)).fill("0"), ...back];
+  return `${groups.slice(0, 4).map((g) => g.replace(/^0+(?=.)/, "")).join(":")}::/64`;
+}
+export const clientIp = (request: Request) => ipKey(request.headers.get("cf-connecting-ip") ?? "local");
 
 /* Only paths on this site, so ?next= can't send anyone elsewhere. */
 export function safeNext(raw: unknown): string {

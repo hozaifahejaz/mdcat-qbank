@@ -1,8 +1,11 @@
 name: Deploy to Cloudflare Pages
 
-# main goes to production. Any other branch gets its own preview at <branch>.mdcat-qbank.pages.dev.
+# Only main is deployed. Branches get no preview: a preview is a public copy of the site at
+# <branch>.mdcat-qbank.pages.dev that keeps running whatever code the branch had, against the real database, long
+# after that code was fixed on main. To look at a branch, run it on your own computer (npm run preview).
 on:
   push:
+    branches: [main]
     # The Android app has its own workflow (android.yml); a push that only changes it leaves the site alone.
     paths-ignore:
       - "android/**"
@@ -36,8 +39,7 @@ jobs:
           fi
       - name: Create Pages project if missing
         run: npx wrangler pages project create mdcat-qbank --production-branch=main || true
-      # Database changes in migrations/ go to the D1 database before the new code. Main only, since branch
-      # previews share the same database. Needs the API token to have "D1: Edit" (docs/auth-setup.md); if it
+      # Database changes in migrations/ go to the D1 database before the new code. Needs the API token to have "D1: Edit" (docs/auth-setup.md); if it
       # doesn't, the site still deploys and this step shows the error.
       - name: Apply database migrations
         id: migrate
@@ -54,6 +56,12 @@ jobs:
           if cmp -s live-sitemap.xml out/sitemap.xml; then echo "changed=false" >> "$GITHUB_OUTPUT"; else echo "changed=true" >> "$GITHUB_OUTPUT"; fi
       - name: Deploy
         run: npx wrangler pages deploy --project-name=mdcat-qbank --branch="${GITHUB_REF_NAME}" --commit-dirty=true
+      # Old previews and old production versions stay reachable at their own addresses for ever unless removed, still
+      # running the code they were built from. Every preview goes, and all but the latest three production versions.
+      - name: Remove old deployments
+        if: github.ref_name == 'main'
+        continue-on-error: true
+        run: node scripts/remove-old-deployments.mjs
       # IndexNow: tells Bing and the other search engines that take part which pages to read again, so new and
       # changed pages show up in hours instead of days. The key is public by design (public/<key>.txt proves the
       # site sent it). Only when the page list changed, and never fails the deploy.

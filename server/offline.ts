@@ -4,7 +4,7 @@ import { requireActiveSession } from "./devices";
 import type { Env } from "./env";
 import { body, fail, json, str } from "./http";
 import { checkIntegrity } from "./integrity";
-import { spend, usedOf, usedStmt } from "./ratelimit";
+import { giveBack, reserve, took, usedOf, usedStmt } from "./ratelimit";
 import { type Session, isApp, note, requireSession } from "./session";
 import { type AttemptRow, type Served, DAILY_QUESTIONS, IN_OPEN_TEST, finish, full, scope } from "./study";
 import { effectivePlan } from "./users";
@@ -95,13 +95,22 @@ export const offlineRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
     if (!ids.length) throw fail(409, "empty", "No questions match that. Try other chapters.");
     const id = uuid();
     const title = packTitle(sc);
+    // Taken from the day's allowance in one statement, so downloads started together can't all fit under it; and the
+    // pack is saved only if the account's offline room still holds it at that moment.
+    if (!staff && !took((await c.db.batch([reserve(c.db, `given:${s.user_id}`, ids.length, DAILY_QUESTIONS, DAY)]))[0])) {
+      throw fail(429, "daily_limit", "That's the most new questions for one day. Download more tomorrow.");
+    }
     const made = await c.db.batch([
-      c.db.prepare("INSERT INTO packs (id, user_id, device_id, title, question_count, created_at, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?)")
-        .bind(id, s.user_id, device.id, title, ids.length, now, now + LEASE),
-      c.db.prepare("INSERT INTO pack_questions (pack_id, question_id) SELECT ?, value FROM json_each(?)").bind(id, JSON.stringify(ids)),
+      c.db.prepare(`INSERT INTO packs (id, user_id, device_id, title, question_count, created_at, expires_at) SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7
+          WHERE (SELECT coalesce(sum(question_count), 0) FROM packs WHERE user_id = ?2 AND revoked_at IS NULL AND expires_at > ?6) + ?5 <= ?8`)
+        .bind(id, s.user_id, device.id, title, ids.length, now, now + LEASE, OFFLINE_MAX),
+      c.db.prepare("INSERT INTO pack_questions (pack_id, question_id) SELECT ?1, value FROM json_each(?2) WHERE EXISTS (SELECT 1 FROM packs WHERE id = ?1)").bind(id, JSON.stringify(ids)),
       c.db.prepare("SELECT * FROM served WHERE id IN (SELECT value FROM json_each(?))").bind(JSON.stringify(ids)),
-      ...(staff ? [] : [spend(c.db, `given:${s.user_id}`, ids.length, DAY)]),
     ]);
+    if (!made[0]!.meta.changes) {
+      if (!staff) await giveBack(c.db, `given:${s.user_id}`, ids.length).run();
+      throw fail(409, "pack_full", `You already have ${OFFLINE_MAX} questions saved for offline. Delete a download to make room.`, { held, cap: OFFLINE_MAX });
+    }
     const qs = new Map((made[2]!.results as Served[]).map((q) => [q.id, q]));
     return json({
       pack: { id, title, expiresAt: now + LEASE, items: ids.filter((q) => qs.has(q)).map((q) => full(qs.get(q)!)) },
