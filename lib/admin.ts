@@ -154,6 +154,9 @@ export const listUsers = (q: string, filter: string, offset = 0) => ((get) => (!
 export const lastUsers = () => last<UserPage>("users");
 export const getUser = (id: string) => api<UserDetail>(`/api/admin/users/one?id=${encodeURIComponent(id)}`);
 export const createAccount = (a: { name: string; email: string; password: string; role: Role }) => api<{ user: AdminUser }>("/api/admin/users/create", { body: a });
+/* Test as a student: makes the admin's own account behave like a student on that plan with those exams (none: a
+   student who has just signed up), or ends the test. */
+export const setTest = (t: { plan: "free" | "paid"; area?: string; exams?: string[] } | { off: true }) => api<{ user: import("@/lib/user").AccountUser }>("/api/admin/test", { body: t });
 export const setRole = (id: string, role: Role) => api<{ user: AdminUser }>("/api/admin/users/role", { body: { id, role } });
 export const setPlan = (id: string, plan: AdminUser["plan"], expiresAt: string | null) => api<{ user: AdminUser }>("/api/admin/users/plan", { body: { id, plan, expiresAt } });
 export const resetDevices = (id: string) => api<{ user: AdminUser }>("/api/admin/users/reset-devices", { body: { id } });

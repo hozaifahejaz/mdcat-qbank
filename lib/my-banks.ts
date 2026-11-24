@@ -10,7 +10,7 @@ const before = banksFor(LEGACY.exams);
 export function myBanks(): Bank[] {
   const u = lastUser();
   if (!u) return before;
-  if (u.role !== "student") return banks;
+  if (u.role !== "student" && !u.testing) return banks;
   const mine = banksFor(u.exams ?? LEGACY.exams);
   return mine.length ? mine : before;
 }

@@ -7,6 +7,8 @@ export type UserRow = {
   password_hash: string | null; plan: string; plan_expires_at: number | null; role: string;
   /* The area and exams the account chose (lib/exams.ts). Missing altogether when the columns couldn't be read. */
   area?: string | null; exams?: string | null;
+  /* Set while an admin is testing the site as a student (testing() below). */
+  test?: string | null;
 };
 
 const BASE_COLUMNS = "id, name, email, email_verified_at, phone, password_hash, plan, plan_expires_at, role";
@@ -16,9 +18,9 @@ const BASE_COLUMNS = "id, name, email, email_verified_at, phone, password_hash, 
    left out for the next minute. An account read that way counts as it did before exams were chosen. */
 let plainUntil = 0;
 const withExams = () => Date.now() >= plainUntil;
-export const userColumns = () => (withExams() ? `${BASE_COLUMNS}, area, exams` : BASE_COLUMNS);
+export const userColumns = () => (withExams() ? `${BASE_COLUMNS}, area, exams, test` : BASE_COLUMNS);
 /* The same two columns for a query that joins users under another name (the session lookup). */
-export const examColumns = (prefix = "") => (withExams() ? `, ${prefix}area, ${prefix}exams` : "");
+export const examColumns = (prefix = "") => (withExams() ? `, ${prefix}area, ${prefix}exams, ${prefix}test` : "");
 export async function tolerant<T>(run: () => Promise<T>): Promise<T> {
   try {
     return await run();
@@ -35,9 +37,30 @@ export const userById = (db: D1Database, id: string) => userBy(db, "id", id);
 export const userByEmail = (db: D1Database, email: string) => userBy(db, "email", email);
 export const userByPhone = (db: D1Database, phone: string) => userBy(db, "phone", phone);
 
+/* Testing as a student (the admin panel's "Test as a student", server/admin.ts): while an admin's account has a test
+   set, the site treats it as a student on that plan with those exams, so every student screen can be checked without
+   making a new account each time. `exams` empty is a student who has just signed up and not chosen yet. Only an
+   admin's account can be in a test, and only what students see changes: the admin panel and device rules do not. */
+export type Test = { plan: "free" | "paid"; area: string | null; exams: string[] };
+type Tested = { role: string; test?: string | null };
+export function testing(u: Tested): Test | null {
+  if (u.role !== "admin" || !u.test) return null;
+  try {
+    const t = JSON.parse(u.test) as Partial<Test>;
+    const exams = cleanExams(t.area, t.exams);
+    return { plan: t.plan === "free" ? "free" : "paid", area: exams.length ? t.area! : null, exams };
+  } catch {
+    return null;
+  }
+}
+/* Staff see every bank and skip the limits students have, except while testing as a student. */
+export const actsAsStaff = (u: Tested) => u.role !== "student" && !testing(u);
+
 /* An account's area and exams as a list. An account read without the columns keeps what every account had before
    (all of pre-medical); one that has not chosen yet has no area and no exams. */
-export function chosen(u: { area?: string | null; exams?: string | null }): { area: string | null; exams: string[] } {
+export function chosen(u: { area?: string | null; exams?: string | null; role?: string; test?: string | null }): { area: string | null; exams: string[] } {
+  const t = u.role ? testing({ role: u.role, test: u.test }) : null;
+  if (t) return { area: t.area, exams: t.exams };
   if (u.area === undefined) return { area: LEGACY.area, exams: [...LEGACY.exams] };
   const exams = cleanExams(u.area, u.exams);
   return exams.length ? { area: u.area, exams } : { area: null, exams: [] };
@@ -97,7 +120,8 @@ export async function userForOAuth(db: D1Database, provider: Provider, p: OAuthP
 export const hasLifetimeAccess = (u: Pick<UserRow, "role">) => u.role === "admin";
 
 /* The plan in force now: a paid plan whose end date has passed counts as free. */
-export const effectivePlan = (u: Pick<UserRow, "plan" | "plan_expires_at" | "role">, now = Date.now()) =>
+export const effectivePlan = (u: Pick<UserRow, "plan" | "plan_expires_at" | "role" | "test">, now = Date.now()) =>
+  testing(u) ? (testing(u)!.plan === "free" ? "free" : "bundle") :
   hasLifetimeAccess(u) ? "bundle" :
   u.plan !== "free" && (u.plan_expires_at === null || u.plan_expires_at > now) ? u.plan : "free";
 
@@ -119,6 +143,7 @@ export async function publicUser(db: D1Database, u: UserRow, linked?: { provider
     planExpiresAt: u.plan_expires_at && !hasLifetimeAccess(u) && effectivePlan(u) !== "free" ? new Date(u.plan_expires_at).toISOString() : undefined,
     methods,
     ...chosen(u),
+    ...(testing(u) ? { testing: true } : {}),
   };
 }
 

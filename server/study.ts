@@ -9,7 +9,7 @@ import { body, fail, json, str } from "./http";
 import { prefsStmt, readPrefs } from "./prefs";
 import { hit, peeked, rateLimit, spend, usedOf, usedStmt } from "./ratelimit";
 import { note, requireSession } from "./session";
-import { effectivePlan } from "./users";
+import { actsAsStaff, effectivePlan } from "./users";
 
 /* The student side of the bank (/api/study/*): which questions a student can practice, their tests, answers,
    bookmarks and reports, and the dashboard numbers. Questions only ever reach the browser from here, a test's worth
@@ -57,7 +57,7 @@ async function student(c: Ctx, active: boolean) {
   // The session query already carries the account's role and plan, so this is one trip to the database.
   const s = active ? await requireActiveSession(c.db, c.request) : await requireSession(c.db, c.request);
   const paid = effectivePlan(s) !== "free";
-  return { id: s.user_id, paid, staff: s.role !== "student", pool: paid ? "" : " AND free = 1", banks: allowedBanks(s) };
+  return { id: s.user_id, paid, staff: actsAsStaff(s), pool: paid ? "" : " AND free = 1", banks: allowedBanks(s) };
 }
 
 async function servedByIds(db: D1Database, ids: string[]): Promise<Map<string, Served>> {

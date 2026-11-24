@@ -2,7 +2,8 @@ import { DUPLICATE_LIMIT, type QuestionFields, type Role, type StageId, checklis
 import { fail, json, body, str } from "./http";
 import { hashPassword } from "./crypto";
 import { requireSession } from "./session";
-import { createUser, userByEmail } from "./users";
+import { createUser, publicUserById, userByEmail } from "./users";
+import { areaById, cleanExams } from "../lib/exams";
 import { visitSummary } from "./visits";
 import { keptActivity } from "./insights";
 
@@ -540,6 +541,27 @@ const userRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
       log(c.db, me, "user.create", id, role === "student" ? "" : roleNames[role]),
     ]);
     return json({ user: presentUser(await targetUser(c.db, id)) });
+  },
+
+  /* Test as a student: the admin's own account behaves like a student on the chosen plan with the chosen exams
+     (server/users.ts testing) until it is switched off. `exams` empty is a student who has just signed up, who gets
+     the welcome screen. { off: true } ends the test. Answers with the account as the pages now draw it. */
+  "POST /api/admin/test": async (c) => {
+    const me = await admin(c);
+    const b = await body(c.request);
+    let test: string | null = null;
+    if (!b.off) {
+      const area = areaById(typeof b.area === "string" ? b.area : null);
+      const exams = area?.open ? cleanExams(area.id, b.exams) : [];
+      test = JSON.stringify({ plan: b.plan === "free" ? "free" : "paid", area: exams.length ? area!.id : null, exams });
+    }
+    try {
+      await c.db.prepare("UPDATE users SET test = ? WHERE id = ?").bind(test, me.id).run();
+    } catch (e) {
+      if (/no such column/i.test(String((e as Error)?.message ?? e))) throw fail(503, "not_ready", "This isn't ready yet. Please try again in a few minutes.");
+      throw e;
+    }
+    return json({ user: await publicUserById(c.db, me.id) });
   },
 
   "POST /api/admin/users/role": async (c) => {

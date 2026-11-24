@@ -19,7 +19,7 @@ export type Session = {
   /* From the account's row, read in the same query so most requests need no second look at it. */
   active_session_id: string | null; plan: string; plan_expires_at: number | null;
   /* The area and exams the account chose (server/exams.ts). Missing when the columns couldn't be read. */
-  area?: string | null; exams?: string | null;
+  area?: string | null; exams?: string | null; test?: string | null;
 };
 
 const lifetime = (role: string) => (role === "student" ? LIFETIME_MS : STAFF_LIFETIME_MS);
@@ -47,7 +47,7 @@ export function bearer(request: Request): string | null {
 
 /* A new session, not yet saved: the statement that saves it (so a caller can send it along with its own in one trip),
    what the browser or app gets, and the row as later requests will read it. */
-export async function newSession(db: D1Database, user: { id: string; role: string; plan: string; plan_expires_at: number | null; area?: string | null; exams?: string | null }, request: Request) {
+export async function newSession(db: D1Database, user: { id: string; role: string; plan: string; plan_expires_at: number | null; area?: string | null; exams?: string | null; test?: string | null }, request: Request) {
   const token = randomToken();
   const now = Date.now();
   const life = lifetime(user.role);
@@ -59,7 +59,7 @@ export async function newSession(db: D1Database, user: { id: string; role: strin
     .bind(id, user.id, now, now, now + life, ua, ip, now);
   const session: Session = {
     id, user_id: user.id, device_id: null, expires_at: now + life, last_seen_at: now, created_at: now, user_agent: ua, ip, ip_changes: 0, ip_window: now,
-    role: user.role, active_session_id: null, plan: user.plan, plan_expires_at: user.plan_expires_at, area: user.area, exams: user.exams,
+    role: user.role, active_session_id: null, plan: user.plan, plan_expires_at: user.plan_expires_at, area: user.area, exams: user.exams, test: user.test,
   };
   const out: NewSession = { token, cookie: cookie(SESSION_COOKIE, token, { maxAge: life / 1000 }), expiresAt: now + life };
   return { save, session, out };
@@ -67,8 +67,8 @@ export async function newSession(db: D1Database, user: { id: string; role: strin
 
 export async function createSession(db: D1Database, userId: string, request: Request): Promise<NewSession> {
   const u = await tolerant(() => db.prepare(`SELECT role, plan, plan_expires_at${examColumns()} FROM users WHERE id = ?`).bind(userId)
-    .first<{ role: string; plan: string; plan_expires_at: number | null; area?: string | null; exams?: string | null }>());
-  const made = await newSession(db, { id: userId, role: u?.role ?? "student", plan: u?.plan ?? "free", plan_expires_at: u?.plan_expires_at ?? null, area: u?.area, exams: u?.exams }, request);
+    .first<{ role: string; plan: string; plan_expires_at: number | null; area?: string | null; exams?: string | null; test?: string | null }>());
+  const made = await newSession(db, { id: userId, role: u?.role ?? "student", plan: u?.plan ?? "free", plan_expires_at: u?.plan_expires_at ?? null, area: u?.area, exams: u?.exams, test: u?.test }, request);
   await made.save.run();
   return made.out;
 }

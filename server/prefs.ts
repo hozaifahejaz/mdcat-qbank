@@ -3,7 +3,7 @@ import { areaById, cleanExams, examById } from "../lib/exams";
 import { allowedBanks, bankFor } from "./exams";
 import { body, fail, json } from "./http";
 import { requireSession } from "./session";
-import { publicUserById } from "./users";
+import { publicUserById, testing } from "./users";
 
 /* What a student picked on the welcome screen (and can change later): which test they're preparing for, the year
    they sit it and how many questions a day they aim for. Kept in user_prefs (migrations/0042). */
@@ -76,9 +76,13 @@ export const prefRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
     const main = examById(exams.includes(String(b.main)) ? String(b.main) : exams[0])!;
     const year = Number.isInteger(b.examYear) && (b.examYear as number) >= 2026 && (b.examYear as number) <= 2035 ? (b.examYear as number) : null;
     const now = Date.now();
+    // An admin testing as a student saves the choice into the test, so their own account is left as it was.
+    const test = testing(s);
     try {
       await c.db.batch([
-        c.db.prepare("UPDATE users SET area = ?, exams = ? WHERE id = ?").bind(area.id, exams.join(","), s.user_id),
+        test
+          ? c.db.prepare("UPDATE users SET test = ? WHERE id = ?").bind(JSON.stringify({ ...test, area: area.id, exams }), s.user_id)
+          : c.db.prepare("UPDATE users SET area = ?, exams = ? WHERE id = ?").bind(area.id, exams.join(","), s.user_id),
         c.db.prepare(`INSERT INTO user_prefs (user_id, bank, exam_year, welcomed_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?4)
           ON CONFLICT (user_id) DO UPDATE SET bank = ?2, exam_year = coalesce(?3, exam_year), welcomed_at = coalesce(welcomed_at, ?4), updated_at = ?4`)
           .bind(s.user_id, main.bank, year, now),
