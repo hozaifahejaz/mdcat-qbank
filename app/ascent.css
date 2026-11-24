@@ -101,7 +101,7 @@
 .x5-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-block: 24px; }
 .x5-logo { display: inline-flex; align-items: center; gap: 9px; font-weight: 800; letter-spacing: -0.03em; font-size: 1.0625rem; white-space: nowrap; }
 .x5 .theme-toggle { width: 40px; height: 40px; border-radius: 12px; background: transparent; box-shadow: none; color: var(--x-mute); }
-.x5 .theme-toggle:hover { color: var(--x-ink); background: var(--x-card); transform: none; }
+@media (hover: hover) { .x5 .theme-toggle:hover { color: var(--x-ink); background: var(--x-card); transform: none; } }
 .x5-main { width: 100%; max-width: 380px; margin-inline: auto; align-self: center; display: grid; gap: 20px; padding-block: 24px 40px; }
 .x5-foot { padding-block: 0 24px; font-size: .75rem; color: var(--x-mute); text-align: center; }
 
@@ -112,7 +112,7 @@
 
 
 .x5-google { position: relative; display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; height: 50px; border: 0; border-radius: 14px; background: var(--x-card); color: var(--x-ink); box-shadow: inset 0 0 0 1px var(--x-line), 0 1px 2px rgba(15,17,21,.04); font: inherit; font-weight: 600; font-size: .9375rem; cursor: pointer; transition: transform .15s, box-shadow .15s; }
-.x5-google:not(:disabled):hover { transform: translateY(-1px); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--x-ink) 18%, var(--x-line)), 0 6px 16px -8px rgba(15,17,21,.2); }
+@media (hover: hover) { .x5-google:not(:disabled):hover { transform: translateY(-1px); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--x-ink) 18%, var(--x-line)), 0 6px 16px -8px rgba(15,17,21,.2); } }
 .x5-google:disabled { cursor: default; }
 .x5-google em { position: absolute; right: 12px; font-style: normal; font-size: .6875rem; font-weight: 700; letter-spacing: .02em; color: var(--x-blue); background: color-mix(in srgb, var(--x-blue) 10%, transparent); padding: 3px 8px; border-radius: 99px; }
 @media (max-width: 380px) { .x5-google em { display: none; } }
@@ -135,7 +135,7 @@
 .x5-pw { position: relative; }
 .x5-pw input { padding-right: 68px; }
 .x5-pw button { position: absolute; right: 6px; top: 7px; height: 36px; padding-inline: 12px; border: 0; border-radius: 10px; background: transparent; color: var(--x-mute); font: inherit; font-size: .8125rem; font-weight: 600; cursor: pointer; }
-.x5-pw button:hover { color: var(--x-ink); }
+@media (hover: hover) { .x5-pw button:hover { color: var(--x-ink); } }
 
 .x5-note { font-size: .875rem; line-height: 1.5; padding: 11px 14px; border-radius: 12px; }
 .x5-note.bad { background: var(--rose); color: var(--bad); }
@@ -144,13 +144,13 @@
 
 .x5-go { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; height: 52px; margin-top: 4px; border: 0; border-radius: 14px; background: var(--x-blue); color: #fff; font: inherit; font-weight: 700; font-size: 1rem; cursor: pointer; box-shadow: 0 10px 24px -12px color-mix(in srgb, var(--x-blue) 80%, transparent); transition: transform .15s; }
 .x5-go svg { transition: transform .2s; }
-.x5-go:not(:disabled):hover { transform: translateY(-1px); }
-.x5-go:not(:disabled):hover svg { transform: translateX(3px); }
+@media (hover: hover) { .x5-go:not(:disabled):hover { transform: translateY(-1px); } }
+@media (hover: hover) { .x5-go:not(:disabled):hover svg { transform: translateX(3px); } }
 .x5-go:disabled { cursor: default; }
 
 .x5-new { text-align: center; font-size: .9375rem; color: var(--x-mute); }
 .x5-new a { color: var(--x-ink); font-weight: 700; }
-.x5-new a:hover { color: var(--x-blue); }
+@media (hover: hover) { .x5-new a:hover { color: var(--x-blue); } }
 
 .x5-after .center-state { min-height: 40dvh; }
 

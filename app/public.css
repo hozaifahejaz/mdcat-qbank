@@ -2,9 +2,10 @@
    (.x3, app/landing-new.css) and use the full width on a wide screen: text on the left, lists and cards in a grid. */
 .pub-main { padding-block: 28px 72px; }
 .pub .crumbs { display: flex; flex-wrap: wrap; gap: 4px 8px; font-size: .8125rem; color: var(--x-mute); margin-bottom: 22px; }
-.pub .crumbs a:hover { color: var(--x-ink); }
+@media (hover: hover) { .pub .crumbs a:hover { color: var(--x-ink); } }
 .pub .crumbs i { font-style: normal; margin-left: 8px; color: var(--x-faint); }
 .pub .crumbs [aria-current] { color: var(--x-ink); }
+@media (pointer: coarse) { .pub .crumbs a { padding-block: 10px; margin-block: -10px; } .pub-table td a { display: inline-block; padding-block: 10px; margin-block: -10px; } }
 
 .pub-head { display: grid; gap: 14px; margin-bottom: 36px; max-width: 880px; }
 .pub-head h1 { font-size: clamp(2rem, 1.3rem + 2.6vw, 3.25rem); font-weight: 800; letter-spacing: -0.04em; line-height: 1.06; text-wrap: balance; }
@@ -41,7 +42,7 @@
 @media (max-width: 960px) { .pub-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 600px) { .pub-grid, .pub-grid.two { grid-template-columns: minmax(0, 1fr); } }
 .pub .tile { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 16px 18px; border-radius: 16px; background: var(--x-card); box-shadow: var(--x-shadow); min-height: 64px; transition: transform .15s; }
-.pub a.tile:hover { transform: translateY(-1px); }
+@media (hover: hover) { .pub a.tile:hover { transform: translateY(-1px); } }
 .pub .tile b { font-weight: 600; letter-spacing: -0.01em; line-height: 1.35; }
 .pub .tile small { display: block; font-size: .8125rem; line-height: 1.5; color: var(--x-mute); margin-top: 3px; font-weight: 400; }
 .pub .tile em { font-style: normal; font-size: .8125rem; color: var(--x-mute); white-space: nowrap; }
