@@ -5,6 +5,7 @@ import { tracks, type TrackId } from "@/lib/catalogue";
 import { useArea, type Area } from "./ExamState";
 import TrackMark from "./TrackMark";
 import { ExamMark } from "@/components/Marks";
+import { startHref } from "@/lib/exams";
 
 /* The heart of experiment 4: "I'm preparing for ___". The blank is an area (medical college, engineering university,
    residency...). Until the visitor touches it, it turns through the areas so they can see the page adapt. Picking one
@@ -143,7 +144,7 @@ function AreaCard({ area, soon }: { area: Area; soon: boolean }) {
         })}
       </ul>
       <div className="x4-go">
-        <a className="x3-btn x3-blue x3-big" href="/signup">Start free</a>
+        <a className="x3-btn x3-blue x3-big" href={startHref(area.id)}>Start free</a>
         <small className="x3-proof">{soon && !area.exams.some((e) => e.live) ? `${area.name} is coming soon. Pre-medical is open now, with 100 questions free.` : "100 questions free. No card needed."}</small>
       </div>
     </div>

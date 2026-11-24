@@ -15,7 +15,7 @@ import { OUTSIDE } from "@/lib/paths";
 /* The signed-in pages. Their page files are fetched in a quiet moment after the first page shows, so a click swaps the
    page at once instead of waiting on the network first (on a phone, a touch comes only a moment before the tap).
    Fetched again every few minutes while the tab is open, since the router only trusts its copies for five. */
-const PAGES = ["/dashboard", "/practice", "/mocks", "/past-papers", "/progress", "/mistakes", "/history", "/test", "/review", "/account", "/account/billing", "/pricing"];
+const PAGES = ["/dashboard", "/practice", "/mocks", "/past-papers", "/progress", "/mistakes", "/history", "/test", "/review", "/account", "/account/exams", "/account/billing", "/pricing"];
 const REFETCH_MS = 4 * 60 * 1000;
 
 const idle = (f: () => void) => {

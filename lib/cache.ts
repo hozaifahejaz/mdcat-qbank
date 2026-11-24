@@ -51,6 +51,8 @@ export function forgetAll() {
         const k = s.key(i);
         if (k?.startsWith(PREFIX)) s.removeItem(k);
       }
+      // The bank the last account practiced from is theirs too, not the next account's.
+      s.removeItem("practice-bank");
     } catch {}
   }
 }

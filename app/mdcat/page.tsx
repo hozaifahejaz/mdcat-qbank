@@ -5,6 +5,7 @@ import { pageMeta } from "@/lib/public-meta";
 import { site } from "@/lib/site";
 import "../landing-new.css";
 import "../public.css";
+import { signupHref } from "@/lib/exams";
 
 export const metadata = pageMeta({
   title: `MDCAT MCQs ${site.season}: Chapter-wise Practice for PMDC MDCAT`,
@@ -31,7 +32,7 @@ export default function Mdcat() {
           Pick a subject below to read free sample questions for every chapter on the syllabus.
         </p>
         <div className="pub-acts">
-          <a className="x3-btn x3-blue" href="/signup">Start free</a>
+          <a className="x3-btn x3-blue" href={signupHref({ area: "medical", exam: "mdcat" })}>Start free</a>
           <a className="x3-btn x3-line" href="/mdcat/syllabus">See the syllabus</a>
         </div>
       </header>

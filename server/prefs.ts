@@ -1,6 +1,9 @@
 import { bankById } from "../lib/banks";
-import { body, json } from "./http";
+import { areaById, cleanExams, examById } from "../lib/exams";
+import { allowedBanks, bankFor } from "./exams";
+import { body, fail, json } from "./http";
 import { requireSession } from "./session";
+import { publicUserById } from "./users";
 
 /* What a student picked on the welcome screen (and can change later): which test they're preparing for, the year
    they sit it and how many questions a day they aim for. Kept in user_prefs (migrations/0042). */
@@ -35,14 +38,17 @@ type Ctx = { db: D1Database; request: Request };
 export const prefRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
   "GET /api/account/prefs": async (c) => {
     const s = await requireSession(c.db, c.request);
-    return json(await getPrefs(c.db, s.user_id));
+    const p = await getPrefs(c.db, s.user_id);
+    // The test they practice for is always one of their own exams' banks.
+    return json({ ...p, bank: bankFor(allowedBanks(s), p.bank).id });
   },
 
   /* Saves whichever of the three are sent; `welcomed` marks the welcome screen as seen. */
   "POST /api/account/prefs": async (c) => {
     const s = await requireSession(c.db, c.request);
     const b = await body(c.request);
-    const bank = typeof b.bank === "string" ? bankById(b.bank)?.id ?? null : null;
+    const mine = allowedBanks(s);
+    const bank = typeof b.bank === "string" && mine.some((x) => x.id === b.bank) ? b.bank : null;
     const year = Number.isInteger(b.examYear) && (b.examYear as number) >= 2026 && (b.examYear as number) <= 2035 ? (b.examYear as number) : null;
     const goal = Number.isFinite(Number(b.dailyGoal)) && b.dailyGoal !== null && b.dailyGoal !== undefined
       ? Math.min(GOALS.max, Math.max(GOALS.min, Math.round(Number(b.dailyGoal)))) : null;
@@ -54,6 +60,33 @@ export const prefRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
           welcomed_at = coalesce(welcomed_at, ?5), updated_at = ?6`)
       .bind(s.user_id, bank, year, goal, b.welcomed ? now : null, now)
       .run();
-    return json(await getPrefs(c.db, s.user_id));
+    const p = await getPrefs(c.db, s.user_id);
+    return json({ ...p, bank: bankFor(mine, p.bank).id });
+  },
+
+  /* The area and exams an account is preparing for: saved from the welcome screen and from My exams. `main` is the
+     exam the app opens on; `examYear` is optional. Answers with the account as the pages draw it. */
+  "POST /api/account/exams": async (c) => {
+    const s = await requireSession(c.db, c.request);
+    const b = await body(c.request);
+    const area = areaById(typeof b.area === "string" ? b.area : null);
+    if (!area || !area.open) throw fail(400, "bad_area", "Please pick one of the areas that are open.");
+    const exams = cleanExams(area.id, b.exams);
+    if (!exams.length) throw fail(400, "no_exam", "Please pick at least one exam.");
+    const main = examById(exams.includes(String(b.main)) ? String(b.main) : exams[0])!;
+    const year = Number.isInteger(b.examYear) && (b.examYear as number) >= 2026 && (b.examYear as number) <= 2035 ? (b.examYear as number) : null;
+    const now = Date.now();
+    try {
+      await c.db.batch([
+        c.db.prepare("UPDATE users SET area = ?, exams = ? WHERE id = ?").bind(area.id, exams.join(","), s.user_id),
+        c.db.prepare(`INSERT INTO user_prefs (user_id, bank, exam_year, welcomed_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?4)
+          ON CONFLICT (user_id) DO UPDATE SET bank = ?2, exam_year = coalesce(?3, exam_year), welcomed_at = coalesce(welcomed_at, ?4), updated_at = ?4`)
+          .bind(s.user_id, main.bank, year, now),
+      ]);
+    } catch (e) {
+      if (/no such column/i.test(String((e as Error)?.message ?? e))) throw fail(503, "not_ready", "We couldn't save that just now. Please try again in a few minutes.");
+      throw e;
+    }
+    return json({ user: await publicUserById(c.db, s.user_id), prefs: await getPrefs(c.db, s.user_id) });
   },
 };

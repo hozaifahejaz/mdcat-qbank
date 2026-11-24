@@ -6,9 +6,9 @@ import Empty from "@/components/app/Empty";
 import Icon from "@/components/app/Icon";
 import BarChart from "@/components/dashboard/BarChart";
 import MobileHome from "@/components/dashboard/MobileHome";
+import ExamLabel, { examOfBank, usersExams } from "@/components/exams/ExamLabel";
 import NextCard from "@/components/dashboard/NextCard";
 import { GoalStrip, Stand, Subjects, daysUntil } from "@/components/dashboard/Insights";
-import { go } from "@/components/Nav";
 import { BankButtons } from "@/components/screens/PracticeScreen";
 import { getDashboard, type Dashboard as Data, type SubjectStat } from "@/lib/dashboard-data";
 import { band, day, fullDay, kindNames, pct, tz } from "@/lib/format";
@@ -65,9 +65,6 @@ export default function Dashboard() {
     return () => { live = false; };
   }, [bank]);
 
-  // A brand-new student picks their test, year and daily goal first (/welcome), once.
-  const fresher = data?.welcomed === false && (data.answeredEver ?? 1) === 0 && !data.resume;
-  useEffect(() => { if (fresher) go("/welcome", true); }, [fresher]);
 
   function setGoal(n: number) {
     setData((d) => {
@@ -86,7 +83,7 @@ export default function Dashboard() {
   const aside = narrow === false && user && data && coach ? <Coach data={data} onHide={() => toggleCoach(false)} /> : null;
   return (
     <Framed active="/dashboard" aside={aside}>
-      {user && data && narrow !== null && !fresher ? narrow ? <MobileHome data={data} /> : <Body data={data} name={user.name} free={user.plan === "free"} coachHidden={!coach} onShowCoach={() => toggleCoach(true)} onBank={setBank} onGoal={setGoal} /> : <Skeleton />}
+      {user && data && narrow !== null ? narrow ? <MobileHome data={data} onBank={setBank} /> : <Body data={data} name={user.name} free={user.plan === "free"} coachHidden={!coach} onShowCoach={() => toggleCoach(true)} onBank={setBank} onGoal={setGoal} /> : <Skeleton />}
     </Framed>
   );
 }
@@ -113,6 +110,8 @@ export function Body({ data, name, free, coachHidden, onShowCoach, progress, onB
   const mockReady = useMockReady();
   const showMock = mockReady || !!lastMock;
   const examDate = examDateFor(data.examYear);
+  // The expected test day is the MDCAT's; another exam shows its name and the student's year.
+  const exam = examOfBank(usersExams(), data.bank);
   // A new account sees one thing to do and the banks, not a page of empty charts.
   const brandNew = !progress && hasQuestions(data) && totals.answered === 0 && data.recent.length === 0 && !data.resume;
 
@@ -122,8 +121,11 @@ export function Body({ data, name, free, coachHidden, onShowCoach, progress, onB
       <section className="home-head" aria-labelledby="home-h">
         <div>
           <h1 id="home-h">{greeting()}{name ? `, ${name.split(/\s+/)[0]}` : ""}</h1>
-          <p className="muted"><b>{daysUntil(examDate)} days</b> to MDCAT {examDate.slice(0, 4)}, expected {fullDay(examDate)}</p>
+          {!exam || exam.id === "mdcat"
+            ? <p className="muted"><b>{daysUntil(examDate)} days</b> to MDCAT {examDate.slice(0, 4)}, expected {fullDay(examDate)}</p>
+            : <p className="muted">Preparing for <b>{exam.name}</b>{data.examYear && !exam.group ? ` ${data.examYear}` : ""}</p>}
         </div>
+        <ExamLabel bank={data.bank} onBank={onBank} />
         {coachHidden && <div className="hello-ctas"><button type="button" className="dpill light small hide-m" onClick={onShowCoach}><Icon name="spark" size={16} />Suggestions</button></div>}
       </section>
       )}

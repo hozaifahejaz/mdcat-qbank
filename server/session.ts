@@ -1,5 +1,6 @@
 import { randomToken, sha256 } from "./crypto";
 import { clientIp, cookie, fail, readCookie } from "./http";
+import { examColumns, tolerant } from "./users";
 
 /* Sessions: a random secret in an HttpOnly cookie, stored in D1 only as its SHA-256.
    Each signed-in browser has its own session; which one may use the account is decided in devices.ts. */
@@ -17,6 +18,8 @@ export type Session = {
   user_agent: string | null; ip: string | null; ip_changes: number; ip_window: number; role: string;
   /* From the account's row, read in the same query so most requests need no second look at it. */
   active_session_id: string | null; plan: string; plan_expires_at: number | null;
+  /* The area and exams the account chose (server/exams.ts). Missing when the columns couldn't be read. */
+  area?: string | null; exams?: string | null;
 };
 
 const lifetime = (role: string) => (role === "student" ? LIFETIME_MS : STAFF_LIFETIME_MS);
@@ -44,7 +47,7 @@ export function bearer(request: Request): string | null {
 
 /* A new session, not yet saved: the statement that saves it (so a caller can send it along with its own in one trip),
    what the browser or app gets, and the row as later requests will read it. */
-export async function newSession(db: D1Database, user: { id: string; role: string; plan: string; plan_expires_at: number | null }, request: Request) {
+export async function newSession(db: D1Database, user: { id: string; role: string; plan: string; plan_expires_at: number | null; area?: string | null; exams?: string | null }, request: Request) {
   const token = randomToken();
   const now = Date.now();
   const life = lifetime(user.role);
@@ -56,15 +59,16 @@ export async function newSession(db: D1Database, user: { id: string; role: strin
     .bind(id, user.id, now, now, now + life, ua, ip, now);
   const session: Session = {
     id, user_id: user.id, device_id: null, expires_at: now + life, last_seen_at: now, created_at: now, user_agent: ua, ip, ip_changes: 0, ip_window: now,
-    role: user.role, active_session_id: null, plan: user.plan, plan_expires_at: user.plan_expires_at,
+    role: user.role, active_session_id: null, plan: user.plan, plan_expires_at: user.plan_expires_at, area: user.area, exams: user.exams,
   };
   const out: NewSession = { token, cookie: cookie(SESSION_COOKIE, token, { maxAge: life / 1000 }), expiresAt: now + life };
   return { save, session, out };
 }
 
 export async function createSession(db: D1Database, userId: string, request: Request): Promise<NewSession> {
-  const u = await db.prepare("SELECT role, plan, plan_expires_at FROM users WHERE id = ?").bind(userId).first<{ role: string; plan: string; plan_expires_at: number | null }>();
-  const made = await newSession(db, { id: userId, role: u?.role ?? "student", plan: u?.plan ?? "free", plan_expires_at: u?.plan_expires_at ?? null }, request);
+  const u = await tolerant(() => db.prepare(`SELECT role, plan, plan_expires_at${examColumns()} FROM users WHERE id = ?`).bind(userId)
+    .first<{ role: string; plan: string; plan_expires_at: number | null; area?: string | null; exams?: string | null }>());
+  const made = await newSession(db, { id: userId, role: u?.role ?? "student", plan: u?.plan ?? "free", plan_expires_at: u?.plan_expires_at ?? null, area: u?.area, exams: u?.exams }, request);
   await made.save.run();
   return made.out;
 }
@@ -101,12 +105,12 @@ export async function getSession(db: D1Database, request: Request): Promise<Sess
     const hit = reused.get(id);
     if (hit && Date.now() - hit.at < REUSE_MS && hit.s.expires_at > Date.now()) return hit.s;
   }
-  const s = await db
+  const s = await tolerant(() => db
     .prepare(`SELECT s.id, s.user_id, s.device_id, s.expires_at, s.last_seen_at, s.created_at, s.user_agent, s.ip, s.ip_changes, s.ip_window,
-        u.role, u.active_session_id, u.plan, u.plan_expires_at
+        u.role, u.active_session_id, u.plan, u.plan_expires_at${examColumns("u.")}
       FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.id = ?`)
     .bind(id)
-    .first<Session>();
+    .first<Session>());
   const now = Date.now();
   if (!s) return null;
   // Staff sign in again a week after signing in, however much the session was used.

@@ -5,6 +5,7 @@ import { checkedText, data, faqData, ld, mdcat, nums, round } from "@/lib/public
 import { pageMeta } from "@/lib/public-meta";
 import "../landing-new.css";
 import "../public.css";
+import { signupHref } from "@/lib/exams";
 
 const bank = bankById("nums")!;
 const size = round(data.banks.nums ?? 0);
@@ -32,7 +33,7 @@ export default function Nums() {
           The NUMS MDCAT is the entry test of the National University of Medical Sciences. Its subject paper has <b>{nums.mcqs} MCQs in {nums.time}</b> with no negative marking.
           The NUMS bank here holds {size} MCQs arranged under NUMS&apos;s own chapter list.
         </p>
-        <div className="pub-acts"><a className="x3-btn x3-blue" href="/signup">Start free</a></div>
+        <div className="pub-acts"><a className="x3-btn x3-blue" href={signupHref({ area: "medical", exam: "nums" })}>Start free</a></div>
       </header>
 
       <div className="pub-cols">

@@ -2,6 +2,7 @@ import { OFFLINE_LEASE_DAYS, OFFLINE_MAX, offlineEnabled } from "./app";
 import { uuid } from "./crypto";
 import { requireActiveSession } from "./devices";
 import type { Env } from "./env";
+import { allowedBanks } from "./exams";
 import { body, fail, json, str } from "./http";
 import { checkIntegrity } from "./integrity";
 import { spend, usedOf, usedStmt } from "./ratelimit";
@@ -83,7 +84,7 @@ export const offlineRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
         throw fail(429, "daily_limit", left > 0 ? `You can take ${left} more new question${left === 1 ? "" : "s"} today. Pick fewer.` : "That's the most new questions for one day. Download more tomorrow.");
       }
     }
-    const sc = scope(b, "");
+    const sc = scope(b, "", allowedBanks(s));
     const where = [...sc.where, `id NOT IN (${IN_OPEN_TEST})`, `id NOT IN (SELECT q.question_id FROM pack_questions q JOIN packs p ON p.id = q.pack_id WHERE p.user_id = ? AND p.${LIVE})`];
     const args = [...sc.args, s.user_id, s.user_id, now];
     // Questions the student hasn't answered yet come first.

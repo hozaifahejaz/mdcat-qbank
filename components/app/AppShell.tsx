@@ -6,13 +6,13 @@ import { usePathname } from "next/navigation";
 import DeviceGate from "@/components/auth/DeviceGate";
 import Icon from "@/components/app/Icon";
 import Logo, { Markhor } from "@/components/Logo";
-import { usePageTurn } from "@/components/Nav";
+import { go, usePageTurn } from "@/components/Nav";
 import ThemeToggle from "@/components/ThemeToggle";
 import { signOut } from "@/lib/auth";
 import { planNames } from "@/lib/format";
 import { isStaff, roleNames } from "@/lib/qc";
 import { site, supportHref } from "@/lib/site";
-import { type AccountUser, getCurrentUser, lastUser } from "@/lib/user";
+import { type AccountUser, getCurrentUser, lastUser, needsExam } from "@/lib/user";
 
 /* The sidebar, grouped like the study loop: practice, then review what went wrong. */
 /* short is the label under a phone tab, when the full one is too long. */
@@ -39,6 +39,7 @@ const groups: NavGroup[] = [
   },
   {
     links: [
+      { href: "/account/exams", label: "My exams", icon: "target", inAccount: true },
       { href: "/account/billing", label: "Plan and billing", icon: "billing", inAccount: true },
       { href: "/account", label: "Account", icon: "account", inAccount: true },
     ],
@@ -216,7 +217,7 @@ function SharedFrame({ children }: { children: React.ReactNode }) {
   const path = usePathname();
   // What the page will say about itself, guessed from the address so the saved page file already has the right frame:
   // its link lit, and no sidebar around the test player.
-  const [meta, setMeta] = useState<Meta>(() => ({ active: path ?? undefined, bare: path === "/test" }));
+  const [meta, setMeta] = useState<Meta>(() => ({ active: path ?? undefined, bare: path === "/test" || path === "/welcome" }));
   const [slot, setSlot] = useState<HTMLDivElement | null>(null);
   // The page that is showing, opened afresh in place when it is asked for with another query (components/Nav.tsx).
   const turn = usePageTurn();
@@ -225,9 +226,20 @@ function SharedFrame({ children }: { children: React.ReactNode }) {
   useEffect(() => { getCurrentUser().then((u) => { if (u) setUser(u); }); }, [path]);
   const set = useCallback((m: Meta) => setMeta((o) => (o.active === m.active && o.title === m.title && o.bare === m.bare && o.aside === m.aside ? o : m)), []);
   const ctx = useMemo(() => ({ user, set, slot }), [user, set, slot]);
+  // A student who has not chosen an exam yet sees the welcome screen first, whichever page they opened, so nobody
+  // lands in another exam's questions. Where they were going is kept, so a checkout link still ends at the checkout.
+  // The account as last remembered is asked too: it is the first to know the choice was just made.
+  const gated = !!user && needsExam(lastUser() ?? user) && path !== "/welcome";
+  useEffect(() => {
+    if (!gated) return;
+    const from = window.location.pathname + window.location.search;
+    go(from === "/dashboard" ? "/welcome" : `/welcome?next=${encodeURIComponent(from)}`, true);
+  }, [gated]);
   return (
     <FrameContext value={ctx}>
-      <AppFrame active={meta.active} title={meta.title} user={user} bare={meta.bare} hasAside={meta.aside} asideSlot={setSlot}><Fragment key={turn}>{children}</Fragment></AppFrame>
+      <AppFrame active={meta.active} title={meta.title} user={user} bare={meta.bare || gated} hasAside={meta.aside} asideSlot={setSlot}>
+        {gated ? <div className="sk" style={{ height: "100dvh", borderRadius: 0 }} /> : <Fragment key={turn}>{children}</Fragment>}
+      </AppFrame>
     </FrameContext>
   );
 }
@@ -279,11 +291,12 @@ function Shell({ active, title, bare, children }: { active?: string; title?: str
   );
 }
 
-/* Account and Plan and billing are one place with two tabs. */
-export function AccountTabs({ active }: { active: "/account" | "/account/billing" }) {
+/* Account, My exams and Plan and billing are one place with three tabs. */
+export function AccountTabs({ active }: { active: "/account" | "/account/exams" | "/account/billing" }) {
   return (
     <nav className="ptabs" aria-label="Account">
       <a className="tab" href="/account" aria-current={active === "/account" ? "page" : undefined}>Account</a>
+      <a className="tab" href="/account/exams" aria-current={active === "/account/exams" ? "page" : undefined}>My exams</a>
       <a className="tab" href="/account/billing" aria-current={active === "/account/billing" ? "page" : undefined}>Plan and billing</a>
     </nav>
   );

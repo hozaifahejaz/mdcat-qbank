@@ -4,7 +4,8 @@ import { type MouseEvent, useEffect, useLayoutEffect, useMemo, useRef, useState 
 import { seen } from "@/lib/cache";
 import AppShell, { PageHead } from "@/components/app/AppShell";
 import Icon from "@/components/app/Icon";
-import { type Bank, bankById, banks, toneOf } from "@/lib/banks";
+import { type Bank, toneOf } from "@/lib/banks";
+import { myBank, myBanks, myFirstBank, useMyBanks } from "@/lib/my-banks";
 import { ExamMark, SubjectMark } from "@/components/Marks";
 import { band, pct } from "@/lib/format";
 import { type Catalog, type ChapterPool, type Filter, type Pool, doneCount, filters, getPool, openCount, poolMatch, sumPools, testHref, totalCount, warmCatalog, warmPools, watchCatalog, watchPools } from "@/lib/study";
@@ -29,8 +30,9 @@ function Practice() {
     const p = new URLSearchParams(window.location.search);
     let last: string | null = null;
     try { last = localStorage.getItem(BANK_KEY); } catch {}
-    const picked = bankById(p.get("bank"));
-    const b = picked ?? (p.get("subject") || p.get("mode") ? undefined : bankById(last)) ?? bankById("mdcat")!;
+    // Only ever one of the student's own banks (lib/my-banks.ts).
+    const picked = myBank(p.get("bank"));
+    const b = picked ?? (p.get("subject") || p.get("mode") ? undefined : myBank(last)) ?? myFirstBank();
     if (picked) { try { localStorage.setItem(BANK_KEY, picked.id); } catch {} }
     setBank(b);
   }, []);
@@ -38,7 +40,7 @@ function Practice() {
   // switch to each has them too. After that the copy kept from the last visit is shown and refreshed on the switch.
   useEffect(() => {
     if (!bank) return;
-    const t = window.setTimeout(() => { for (const b of banks) if (b.id !== bank.id) warmBank(b.id, true); }, 400);
+    const t = window.setTimeout(() => { for (const b of myBanks()) if (b.id !== bank.id) warmBank(b.id, true); }, 400);
     return () => window.clearTimeout(t);
   }, [bank]);
   function pick(b: Bank) {
@@ -55,8 +57,9 @@ function warmBank(id: string, onlyNew = false) {
   if (!onlyNew || seen(`pools:${id}`, true) === undefined) warmPools(id);
 }
 
-/* The five banks as big buttons. The phone home screen uses the same ones. */
+/* The student's banks as big buttons. The phone home screen uses the same ones. */
 export function BankButtons() {
+  const banks = useMyBanks();
   return (
     <ul className="bank-grid">
       {banks.map((b) => (
@@ -76,6 +79,7 @@ export function BankButtons() {
 type Sel = { kind: "subjects"; set: Set<string> } | { kind: "chapters"; subject: string; set: Set<string> };
 
 function BankPractice({ bank, onBank }: { bank: Bank; onBank: (b: Bank) => void }) {
+  const banks = useMyBanks();
   const [sel, setSel] = useState<Sel>({ kind: "subjects", set: new Set() });
   const [open, setOpen] = useState<Set<string>>(() => new Set());
   const [tutor, setTutor] = useState(true);
