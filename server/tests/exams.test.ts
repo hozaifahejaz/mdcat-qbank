@@ -71,8 +71,10 @@ describe("what an account is served", () => {
 
   it("gives staff every bank, and an account with no choice what it had before", () => {
     expect(allowedBanks({ role: "admin", area: null, exams: null })).toEqual(banks);
-    expect(ids(allowedBanks({ role: "student", area: null, exams: null }))).toEqual(ids(banks));
-    expect(ids(allowedBanks({ role: "student" }))).toEqual(ids(banks));
+    const premed = ids(banksFor(["mdcat", "nums", "aku"]));
+    expect(ids(allowedBanks({ role: "student", area: null, exams: null }))).toEqual(premed);
+    expect(ids(allowedBanks({ role: "student" }))).toEqual(premed);
+    expect(premed).not.toContain("lat");
   });
 
   it("treats an admin who is testing as the student they chose", () => {
