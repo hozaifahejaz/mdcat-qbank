@@ -5,6 +5,7 @@ import { checkedText, data, faqData, ld, round } from "@/lib/public";
 import { pageMeta } from "@/lib/public-meta";
 import "../landing-new.css";
 import "../public.css";
+import { signupHref } from "@/lib/exams";
 
 const bank = bankById("aku")!;
 const size = round(data.banks.aku ?? 0);
@@ -33,7 +34,7 @@ export default function Aku() {
           Aga Khan University holds its own admission test for MBBS: <b>100 MCQs in 2 hours</b>, made of a Science Achievement section (40 MCQs) and a Science and Mathematics Reasoning section (60 MCQs).
           The AKU bank here has <b>{size} MCQs</b> across {bank.subjects.map((s) => s.name).join(", ")}, each with a full explanation.
         </p>
-        <div className="pub-acts"><a className="x3-btn x3-blue" href="/signup">Start free</a></div>
+        <div className="pub-acts"><a className="x3-btn x3-blue" href={signupHref({ area: "medical", exam: "aku" })}>Start free</a></div>
       </header>
 
       {bank.subjects.map((s) => (

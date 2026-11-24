@@ -45,7 +45,7 @@ export function PublicFooter({ home = "/" }: { home?: string }) {
 }
 
 /* The bar at the top of every public page. A visitor this browser knows is signed in gets a way back to the app. */
-export function PublicNav({ inside = false }: { inside?: boolean }) {
+export function PublicNav({ inside = false, start = "/signup" }: { inside?: boolean; start?: string }) {
   return (
     <nav className="x3-nav">
       <div className="x3-wrap x3-navin">
@@ -61,7 +61,7 @@ export function PublicNav({ inside = false }: { inside?: boolean }) {
           <ThemeToggle />
           {inside ? <a className="x3-btn x3-dark" href="/dashboard">Dashboard</a> : <>
             <a className="x3-signin" href="/signin">Sign in</a>
-            <a className="x3-btn x3-dark" href="/signup">Start free</a>
+            <a className="x3-btn x3-dark" href={start}>Start free</a>
           </>}
         </div>
       </div>

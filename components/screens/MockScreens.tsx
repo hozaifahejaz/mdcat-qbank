@@ -5,6 +5,7 @@ import AppShell, { PageHead } from "@/components/app/AppShell";
 import Empty from "@/components/app/Empty";
 import type { TestResult } from "@/lib/dashboard-data";
 import { band, day, kindNames, pct } from "@/lib/format";
+import { useMyBanks } from "@/lib/my-banks";
 import { hoursText, type MockFormatId, mockFormat, mockFormats, NEG_MARK } from "@/lib/site";
 import { type Catalog, testHref, watchCatalog, watchHistory } from "@/lib/study";
 import type { AccountUser } from "@/lib/user";
@@ -54,8 +55,12 @@ export function MocksScreen() {
 function Mocks({ user }: { user: AccountUser }) {
   const recent = useRecent();
   // Opens on the paper practiced last: the NUMS mock for a NUMS student, the MDCAT mock for everyone else.
-  const [bank, setBank] = useState<MockFormatId>("mdcat");
+  // Only the papers of the student's own exams (lib/my-banks.ts). A student on the textbooks alone has none.
+  const mine = useMyBanks();
+  const formats = Object.values(mockFormats).filter((f) => mine.some((b) => b.id === f.id));
+  const [asked, setBank] = useState<MockFormatId>("mdcat");
   useEffect(() => { try { const last = localStorage.getItem(BANK_KEY); if (last === "nums" || last === "aku") setBank(last); } catch {} }, []);
+  const bank = formats.some((f) => f.id === asked) ? asked : formats[0]?.id ?? "mdcat";
   const format = mockFormats[bank];
   const facts = `${countOf(format)} MCQs · ${hoursText(format.minutes)}`;
   const catalog = useCatalog(bank);
@@ -67,6 +72,18 @@ function Mocks({ user }: { user: AccountUser }) {
   const mocks = catalog?.mocks ?? 12;
   const link = bank === "mdcat" ? "" : `&bank=${bank}`;
   const nextMock = Array.from({ length: mocks }, (_, k) => k + 1).find((k) => !byTitle.has(`${format.name} ${k}`)) ?? 1;
+  if (!formats.length) {
+    return (
+      <div className="dgrid">
+        <PageHead title="Full mocks" sub="Full-length papers, split by subject like the real one." />
+        <section className="dcard panel">
+          <Empty title="Mocks come with an entrance test" text="You are on the FSc textbooks. Add MDCAT, NUMS or the AKU Test to sit its full-length mocks.">
+            <a className="dpill dark small" href="/account/exams">My exams</a>
+          </Empty>
+        </section>
+      </div>
+    );
+  }
   return (
     <div className="dgrid">
       <PageHead title="Full mocks" sub={`${countOf(format)} MCQs in ${hoursText(format.minutes)}, split by subject like the real paper.`}>
@@ -74,7 +91,7 @@ function Mocks({ user }: { user: AccountUser }) {
       </PageHead>
       <section className="dcard panel">
         <div className="chips" role="group" aria-label="Paper">
-          {Object.values(mockFormats).map((f) => (
+          {formats.length > 1 && formats.map((f) => (
             <button key={f.id} type="button" className="chip" aria-pressed={bank === f.id} onClick={() => setBank(f.id)}>{f.label}</button>
           ))}
         </div>
@@ -205,6 +222,19 @@ function PastPapers({ user }: { user: AccountUser }) {
   const catalog = useCatalog();
   const papers = catalog?.papers ?? [];
   const paid = catalog?.paid ?? user.plan !== "free";
+  const mine = useMyBanks();
+  if (!mine.some((b) => b.id === "mdcat")) {
+    return (
+      <div className="dgrid">
+        <PageHead title="Past papers" sub="Real MDCAT papers, rebuilt in our own words with a full explanation on every question." />
+        <section className="dcard panel">
+          <Empty title="Past papers come with MDCAT" text="These are MDCAT papers. Add MDCAT to your exams to sit them.">
+            <a className="dpill dark small" href="/account/exams">My exams</a>
+          </Empty>
+        </section>
+      </div>
+    );
+  }
   return (
     <div className="dgrid">
       <PageHead title="Past papers" sub="Real MDCAT papers, rebuilt in our own words with a full explanation on every question. No official answer key was published, so the keys here are worked out by us." />

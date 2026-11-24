@@ -17,7 +17,7 @@ import { offlineRoutes, revokeDevicePacks, revokeUserPacks } from "./offline";
 import { checkCode, sendCode, smsConfigured } from "./sms";
 import { checkCaptcha } from "./turnstile";
 import { checkIntegrity } from "./integrity";
-import { type UserRow, USER_COLUMNS, createUser, publicUser, publicUserById, userByEmail, userById, userByPhone, userForOAuth } from "./users";
+import { type UserRow, createUser, publicUser, publicUserById, tolerant, userByEmail, userById, userByPhone, userColumns, userForOAuth } from "./users";
 import { normalisePhone } from "../lib/phone";
 
 const HOUR = 60 * 60 * 1000;
@@ -66,10 +66,10 @@ async function enter(c: Ctx, b: Record<string, unknown>, who: string | { user: U
   if (isApp(c.request) || !/^[0-9a-f-]{36}$/i.test(deviceKey)) return signedIn(c.request, await createSession(c.db, userId, c.request), extra);
   let known = typeof who === "string" ? null : who;
   if (!known) {
-    const [user, linked] = await c.db.batch([
-      c.db.prepare(`SELECT ${USER_COLUMNS} FROM users WHERE id = ?`).bind(userId),
+    const [user, linked] = await tolerant(() => c.db.batch([
+      c.db.prepare(`SELECT ${userColumns()} FROM users WHERE id = ?`).bind(userId),
       c.db.prepare("SELECT provider FROM identities WHERE user_id = ?").bind(userId),
-    ]);
+    ]));
     const u = user!.results[0] as UserRow | undefined;
     if (!u) throw fail(401, "signed_out", "Please sign in.");
     known = { user: u, linked: linked!.results as { provider: string }[] };
@@ -204,11 +204,11 @@ const routes: Record<string, (c: Ctx) => Promise<Response>> = {
     const limits: [string, number, number][] = [[`signin:ip:${c.ip}`, 30, HOUR], [`signin:pair:${addr}:${c.ip}`, 5, HOUR / 4], [`signin:email:${addr}`, 40, HOUR]];
     // One trip reads the three counters and the account, while the person-not-a-script check runs beside it.
     const [rows, human] = await Promise.all([
-      c.db.batch([
+      tolerant(() => c.db.batch([
         ...limits.map(([key]) => usedStmt(c.db, key)),
-        c.db.prepare(`SELECT ${USER_COLUMNS} FROM users WHERE email = ?`).bind(addr),
+        c.db.prepare(`SELECT ${userColumns()} FROM users WHERE email = ?`).bind(addr),
         c.db.prepare("SELECT provider FROM identities WHERE user_id = (SELECT id FROM users WHERE email = ?)").bind(addr),
-      ]),
+      ])),
       // Its failure is reported after the counters have had their say, as before.
       humanCheck(c, b).then(() => null, (e: unknown) => e),
     ]);

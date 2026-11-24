@@ -6,6 +6,7 @@ import { subjectBySlug, subjects } from "@/lib/public";
 import { pageMeta } from "@/lib/public-meta";
 import "../../../landing-new.css";
 import "../../../public.css";
+import { signupHref } from "@/lib/exams";
 
 export const dynamicParams = false;
 export const generateStaticParams = () => subjects.flatMap((s) => s.chapters.map((c) => ({ subject: s.slug, chapter: c.slug })));
@@ -48,7 +49,7 @@ export default async function Chapter({ params }: { params: Params }) {
           Below are <b>{c.samples.length} sample MCQs with answers and explanations</b>. The full bank has {c.total} questions on this chapter.
         </p>
         <div className="pub-acts">
-          <a className="x3-btn x3-blue" href="/signup">Practice this chapter free</a>
+          <a className="x3-btn x3-blue" href={signupHref({ area: "medical", exam: "mdcat" })}>Practice this chapter free</a>
         </div>
       </header>
 

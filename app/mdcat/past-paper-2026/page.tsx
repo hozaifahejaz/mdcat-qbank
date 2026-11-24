@@ -4,6 +4,7 @@ import { data, mdcat, slug, subjects } from "@/lib/public";
 import { pageMeta } from "@/lib/public-meta";
 import "../../landing-new.css";
 import "../../public.css";
+import { signupHref } from "@/lib/exams";
 
 const p = data.paper;
 
@@ -25,7 +26,7 @@ export default function Paper() {
           The most tested chapter in each subject was {top.map((x) => `${x.first!.chapter} in ${x.s.name} (${x.first!.n})`).join(", ")}.
         </p>
         <div className="pub-acts">
-          <a className="x3-btn x3-blue" href="/signup">Start free</a>
+          <a className="x3-btn x3-blue" href={signupHref({ area: "medical", exam: "mdcat" })}>Start free</a>
           <a className="x3-btn x3-line" href="/pricing">Sit the whole paper, timed</a>
         </div>
       </header>

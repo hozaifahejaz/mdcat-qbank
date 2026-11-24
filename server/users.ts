@@ -1,16 +1,47 @@
 import { uuid } from "./crypto";
 import type { OAuthProfile, Provider } from "./oauth";
+import { LEGACY, cleanExams } from "../lib/exams";
 
 export type UserRow = {
   id: string; name: string; email: string | null; email_verified_at: number | null; phone: string | null;
   password_hash: string | null; plan: string; plan_expires_at: number | null; role: string;
+  /* The area and exams the account chose (lib/exams.ts). Missing altogether when the columns couldn't be read. */
+  area?: string | null; exams?: string | null;
 };
 
-export const USER_COLUMNS = "id, name, email, email_verified_at, phone, password_hash, plan, plan_expires_at, role";
+const BASE_COLUMNS = "id, name, email, email_verified_at, phone, password_hash, plan, plan_expires_at, role";
 
-export const userById = (db: D1Database, id: string) => db.prepare(`SELECT ${USER_COLUMNS} FROM users WHERE id = ?`).bind(id).first<UserRow>();
-export const userByEmail = (db: D1Database, email: string) => db.prepare(`SELECT ${USER_COLUMNS} FROM users WHERE email = ?`).bind(email).first<UserRow>();
-export const userByPhone = (db: D1Database, phone: string) => db.prepare(`SELECT ${USER_COLUMNS} FROM users WHERE phone = ?`).bind(phone).first<UserRow>();
+/* The area and exams columns arrive with migration 0064. The site is deployed whether or not a migration went
+   through, so if they turn out not to be there, every query that names them is run again without them, and they are
+   left out for the next minute. An account read that way counts as it did before exams were chosen. */
+let plainUntil = 0;
+const withExams = () => Date.now() >= plainUntil;
+export const userColumns = () => (withExams() ? `${BASE_COLUMNS}, area, exams` : BASE_COLUMNS);
+/* The same two columns for a query that joins users under another name (the session lookup). */
+export const examColumns = (prefix = "") => (withExams() ? `, ${prefix}area, ${prefix}exams` : "");
+export async function tolerant<T>(run: () => Promise<T>): Promise<T> {
+  try {
+    return await run();
+  } catch (e) {
+    if (!withExams() || !/no such column/i.test(String((e as Error)?.message ?? e))) throw e;
+    plainUntil = Date.now() + 60_000;
+    return run();
+  }
+}
+
+const userBy = (db: D1Database, column: "id" | "email" | "phone", value: string) =>
+  tolerant(() => db.prepare(`SELECT ${userColumns()} FROM users WHERE ${column} = ?`).bind(value).first<UserRow>());
+export const userById = (db: D1Database, id: string) => userBy(db, "id", id);
+export const userByEmail = (db: D1Database, email: string) => userBy(db, "email", email);
+export const userByPhone = (db: D1Database, phone: string) => userBy(db, "phone", phone);
+
+/* An account's area and exams as a list. An account read without the columns keeps what every account had before
+   (all of pre-medical); one that has not chosen yet has no area and no exams. */
+export function chosen(u: { area?: string | null; exams?: string | null }): { area: string | null; exams: string[] } {
+  if (u.area === undefined) return { area: LEGACY.area, exams: [...LEGACY.exams] };
+  const exams = cleanExams(u.area, u.exams);
+  return exams.length ? { area: u.area, exams } : { area: null, exams: [] };
+}
 
 export async function createUser(db: D1Database, fields: { name?: string; email?: string | null; emailVerified?: boolean; phone?: string | null; passwordHash?: string | null }): Promise<string> {
   const id = uuid();
@@ -87,15 +118,16 @@ export async function publicUser(db: D1Database, u: UserRow, linked?: { provider
     role: u.role,
     planExpiresAt: u.plan_expires_at && !hasLifetimeAccess(u) && effectivePlan(u) !== "free" ? new Date(u.plan_expires_at).toISOString() : undefined,
     methods,
+    ...chosen(u),
   };
 }
 
 /* The same, read in one trip to the database. Null when the account is gone. */
 export async function publicUserById(db: D1Database, id: string) {
-  const [user, linked] = await db.batch([
-    db.prepare(`SELECT ${USER_COLUMNS} FROM users WHERE id = ?`).bind(id),
+  const [user, linked] = await tolerant(() => db.batch([
+    db.prepare(`SELECT ${userColumns()} FROM users WHERE id = ?`).bind(id),
     db.prepare("SELECT provider FROM identities WHERE user_id = ?").bind(id),
-  ]);
+  ]));
   const u = user!.results[0] as UserRow | undefined;
   return u ? publicUser(db, u, linked!.results as { provider: string }[]) : null;
 }

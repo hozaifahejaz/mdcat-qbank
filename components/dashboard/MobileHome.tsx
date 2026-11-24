@@ -1,6 +1,7 @@
 "use client";
 
 import NextCard from "@/components/dashboard/NextCard";
+import ExamLabel from "@/components/exams/ExamLabel";
 import { BankButtons } from "@/components/screens/PracticeScreen";
 import type { Dashboard } from "@/lib/dashboard-data";
 import { band, pct } from "@/lib/format";
@@ -9,12 +10,15 @@ const weekday = (iso: string) => new Date(iso + "T12:00:00").toLocaleDateString(
 
 /* The phone home screen: a button per question bank, straight into practice, and one progress card. Everything else
    lives on the Progress tab. */
-export default function MobileHome({ data }: { data: Dashboard }) {
+export default function MobileHome({ data, onBank }: { data: Dashboard; onBank?: (bank: string) => void }) {
   return (
     <div className="dgrid m-home">
       {data.resume && <NextCard data={data} />}
       <section aria-labelledby="mh-start">
-        <h1 id="mh-start" className="m-home-h">Start practicing</h1>
+        <div className="m-home-top">
+          <h1 id="mh-start" className="m-home-h">Start practicing</h1>
+          <ExamLabel bank={data.bank} onBank={onBank} />
+        </div>
         <BankButtons />
       </section>
       <WeekCard data={data} />
