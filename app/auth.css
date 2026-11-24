@@ -8,7 +8,7 @@ a { color: inherit; text-decoration: none; }
 [hidden] { display: none !important; }
 
 .pill { display: inline-flex; align-items: center; justify-content: center; gap: 10px; height: 48px; padding-inline: 24px; border-radius: 999px; font-weight: 600; font-size: 0.9375rem; border: 0; cursor: pointer; font-family: inherit; white-space: nowrap; transition: transform .15s, opacity .15s; text-decoration: none; }
-.pill:not(:disabled):hover { transform: translateY(-1px); }
+@media (hover: hover) { .pill:not(:disabled):hover { transform: translateY(-1px); } }
 .pill:disabled { opacity: .55; cursor: default; }
 .pill-dark { background: var(--pill); color: var(--on-pill); }
 .pill-light { background: var(--card); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); }
@@ -19,16 +19,17 @@ a { color: inherit; text-decoration: none; }
 .logo { display: flex; align-items: center; gap: 10px; font-weight: 800; letter-spacing: -0.03em; font-size: 1.0625rem; min-width: 0; white-space: nowrap; }
 .logo svg { flex: none; }
 .theme-toggle { width: 40px; height: 40px; display: grid; place-items: center; border: 0; border-radius: 999px; background: var(--card); color: var(--ink); cursor: pointer; flex: none; box-shadow: inset 0 0 0 1px var(--line); transition: transform .2s; }
-.theme-toggle:hover { transform: rotate(-15deg); }
+@media (hover: hover) { .theme-toggle:hover { transform: rotate(-15deg); } }
 
 /* Page frame */
-.auth { min-height: 100dvh; display: grid; grid-template-rows: auto 1fr auto; }
+.auth { min-height: 100dvh; display: grid; grid-template-rows: auto 1fr auto; grid-template-columns: minmax(0, 1fr); }
 .auth-wrap { width: 100%; max-width: 1080px; margin-inline: auto; padding-inline: 24px; box-sizing: border-box; }
 @media (max-width: 520px) { .auth-wrap { padding-inline: 16px; } }
+@media (max-width: 340px) { .auth-wrap { padding-inline: 12px; } .auth-top { gap: 8px; } .auth-top .end { gap: 8px; } .auth-top .logo { font-size: 1rem; gap: 6px; } .auth-top .end a { white-space: nowrap; } }
 .auth-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-block: 20px; }
 .auth-top .end { display: flex; align-items: center; gap: 14px; font-size: 0.9375rem; }
 .auth-top .end a { font-weight: 600; }
-.auth-top .end a:hover { color: var(--blue); }
+@media (hover: hover) { .auth-top .end a:hover { color: var(--blue); } }
 @media (max-width: 440px) { .auth-top .end .hint { display: none; } }
 .auth-main { display: grid; grid-template-columns: minmax(0, 460px) minmax(0, 1fr); gap: 20px; align-items: stretch; align-content: start; padding-block: 12px 40px; }
 .auth-main.solo { grid-template-columns: minmax(0, 520px); justify-content: center; align-items: start; }
@@ -42,7 +43,7 @@ a { color: inherit; text-decoration: none; }
 .auth-card .lede { color: var(--muted); margin-top: 8px; }
 .auth-card .switch { font-size: 0.9375rem; color: var(--muted); text-align: center; }
 .auth-card .switch a { color: var(--ink); font-weight: 700; }
-.auth-card .switch a:hover { color: var(--blue); }
+@media (hover: hover) { .auth-card .switch a:hover { color: var(--blue); } }
 
 .providers { display: grid; gap: 10px; }
 .or { display: flex; align-items: center; gap: 14px; font-size: 0.8125rem; font-weight: 600; color: var(--muted); }
@@ -50,7 +51,7 @@ a { color: inherit; text-decoration: none; }
 
 .tabs { display: grid; grid-template-columns: 1fr 1fr; background: var(--bg); border-radius: 14px; padding: 4px; gap: 2px; }
 .tabs button { font: inherit; font-size: 0.875rem; font-weight: 600; padding: 9px 4px; border: 0; border-radius: 10px; cursor: pointer; color: var(--muted); background: transparent; transition: background-color .2s, color .2s, box-shadow .2s; }
-.tabs button:hover { color: var(--ink); }
+@media (hover: hover) { .tabs button:hover { color: var(--ink); } }
 .tabs button[aria-selected="true"] { background: var(--card); color: var(--ink); box-shadow: 0 1px 3px rgba(17,18,20,.12); }
 
 form.stack, .stack { display: grid; gap: 14px; }
@@ -60,7 +61,7 @@ form.stack, .stack { display: grid; gap: 14px; }
 .field .row a { font-size: 0.8125rem; font-weight: 600; color: var(--blue); }
 .input { width: 100%; box-sizing: border-box; height: 48px; border: 0; border-radius: 14px; padding-inline: 16px; font: inherit; font-size: 1rem; color: var(--ink); background: var(--bg); box-shadow: inset 0 0 0 1.5px transparent; transition: box-shadow .15s, background-color .15s; }
 .input::placeholder { color: color-mix(in srgb, var(--muted) 70%, transparent); }
-.input:hover { box-shadow: inset 0 0 0 1.5px var(--line); }
+@media (hover: hover) { .input:hover { box-shadow: inset 0 0 0 1.5px var(--line); } }
 .input:focus { outline: none; background: var(--card); box-shadow: inset 0 0 0 1.5px var(--blue); }
 .phone-in { display: grid; grid-template-columns: auto minmax(0, 1fr); background: var(--bg); border-radius: 14px; box-shadow: inset 0 0 0 1.5px transparent; transition: box-shadow .15s, background-color .15s; }
 .phone-in:focus-within { background: var(--card); box-shadow: inset 0 0 0 1.5px var(--blue); }
@@ -70,7 +71,7 @@ form.stack, .stack { display: grid; gap: 14px; }
 .pw { position: relative; }
 .pw .input { padding-right: 64px; }
 .pw button { position: absolute; right: 6px; top: 6px; height: 36px; padding-inline: 12px; border: 0; border-radius: 10px; background: transparent; color: var(--muted); font: inherit; font-size: 0.8125rem; font-weight: 600; cursor: pointer; }
-.pw button:hover { color: var(--ink); }
+@media (hover: hover) { .pw button:hover { color: var(--ink); } }
 
 .note { font-size: 0.875rem; line-height: 1.5; padding: 12px 14px; border-radius: 14px; }
 .note.bad { background: var(--rose); color: var(--bad); }
@@ -159,10 +160,12 @@ html[data-look="new"] .auth {
 html[data-look="new"] body { background: #fafafa; }
 :root[data-theme="dark"][data-look="new"] body { background: #0c0d0f; }
 html[data-look="new"] .auth-top { padding-block: 16px; border-bottom: 1px solid color-mix(in srgb, var(--line) 80%, transparent); max-width: none; padding-inline: max(24px, calc((100% - 1080px) / 2 + 24px)); }
+@media (max-width: 520px) { html[data-look="new"] .auth-top { padding-inline: 16px; } }
+@media (max-width: 340px) { html[data-look="new"] .auth-top { padding-inline: 12px; } }
 html[data-look="new"] .auth-top .end a { color: var(--ink); }
 html[data-look="new"] .auth-top .end .hint { color: var(--muted); }
 html[data-look="new"] .theme-toggle { border-radius: 10px; box-shadow: none; background: transparent; color: var(--muted); }
-html[data-look="new"] .theme-toggle:hover { color: var(--ink); background: var(--card); transform: none; }
+@media (hover: hover) { html[data-look="new"] .theme-toggle:hover { color: var(--ink); background: var(--card); transform: none; } }
 html[data-look="new"] .auth-main { padding-block: 40px 48px; gap: 28px; }
 html[data-look="new"] .card { border-radius: 22px; box-shadow: var(--n-shadow-lg); }
 html[data-look="new"] .auth-card h1 { letter-spacing: -0.045em; }
@@ -173,11 +176,11 @@ html[data-look="new"] .tabs { border-radius: 12px; box-shadow: inset 0 0 0 1px v
 html[data-look="new"] .tabs button { border-radius: 9px; }
 html[data-look="new"] .input, html[data-look="new"] .phone-in { border-radius: 12px; background: var(--card); box-shadow: inset 0 0 0 1px var(--line); }
 html[data-look="new"] .phone-in .input { box-shadow: none; }
-html[data-look="new"] .input:hover, html[data-look="new"] .phone-in:hover { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--muted) 45%, var(--line)); }
+@media (hover: hover) { html[data-look="new"] .input:hover, html[data-look="new"] .phone-in:hover { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--muted) 45%, var(--line)); } }
 html[data-look="new"] .input:focus, html[data-look="new"] .phone-in:focus-within { box-shadow: inset 0 0 0 1.5px var(--blue), 0 0 0 4px color-mix(in srgb, var(--blue) 14%, transparent); }
 html[data-look="new"] .phone-in .input:focus { box-shadow: none; }
 html[data-look="new"] .note { border-radius: 12px; }
-html[data-look="new"] .auth-card .switch a:hover, html[data-look="new"] .auth-top .end a:hover { color: var(--blue); }
+@media (hover: hover) { html[data-look="new"] .auth-card .switch a:hover, html[data-look="new"] .auth-top .end a:hover { color: var(--blue); } }
 
 /* Side panel: the headline and points over a faint grid, with product cards floating beside them */
 html[data-look="new"] .auth-side { position: relative; overflow: hidden; background: var(--card); box-shadow: var(--n-shadow-lg); border-radius: 22px; align-content: start; padding: 44px 40px 300px; }

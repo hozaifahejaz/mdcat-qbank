@@ -45,7 +45,7 @@ const css = `
 .nf-sub { margin: 10px 0 0; color: var(--muted); font-size: 1.0625rem; }
 .nf-btns { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 22px; }
 .nf-btn { display: inline-flex; align-items: center; height: 44px; padding: 0 20px; border-radius: var(--r-btn, 999px); font-size: .9375rem; font-weight: 600; transition: transform .15s; }
-.nf-btn:hover { transform: translateY(-1px); }
+@media (hover: hover) { .nf-btn:hover { transform: translateY(-1px); } }
 .nf-btn.is-main { background: var(--cta, var(--ink)); color: var(--on-cta, var(--bg)); }
 .nf-btn.is-alt { background: var(--card); box-shadow: inset 0 0 0 1px var(--line); }
 

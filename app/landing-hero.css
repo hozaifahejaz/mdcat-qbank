@@ -5,7 +5,7 @@
 .x4-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .x4-mute { color: var(--x-mute); }
 .x4-link { background: none; border: 0; padding: 0; cursor: pointer; color: var(--x-blue) !important; font-weight: 600; font-size: .9375rem; }
-.x4-link:hover { text-decoration: underline; }
+@media (hover: hover) { .x4-link:hover { text-decoration: underline; } }
 
 /* Hero: the sentence */
 .x4-hero { padding: 88px 0 72px; text-align: center; }
@@ -27,7 +27,7 @@
 .x4-pgroup > small i { width: 8px; height: 8px; border-radius: 50%; }
 .x4-pgroup > div { display: flex; flex-wrap: wrap; gap: 6px; }
 .x4-pgroup button { cursor: pointer; border: 0; display: inline-flex; align-items: center; gap: 6px; height: 36px; padding-inline: 12px; border-radius: 10px; background: var(--x-bg); box-shadow: inset 0 0 0 1px var(--x-line); font-size: .875rem; font-weight: 500; }
-.x4-pgroup button:hover { box-shadow: inset 0 0 0 1.5px var(--x-ink); }
+@media (hover: hover) { .x4-pgroup button:hover { box-shadow: inset 0 0 0 1.5px var(--x-ink); } }
 .x4-pgroup button.on { background: var(--x-ink); color: var(--x-bg); box-shadow: none; }
 .x4-pgroup em { font-style: normal; font-size: .6875rem; font-weight: 700; color: #11804a; background: var(--x-mint); padding: 1px 6px; border-radius: 6px; }
 .x4-none { color: var(--x-mute); font-size: .9375rem; }
@@ -71,7 +71,7 @@
 .x4 .x4-stem { font-size: 1.1875rem; font-weight: 600; letter-spacing: -0.01em; line-height: 1.45; margin: 8px 0 18px; }
 .x4-opts { display: grid; gap: 10px; }
 .x4-opts button { cursor: pointer; display: grid; grid-template-columns: 30px 1fr; align-items: center; gap: 4px 12px; text-align: left; border: 0; padding: 12px 14px; border-radius: 14px; background: var(--x-bg); box-shadow: inset 0 0 0 1px var(--x-line); font-size: .9688rem; transition: transform .15s, box-shadow .15s; }
-.x4-opts button:not(:disabled):hover { transform: translateX(3px); box-shadow: inset 0 0 0 1.5px var(--x-ink); }
+@media (hover: hover) { .x4-opts button:not(:disabled):hover { transform: translateX(3px); box-shadow: inset 0 0 0 1.5px var(--x-ink); } }
 .x4-opts button:disabled { cursor: default; }
 .x4-opts i { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; font-style: normal; font-weight: 700; font-size: .8125rem; background: var(--x-card); box-shadow: inset 0 0 0 1px var(--x-line); }
 .x4-opts small { grid-column: 2; color: var(--x-mute); font-size: .875rem; line-height: 1.5; }
@@ -124,7 +124,7 @@
 .x4-soon .x4-notify { justify-content: center; }
 .x3-note .x4-link, .x4-end .x4-link { font-size: inherit; }
 .x4-track { cursor: pointer; border: 0; text-align: left; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 18px; border-radius: 18px; transition: transform .15s, box-shadow .15s; }
-.x4-track:hover { transform: translateY(-3px); box-shadow: var(--x-shadow-lg); }
+@media (hover: hover) { .x4-track:hover { transform: translateY(-3px); box-shadow: var(--x-shadow-lg); } }
 .x4-track b { font-size: 1rem; margin-top: 10px; }
 .x4-track small { color: var(--x-mute); font-size: .8125rem; line-height: 1.45; }
 .x4-track em { margin-top: auto; transform: translateY(6px); }
@@ -136,14 +136,14 @@
 @media (prefers-reduced-motion: reduce) {
   .x4-word, .x4-bar span { animation: none; }
   .x4-track, .x4-opts button, .x4-steps li > span { transition: none; }
-  .x4-track:hover, .x4-opts button:not(:disabled):hover { transform: none; }
+  @media (hover: hover) { .x4-track:hover, .x4-opts button:not(:disabled):hover { transform: none; } }
 }
 
 /* Area picker */
 .x4-areas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 @media (max-width: 560px) { .x4-areas { grid-template-columns: minmax(0, 1fr); } }
 .x4-areas button { cursor: pointer; border: 0; display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 14px; background: var(--x-bg); box-shadow: inset 0 0 0 1px var(--x-line); text-align: left; color: var(--x-ink); font: inherit; }
-.x4-areas button:hover { box-shadow: inset 0 0 0 1.5px var(--x-ink); }
+@media (hover: hover) { .x4-areas button:hover { box-shadow: inset 0 0 0 1.5px var(--x-ink); } }
 .x4-areas button.on { box-shadow: inset 0 0 0 2px var(--x-blue); }
 .x4-areas button > span:last-child { display: grid; min-width: 0; }
 .x4-areas b { font-size: .9375rem; }
@@ -181,7 +181,7 @@
 .x4-under { margin-top: 44px; display: flex; flex-direction: column; align-items: center; gap: 34px; }
 .x4-fan { list-style: none; padding: 8px 0 0; margin: 0; display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; width: min(1240px, calc(100vw - 48px)); flex: none; }
 .x4-fcard { width: 164px; padding: 16px; display: grid; gap: 2px; text-align: left; border-radius: 18px; transform: rotate(var(--r)); animation: x4-deal .5s cubic-bezier(.2,.8,.2,1) both; animation-delay: var(--d); transition: transform .2s; }
-.x4-fcard:hover { transform: rotate(0deg) translateY(-6px); }
+@media (hover: hover) { .x4-fcard:hover { transform: rotate(0deg) translateY(-6px); } }
 .x4-fhead { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
 .x4-fcard b { font-size: 1.0625rem; letter-spacing: -0.02em; }
 .x4-fcard small { color: var(--x-mute); font-size: .8125rem; line-height: 1.4; }
@@ -206,7 +206,7 @@
 .x4-appme b { font-size: .9375rem; }
 .x4-appin nav { display: grid; gap: 2px; margin-bottom: 14px; }
 .x4-appin nav button { cursor: pointer; border: 0; background: none; text-align: left; height: 38px; padding-inline: 12px; border-radius: 10px; font: inherit; font-size: .875rem; font-weight: 500; color: var(--x-mute); }
-.x4-appin nav button:hover { color: var(--x-ink); }
+@media (hover: hover) { .x4-appin nav button:hover { color: var(--x-ink); } }
 .x4-appin nav button.on { background: color-mix(in srgb, var(--x4-c) 12%, var(--x-card)); color: var(--x4-c); font-weight: 600; }
 .x4-appin aside small { padding-inline: 12px; font-size: .6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--x-mute); }
 .x4-appin aside ul { list-style: none; margin: 0; padding: 0 12px; display: grid; gap: 7px; font-size: .8125rem; color: var(--x-mute); }
@@ -256,7 +256,7 @@
 
 /* Hero tests as admit tickets */
 .x4-ticket { --c: var(--x-blue); position: relative; width: 160px; display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 0 1fr auto; text-align: left; border-radius: 16px; background: var(--x-card); box-shadow: var(--x-shadow), inset 0 0 0 1px color-mix(in srgb, var(--c) 22%, var(--x-line)); overflow: hidden; transform: rotate(var(--r)); animation: x4-deal .5s cubic-bezier(.2,.8,.2,1) both; animation-delay: var(--d); transition: transform .2s, box-shadow .2s; }
-.x4-ticket:hover { transform: rotate(0deg) translateY(-8px); box-shadow: var(--x-shadow-lg), inset 0 0 0 1.5px var(--c); }
+@media (hover: hover) { .x4-ticket:hover { transform: rotate(0deg) translateY(-8px); box-shadow: var(--x-shadow-lg), inset 0 0 0 1.5px var(--c); } }
 .x4-tk-top { padding: 14px 14px 16px; background: color-mix(in srgb, var(--c) 10%, var(--x-card)); display: grid; gap: 10px; align-content: start; min-height: 104px; }
 .x4-tk-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .x4-tk-row small { font-size: .6875rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: color-mix(in srgb, var(--c) 75%, var(--x-mute)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -289,7 +289,7 @@
 @keyframes x4-read { to { transform: scaleX(1); } }
 .x3-nav ul a { position: relative; }
 .x3-nav ul a::after { content: ""; position: absolute; left: 0; right: 0; bottom: -6px; height: 2px; border-radius: 2px; background: var(--x4-c); transform: scaleX(0); transform-origin: right; transition: transform .3s var(--x4-ease); }
-.x3-nav ul a:hover::after { transform: scaleX(1); transform-origin: left; }
+@media (hover: hover) { .x3-nav ul a:hover::after { transform: scaleX(1); transform-origin: left; } }
 
 /* Hero: lines rise in on load, the phrase arrives letter by letter, contour lines draw in behind */
 .x4-hero { position: relative; isolation: isolate; }
@@ -302,7 +302,7 @@
 .x4-wd > span { display: inline-block; animation: x4-letter .55s var(--x4-ease) calc(var(--i) * 22ms) backwards; }
 @keyframes x4-letter { from { transform: translateY(105%) rotate(6deg); } }
 .x4-pick { transition: color .7s ease, transform .2s var(--x4-ease); }
-.x4-pick:hover { transform: translateY(-2px); }
+@media (hover: hover) { .x4-pick:hover { transform: translateY(-2px); } }
 .x4-pick.idle .x4-chev { animation: x4-nudge 1.4s ease-in-out infinite; }
 @keyframes x4-nudge { 50% { transform: translateY(18%); } }
 .x4-contours { position: absolute; z-index: -1; left: 0; right: 0; bottom: 0; width: 100%; height: 300px; pointer-events: none; }
@@ -316,17 +316,17 @@
 .x4-picker { transform-origin: 50% 0; animation: x4-open .32s var(--x4-ease); }
 @keyframes x4-open { from { transform: translateX(-50%) translateY(-10px) scale(.94); } }
 .x4-areas button { animation: x4-rise .45s var(--x4-ease) calc(var(--i) * 28ms) backwards; transition: transform .2s var(--x4-ease), box-shadow .2s; }
-.x4-areas button:hover { transform: translateX(3px); }
+@media (hover: hover) { .x4-areas button:hover { transform: translateX(3px); } }
 .x4-areas button .x4-tile { transition: transform .3s var(--x4-spring); }
-.x4-areas button:hover .x4-tile { transform: rotate(-8deg) scale(1.08); }
+@media (hover: hover) { .x4-areas button:hover .x4-tile { transform: rotate(-8deg) scale(1.08); } }
 
 /* Tickets: dealt in, then they breathe; marks pop, bands fill */
 .x4-ticket { animation: x4-deal .6s var(--x4-ease) var(--d) both, x4-bob 6s ease-in-out calc(var(--d) * -9) infinite; }
 @keyframes x4-deal { from { transform: translateY(70px) rotate(calc(var(--r) * -3)) scale(.9); } }
 @keyframes x4-bob { 50% { translate: 0 -6px; } }
-.x4-ticket:hover { transform: rotate(0deg) translateY(-10px) scale(1.03); }
+@media (hover: hover) { .x4-ticket:hover { transform: rotate(0deg) translateY(-10px) scale(1.03); } }
 .x4-tk-mark { animation: x4-pop .5s var(--x4-spring) calc(var(--d) + .25s) backwards; }
-.x4-ticket:hover .x4-tk-mark { transform: rotate(-10deg) scale(1.1); }
+@media (hover: hover) { .x4-ticket:hover .x4-tk-mark { transform: rotate(-10deg) scale(1.1); } }
 .x4-tk-mark { transition: transform .3s var(--x4-spring); }
 .x4-tk-band i { transform-origin: left; animation: x4-fill .7s var(--x4-ease) calc(var(--d) + .35s) both; }
 .x4-go { animation: x4-rise .8s var(--x4-ease) .45s backwards; }
@@ -354,18 +354,18 @@
 
 /* Inside your account: the active tab shows a timer until the next one; rows slide in one by one */
 .x4-appin nav button { position: relative; overflow: hidden; transition: background .25s, color .25s, transform .2s var(--x4-ease); }
-.x4-appin nav button:hover { transform: translateX(2px); }
+@media (hover: hover) { .x4-appin nav button:hover { transform: translateX(2px); } }
 .x4-appin nav.auto button.on::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: 5px; height: 2px; border-radius: 2px; background: var(--x4-c); transform-origin: left; animation: x4-timer 4.2s linear both; }
 @keyframes x4-timer { from { transform: scaleX(0); } }
 .x4-appme .x4-tile { animation: x4-pop .5s var(--x4-spring); }
 .x4-pane { animation: none; }
 .x4-pane > h4 { animation: x4-slide .45s var(--x4-ease) backwards; }
 .x4-pane .x4-row, .x4-split > span { animation: x4-slide .5s var(--x4-ease) calc(.05s + var(--i) * 70ms) backwards; transition: transform .2s var(--x4-ease), box-shadow .2s; }
-.x4-pane .x4-row:hover { transform: translateX(4px); box-shadow: inset 0 0 0 1px var(--x4-c); }
+@media (hover: hover) { .x4-pane .x4-row:hover { transform: translateX(4px); box-shadow: inset 0 0 0 1px var(--x4-c); } }
 .x4-row u s { animation-delay: calc(.15s + var(--i, 0) * 70ms); animation-duration: 1s; }
 .x4-row.clear > i { animation: x4-pop .45s var(--x4-spring); }
 .x4-row button { transition: transform .2s var(--x4-spring); }
-.x4-row button:not(:disabled):hover { transform: scale(1.06); }
+@media (hover: hover) { .x4-row button:not(:disabled):hover { transform: scale(1.06); } }
 .x4-row button:disabled { animation: x4-pop .4s var(--x4-spring); }
 .x4-mock { animation: x4-slide .5s var(--x4-ease) .05s backwards; }
 .x4-ring { animation: x4-sweep 1.2s var(--x4-ease) .15s backwards; }
@@ -384,7 +384,7 @@
 
 /* Pricing: the best plan floats a little; ticks pop in once the plans are seen */
 .x3-plans .plan { transition: transform .25s var(--x4-ease), box-shadow .25s; }
-.x3-plans .plan:not(.best):hover { transform: translateY(-6px); box-shadow: var(--x-shadow-lg); }
+@media (hover: hover) { .x3-plans .plan:not(.best):hover { transform: translateY(-6px); box-shadow: var(--x-shadow-lg); } }
 .plan.best .x3-btn { position: relative; overflow: hidden; }
 .plan.best .bolt svg { animation: x4-hop 2.4s ease-in-out infinite; }
 .x3-sec[data-seen] .plan li svg { animation: x4-pop .45s var(--x4-spring) backwards; }
@@ -393,7 +393,7 @@
 
 /* FAQ: an opened answer slides down into place */
 .x3-faq details { transition: transform .2s var(--x4-ease); }
-.x3-faq details:hover { transform: translateX(4px); }
+@media (hover: hover) { .x3-faq details:hover { transform: translateX(4px); } }
 .x3-faq details[open] p { animation: x4-drop .4s var(--x4-ease); }
 @keyframes x4-drop { from { transform: translateY(-12px); } }
 
@@ -412,7 +412,7 @@
 .x3-sec[data-seen] .x4-sm-flag { animation: x4-raise .5s var(--x4-spring) 1.7s backwards; }
 @keyframes x4-raise { from { transform: scaleY(0); } }
 .x4-end .x3-btn { transition: transform .25s var(--x4-spring), box-shadow .25s; }
-.x4-end .x3-btn:hover { transform: translateY(-3px) scale(1.03); }
+@media (hover: hover) { .x4-end .x3-btn:hover { transform: translateY(-3px) scale(1.03); } }
 
 @media (prefers-reduced-motion: reduce) {
   .x4 *, .x4 *::before, .x4 *::after { animation: none !important; transition: none !important; }

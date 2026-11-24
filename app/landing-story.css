@@ -14,8 +14,8 @@
 .x7-cta { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; margin-top: 8px; }
 .x7 .x7-how { font-weight: 600; color: var(--x-mute); }
 .x7-how::after { content: " ↓"; display: inline-block; transition: transform .25s var(--x7-ease); }
-.x7 .x7-how:hover { color: var(--x-ink); }
-.x7-how:hover::after { transform: translateY(3px); }
+@media (hover: hover) { .x7 .x7-how:hover { color: var(--x-ink); } }
+@media (hover: hover) { .x7-how:hover::after { transform: translateY(3px); } }
 .x7 .x3-proof { color: var(--x-faint); font-size: .875rem; }
 .x7-num { font-size: .8125rem; font-weight: 700; letter-spacing: .12em; color: var(--x-blue); }
 .x7-step h2 { margin: 0; font-size: clamp(2.1rem, 1.2rem + 2.6vw, 3.5rem); font-weight: 800; letter-spacing: -0.04em; line-height: 1.05; transition: color .4s; }
@@ -162,14 +162,15 @@
 /* Areas */
 .x7-areas { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
 .x7-area { display: grid; justify-items: start; align-content: start; gap: 8px; padding: 22px; border: 0; text-align: left; font: inherit; color: inherit; cursor: pointer; transition: transform .3s var(--x7-ease), box-shadow .3s; }
-.x7-area:hover, .x7-area:focus-visible { transform: translateY(-5px); box-shadow: var(--x-shadow-lg), inset 0 0 0 1.5px var(--c); outline: none; }
+.x7-area:focus-visible { transform: translateY(-5px); box-shadow: var(--x-shadow-lg), inset 0 0 0 1.5px var(--c); outline: none; }
+@media (hover: hover) { .x7-area:hover { transform: translateY(-5px); box-shadow: var(--x-shadow-lg), inset 0 0 0 1.5px var(--c); outline: none; } }
 .x7-tile { width: 44px; height: 44px; display: grid; place-items: center; margin-bottom: 6px; border-radius: 12px; color: var(--c); background: color-mix(in srgb, var(--c) 12%, var(--x-card)); transition: transform .3s var(--x7-ease); }
-.x7-area:hover .x7-tile { transform: rotate(-8deg) scale(1.06); }
+@media (hover: hover) { .x7-area:hover .x7-tile { transform: rotate(-8deg) scale(1.06); } }
 .x7-area b { font-size: 1.0625rem; letter-spacing: -0.02em; }
 .x7-area small { color: var(--x-mute); font-size: .8125rem; line-height: 1.45; }
 .x7-area em { margin-top: auto; padding-top: 10px; font-style: normal; font-size: .8125rem; font-weight: 600; color: var(--c); }
 .x7-area em::after { content: " →"; display: inline-block; transition: transform .25s var(--x7-ease); }
-.x7-area:hover em::after { transform: translateX(4px); }
+@media (hover: hover) { .x7-area:hover em::after { transform: translateX(4px); } }
 @media (max-width: 960px) { .x7-areas { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 420px) { .x7-areas { gap: 10px; } .x7-area { padding: 16px; } }
 
@@ -177,7 +178,7 @@
 .x7-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin: -16px auto 36px; max-width: 900px; }
 .x7-chips button { display: inline-flex; align-items: center; gap: 7px; height: 38px; padding-inline: 14px; border: 0; border-radius: 999px; background: var(--x-card); box-shadow: inset 0 0 0 1px var(--x-line), var(--x-shadow); font: inherit; font-size: .875rem; font-weight: 600; color: var(--x-mute); cursor: pointer; white-space: nowrap; transition: background .25s, color .25s, transform .2s; }
 .x7-chips button svg { color: var(--c); transition: color .25s; }
-.x7-chips button:hover { transform: translateY(-2px); color: var(--x-ink); }
+@media (hover: hover) { .x7-chips button:hover { transform: translateY(-2px); color: var(--x-ink); } }
 .x7-chips button.on { background: var(--c); color: #fff; box-shadow: 0 10px 22px -12px var(--c); }
 .x7-chips button.on svg { color: #fff; }
 @media (max-width: 720px) {
@@ -198,7 +199,7 @@
 /* Entrances: a short rise the first time a section is seen */
 .x7 .x3-head, .x7-area, .x7-endcard { transition: transform .9s var(--x7-ease); }
 .x7-area { transition-delay: calc(var(--i) * 45ms); }
-.x7-area:hover { transition-delay: 0s; transition-duration: .3s; }
+@media (hover: hover) { .x7-area:hover { transition-delay: 0s; transition-duration: .3s; } }
 .x7[data-armed] .x3-sec:not([data-seen]) :is(.x3-head, .x7-area, .x7-endcard) { transform: translateY(44px); }
 
 @media (prefers-reduced-motion: reduce) {
