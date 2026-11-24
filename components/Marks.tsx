@@ -39,6 +39,27 @@ const subjectParts: Record<string, Part[]> = {
   Mathematics: [
     { d: "M7.5 4.5v6M4.5 7.5h6M13.5 7.5h6M5.4 14.4l4.2 4.2M9.6 14.4l-4.2 4.2M13.5 15h6M13.5 18h6" },
   ],
+  // A globe
+  "General Knowledge": [
+    { d: "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z", fill: "soft" },
+    { d: "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM3 12h18M12 3c2.5 2.6 3.7 5.6 3.7 9s-1.2 6.4-3.7 9c-2.5-2.6-3.7-5.6-3.7-9S9.5 5.6 12 3z" },
+  ],
+  // A crescent and star
+  "Pakistan Studies": [
+    { d: "M14.5 4.2a8 8 0 1 0 5.3 12.3A6.6 6.6 0 0 1 14.5 4.2z", fill: "soft" },
+    { d: "M14.5 4.2a8 8 0 1 0 5.3 12.3A6.6 6.6 0 0 1 14.5 4.2z" },
+    { d: "M18 6.2l.7 1.6 1.7.1-1.3 1.1.4 1.7-1.5-.9-1.5.9.4-1.7-1.3-1.1 1.7-.1z", fill: "solid" },
+  ],
+  // An open book on a reading stand
+  Islamiat: [
+    { d: "M12 8.5C10 7 7 6.5 3.5 7v6.5c3.5-.5 6.5 0 8.5 1.5z", fill: "soft" },
+    { d: "M12 8.5C10 7 7 6.5 3.5 7v6.5c3.5-.5 6.5 0 8.5 1.5 2-1.5 5-2 8.5-1.5V7C17 6.5 14 7 12 8.5zM12 8.5V15M7 21l10-6M17 21 7 15" },
+  ],
+  // A pen nib
+  Urdu: [
+    { d: "M13.5 3.5l7 7-8.5 8.5-6.5 1.5 1.5-6.5z", fill: "soft" },
+    { d: "M13.5 3.5l7 7-8.5 8.5-6.5 1.5 1.5-6.5zM5.5 20.5l5.3-5.3M11.6 13.2a1.3 1.3 0 1 0 0-.01" },
+  ],
 };
 
 const examParts: Record<string, Part[]> = {
@@ -69,7 +90,7 @@ const examParts: Record<string, Part[]> = {
     { d: "M12 6.5C10 5 7 4.5 3.5 5v13c3.5-.5 6.5 0 8.5 1.5 2-1.5 5-2 8.5-1.5V5c-3.5-.5-6.5 0-8.5 1.5zM12 6.5v13" },
     { d: "M14.9 9.5c.3-.7 1-1.1 1.8-1.1 1 0 1.7.7 1.7 1.6 0 1.6-3.5 2.8-3.5 5.5h3.6" },
   ],
-  // Tests still to come
+  // Tests still to come (LAT's scales are in use)
   ecat: [
     { d: "M18.55 10.19 20.9 10.64v2.72l-2.35.45-.63 1.54 1.33 1.98-1.92 1.92-1.98-1.33-1.54.63-.45 2.35h-2.72l-.45-2.35-1.54-.63-1.98 1.33-1.92-1.92 1.33-1.98-.63-1.54-2.35-.45v-2.72l2.35-.45.63-1.54-1.33-1.98 1.92-1.92 1.98 1.33 1.54-.63.45-2.35h2.72l.45 2.35 1.54.63 1.98-1.33 1.92 1.92-1.33 1.98z", fill: "soft" },
     { d: "M18.55 10.19 20.9 10.64v2.72l-2.35.45-.63 1.54 1.33 1.98-1.92 1.92-1.98-1.33-1.54.63-.45 2.35h-2.72l-.45-2.35-1.54-.63-1.98 1.33-1.92-1.92 1.33-1.98-.63-1.54-2.35-.45v-2.72l2.35-.45.63-1.54-1.33-1.98 1.92-1.92 1.98 1.33 1.54-.63.45-2.35h2.72l.45 2.35 1.54.63 1.98-1.33 1.92 1.92-1.33 1.98z" },
@@ -104,7 +125,7 @@ export function SubjectMark({ subject, size = 18 }: { subject: string; size?: nu
   return parts ? <Mark parts={parts} size={size} /> : <>{subject[0]}</>;
 }
 
-/** The mark for a test or bank: mdcat, nums, aku, fsc1, fsc2, and ecat, net, lat for the ones still to come. */
+/** The mark for a test or bank: mdcat, nums, aku, fsc1, fsc2, lat, and ecat, net for the ones still to come. */
 export function ExamMark({ id, size = 22 }: { id: string; size?: number }) {
   const parts = examParts[id];
   return parts ? <Mark parts={parts} size={size} /> : null;

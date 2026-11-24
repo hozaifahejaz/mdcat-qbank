@@ -23,7 +23,7 @@ export const checklist = [
   "Facts and numbers match the textbook",
   "Exactly one option is correct",
   "Explanation is accurate and covers every option",
-  "On the PMDC syllabus, tagged to the right topic",
+  "On the exam's syllabus, tagged to the right topic",
   "Original wording, not copied from a book or another bank",
   "Clear, correct English",
   "Difficulty label is sensible",
@@ -37,6 +37,10 @@ export const subjectCodes: Record<string, string> = {
   English: "ENG",
   "Logical Reasoning": "LR",
   Mathematics: "MAT",
+  "General Knowledge": "GK",
+  "Pakistan Studies": "PST",
+  Islamiat: "ISL",
+  Urdu: "URD",
 };
 
 /* Above this word overlap with another question, a new one counts as a duplicate and goes back to its writer. */
