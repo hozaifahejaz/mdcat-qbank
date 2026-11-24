@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { banks } from "../../lib/banks";
 import { LEGACY, areas, bankAmong, banksFor, cleanExams, exams, signupHref, startHref } from "../../lib/exams";
 import { allowedBanks, bankFor, mayUse } from "../exams";
-import { chosen } from "../users";
+import { actsAsStaff, chosen, effectivePlan, testing } from "../users";
 
 const ids = (list: { id: string }[]) => list.map((b) => b.id);
 
@@ -73,5 +73,31 @@ describe("what an account is served", () => {
     expect(allowedBanks({ role: "admin", area: null, exams: null })).toEqual(banks);
     expect(ids(allowedBanks({ role: "student", area: null, exams: null }))).toEqual(ids(banks));
     expect(ids(allowedBanks({ role: "student" }))).toEqual(ids(banks));
+  });
+
+  it("treats an admin who is testing as the student they chose", () => {
+    const base = { role: "admin", plan: "free", plan_expires_at: null, area: "medical", exams: "mdcat,nums,aku" };
+    const t = { ...base, test: JSON.stringify({ plan: "free", area: "medical", exams: ["nums"] }) };
+    expect(testing(t)).toEqual({ plan: "free", area: "medical", exams: ["nums"] });
+    expect(actsAsStaff(t)).toBe(false);
+    expect(effectivePlan(t)).toBe("free");
+    expect(ids(allowedBanks(t))).toEqual(["fsc1", "fsc2", "nums"]);
+    expect(chosen(t)).toEqual({ area: "medical", exams: ["nums"] });
+    // A new sign-up: nothing chosen yet.
+    const fresh = { ...base, test: JSON.stringify({ plan: "paid", area: null, exams: [] }) };
+    expect(chosen(fresh)).toEqual({ area: null, exams: [] });
+    expect(effectivePlan(fresh)).toBe("bundle");
+    // Not testing: an admin has everything.
+    expect(actsAsStaff(base)).toBe(true);
+    expect(effectivePlan(base)).toBe("bundle");
+    expect(allowedBanks(base)).toEqual(banks);
+  });
+
+  it("never lets a student's account be put in a test", () => {
+    const s = { role: "student", plan: "free", plan_expires_at: null, area: "medical", exams: "nums", test: JSON.stringify({ plan: "paid", area: "medical", exams: ["mdcat", "aku"] }) };
+    expect(testing(s)).toBeNull();
+    expect(effectivePlan(s)).toBe("free");
+    expect(ids(allowedBanks(s))).toEqual(["fsc1", "fsc2", "nums"]);
+    expect(testing({ role: "admin", test: "not json" })).toBeNull();
   });
 });

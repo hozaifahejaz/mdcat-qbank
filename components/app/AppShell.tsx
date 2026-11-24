@@ -10,6 +10,7 @@ import { go, usePageTurn } from "@/components/Nav";
 import ThemeToggle from "@/components/ThemeToggle";
 import { signOut } from "@/lib/auth";
 import { planNames } from "@/lib/format";
+import { examById } from "@/lib/exams";
 import { isStaff, roleNames } from "@/lib/qc";
 import { site, supportHref } from "@/lib/site";
 import { type AccountUser, getCurrentUser, lastUser, needsExam } from "@/lib/user";
@@ -237,10 +238,23 @@ function SharedFrame({ children }: { children: React.ReactNode }) {
   }, [gated]);
   return (
     <FrameContext value={ctx}>
+      {user?.testing && <TestBar user={user} />}
       <AppFrame active={meta.active} title={meta.title} user={user} bare={meta.bare || gated} hasAside={meta.aside} asideSlot={setSlot}>
         {gated ? <div className="sk" style={{ height: "100dvh", borderRadius: 0 }} /> : <Fragment key={turn}>{children}</Fragment>}
       </AppFrame>
     </FrameContext>
+  );
+}
+
+/* While an admin is testing the site as a student (the admin panel's "Test as a student"), a small bar in the corner says
+   so on every student page, with the way back. */
+function TestBar({ user }: { user: AccountUser }) {
+  const names = (user.exams ?? []).map((id) => examById(id)?.short ?? id);
+  return (
+    <div className="test-bar" role="status">
+      <span><b>Testing as a student</b> · {user.plan === "free" ? "Free" : "Paid"} · {names.length ? names.join(", ") : "new sign-up"}</span>
+      <a href="/admin/test">Change or stop</a>
+    </div>
   );
 }
 

@@ -1,14 +1,14 @@
 import { type Bank, banks } from "../lib/banks";
 import { bankAmong, banksFor } from "../lib/exams";
-import { chosen } from "./users";
+import { actsAsStaff, chosen } from "./users";
 
 /* Which banks an account may be served from: the banks of the exams it chose (lib/exams.ts). Staff get every bank.
    An account that has not chosen yet gets what every account had before the choice existed, so nothing breaks for
    a browser still running an older copy of the site; the pages send it to the welcome screen. */
-type Who = { role: string; area?: string | null; exams?: string | null };
+type Who = { role: string; area?: string | null; exams?: string | null; test?: string | null };
 
 export function allowedBanks(who: Who): Bank[] {
-  if (who.role !== "student") return banks;
+  if (actsAsStaff(who)) return banks;
   const mine = banksFor(chosen(who).exams);
   return mine.length ? mine : banksFor(chosen({}).exams);
 }

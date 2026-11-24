@@ -14,10 +14,12 @@ export type StudentUser = {
 /* role is "student" for everyone except Markhor Prep staff (lib/qc.ts). */
 /* area and exams: what the account is preparing for (lib/exams.ts). An account that has not chosen yet has no area
    and an empty list. A copy kept by an older version of the site has neither field. */
-export type AccountUser = StudentUser & { methods: ("email" | "phone" | "google" | "apple")[]; role: Role; area?: string | null; exams?: string[] };
+export type AccountUser = StudentUser & { methods: ("email" | "phone" | "google" | "apple")[]; role: Role; area?: string | null; exams?: string[]; testing?: boolean };
 
 /* A student who has not said what they are preparing for yet: every page sends them to the welcome screen first. */
-export const needsExam = (u: AccountUser | null | undefined) => !!u && u.role === "student" && Array.isArray(u.exams) && u.exams.length === 0;
+export const needsExam = (u: AccountUser | null | undefined) => !!u && (u.role === "student" || !!u.testing) && Array.isArray(u.exams) && u.exams.length === 0;
+/* testing: an admin trying the site as a student (the admin panel's "Test as a student"). The plan, area and exams
+   above are then the test's, and the pages treat the account as a student. */
 
 const KEY = "me";
 /* The account as this browser last saw it, so pages can draw their frame before the server answers.

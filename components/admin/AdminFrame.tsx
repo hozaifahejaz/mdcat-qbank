@@ -25,6 +25,7 @@ function adminNav(user: AccountUser): Nav {
         { href: "/admin/users", label: "Users and plans", icon: "account", short: "Users" },
         { href: "/admin/tickets", label: "Support tickets", icon: "help", short: "Tickets" },
         { href: "/admin/visitors", label: "Visitors", icon: "results" },
+        { href: "/admin/test", label: "Test as a student", icon: "play", short: "Test" },
         { href: "/admin/reveal", label: "Reveal watermark", icon: "target", short: "Watermark" },
       ],
     }] : []),

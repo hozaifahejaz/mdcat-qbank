@@ -655,3 +655,8 @@
 @media (max-width: 760px) { .exam-switch button { height: 36px; } .exam-label { height: 38px; } }
 .wel-exams .wel-opts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 @media (max-width: 520px) { .wel-exams .wel-opts { grid-template-columns: 1fr; } }
+
+/* Across the top of every student page while an admin is testing as a student (components/app/AppShell.tsx). */
+.test-bar { position: fixed; right: 16px; bottom: 16px; z-index: 60; display: flex; align-items: center; gap: 4px 14px; flex-wrap: wrap; max-width: calc(100vw - 32px); box-sizing: border-box; padding: 10px 16px; border-radius: 14px; background: var(--pill); color: var(--on-pill); font-size: .8125rem; box-shadow: var(--shadow); }
+@media (max-width: 760px) { .test-bar { left: 12px; right: 12px; bottom: calc(88px + env(safe-area-inset-bottom)); justify-content: space-between; } }
+.test-bar a { color: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
