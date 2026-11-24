@@ -5,7 +5,7 @@
    every other bank lists its questions in the bank_questions table with that bank's subject and chapter
    (migrations/0008_banks.sql). So a Biology question can be "Enzymes" in MDCAT and "Chapter 3: Enzymes" in FSc
    Part 1 at the same time. Which questions go in which bank gets filled in as questions are added. */
-export type BankId = "fsc1" | "fsc2" | "mdcat" | "nums" | "aku";
+export type BankId = "fsc1" | "fsc2" | "mdcat" | "nums" | "aku" | "lat";
 
 export type BankSubject = { name: string; chapters: string[] };
 export type Bank = { id: BankId; name: string; short: string; blurb: string; subjects: BankSubject[] };
@@ -245,6 +245,52 @@ export const akuMathematics = [
   "Data sufficiency",
 ];
 
+/* HEC Law Admission Test (LAT), Part I: 75 MCQs in 100 minutes. English 20, General Knowledge 20, Pakistan Studies
+   10, Islamiat 10, Urdu 10, Mathematics 5 (HEC ETC content weightages). Part II, an essay and a personal statement,
+   is practised on the writing screen, not in the bank. English and Mathematics are the questions already written
+   (MDCAT English, AKU Mathematics, migrations/0070); the other four subjects are written for LAT and later shared with
+   the government jobs tests. Chapters follow the topics LAT prep guides group the subjects into. */
+export const latSyllabus = {
+  English: mdcatSyllabus.English,
+  "General Knowledge": [
+    "Everyday science",
+    "World geography and countries",
+    "International organisations and treaties",
+    "Law, courts and the Constitution",
+    "Famous people, books and firsts",
+    "Sports, awards and days",
+    "Current affairs",
+  ],
+  "Pakistan Studies": [
+    "Ancient and Muslim rule in South Asia",
+    "After 1857 and the Pakistan Movement",
+    "Pakistan since 1947",
+    "Constitutions of Pakistan",
+    "Geography of Pakistan",
+    "Economy, resources and culture",
+    "Foreign relations",
+  ],
+  Islamiat: [
+    "The Quran",
+    "Hadith and Sunnah",
+    "Life of the Holy Prophet",
+    "Beliefs and worship",
+    "The Rightly Guided Caliphs",
+    "Prophets and companions",
+    "Islamic law and society",
+  ],
+  Urdu: ["Word meanings", "Synonyms and antonyms", "Idioms and proverbs", "Grammar", "Poets and writers"],
+  // LAT's five maths questions are basic: the arithmetic, algebra, geometry and data chapters of AKU Mathematics.
+  Mathematics: [
+    "Arithmetic and number",
+    "Percentages",
+    "Ratio, rates and proportion",
+    "Algebra",
+    "Geometry and measurement",
+    "Data interpretation and statistics",
+  ],
+};
+
 export const banks: Bank[] = [
   { id: "fsc1", name: "FSc Part 1", short: "FSc 1", blurb: "First-year textbooks", subjects: fsc1 },
   { id: "fsc2", name: "FSc Part 2", short: "FSc 2", blurb: "Second-year textbooks", subjects: fsc2 },
@@ -282,6 +328,10 @@ export const banks: Bank[] = [
       { name: "Mathematics", chapters: akuMathematics },
     ],
   },
+  {
+    id: "lat", name: "LAT", short: "LAT", blurb: "HEC Law Admission Test",
+    subjects: (Object.keys(latSyllabus) as (keyof typeof latSyllabus)[]).map((name) => ({ name, chapters: latSyllabus[name] })),
+  },
 ];
 
 export const bankIds = banks.map((b) => b.id);
@@ -295,5 +345,9 @@ export const subjectTone: Record<string, { tone: string; solid: string }> = {
   English: { tone: "var(--lilac)", solid: "#8a63ff" },
   "Logical Reasoning": { tone: "var(--lemon)", solid: "#c9a400" },
   Mathematics: { tone: "var(--sky)", solid: "#0f9fb5" },
+  "General Knowledge": { tone: "var(--mint)", solid: "#1f9d6b" },
+  "Pakistan Studies": { tone: "var(--peach)", solid: "#d9822b" },
+  Islamiat: { tone: "var(--lemon)", solid: "#b08d00" },
+  Urdu: { tone: "var(--lilac)", solid: "#a05acb" },
 };
 export const toneOf = (subject: string) => subjectTone[subject] ?? { tone: "var(--bg)", solid: "var(--muted)" };

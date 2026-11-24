@@ -3,7 +3,7 @@ import { api } from "@/lib/api";
 import { seen } from "@/lib/cache";
 import type { StudentUser } from "@/lib/user";
 
-export type Subject = "Biology" | "Chemistry" | "Physics" | "English" | "Logical Reasoning" | "Mathematics";
+export type Subject = "Biology" | "Chemistry" | "Physics" | "English" | "Logical Reasoning" | "Mathematics" | "General Knowledge" | "Pakistan Studies" | "Islamiat" | "Urdu";
 
 
 export type ChapterStat = { chapter: string; answered: number; available: number; correct: number };
