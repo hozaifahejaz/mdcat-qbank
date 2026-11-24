@@ -40,6 +40,27 @@ export function peeked(row: Counter | null | undefined, limit: number, windowMs:
   }
 }
 
+/* Takes `n` from an allowance of `limit` per window, in one statement, so requests arriving at the same moment can't
+   each read the old count and all get through. It returns a row when the `n` were taken and none when they would go
+   past the limit (nothing is counted then). Read it with `took`. */
+export function reserve(db: D1Database, key: string, n: number, limit: number, windowMs: number) {
+  const now = Date.now();
+  return db
+    .prepare(
+      `INSERT INTO rate_limits (key, count, window_start) SELECT ?1, ?4, ?2 WHERE ?4 <= ?5
+       ON CONFLICT (key) DO UPDATE SET
+         count = CASE WHEN window_start < ?3 THEN ?4 ELSE count + ?4 END,
+         window_start = CASE WHEN window_start < ?3 THEN ?2 ELSE window_start END
+       WHERE (window_start < ?3 AND ?4 <= ?5) OR (window_start >= ?3 AND count + ?4 <= ?5)
+       RETURNING count`,
+    )
+    .bind(key, now, now - windowMs, n, limit);
+}
+export const took = (res: D1Result | undefined) => !!res?.results.length;
+/* Gives back what a reserve took, when the thing it was taken for didn't happen after all. */
+export const giveBack = (db: D1Database, key: string, n: number) =>
+  db.prepare("UPDATE rate_limits SET count = max(0, count - ?2) WHERE key = ?1").bind(key, n);
+
 /* How much of a counted allowance `key` has used in the current window. */
 export const usedStmt = (db: D1Database, key: string) => db.prepare("SELECT count, window_start FROM rate_limits WHERE key = ?").bind(key);
 export const usedOf = (row: Counter | null | undefined, windowMs: number) => (row && row.window_start >= Date.now() - windowMs ? row.count : 0);

@@ -6,7 +6,7 @@ import { uuid } from "./crypto";
 import { requireActiveSession } from "./devices";
 import { body, fail, json, str } from "./http";
 import { prefsStmt, readPrefs } from "./prefs";
-import { hit, peeked, rateLimit, spend, usedOf, usedStmt } from "./ratelimit";
+import { giveBack, peeked, rateLimit, reserve, took, usedOf, usedStmt } from "./ratelimit";
 import { note, requireSession } from "./session";
 import { effectivePlan } from "./users";
 
@@ -570,19 +570,37 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
         throw fail(429, "daily_limit", left > 0 ? `You can start ${left} more question${left === 1 ? "" : "s"} today. Pick a shorter set, or carry on with a test you already have open.` : "That's the most new questions for one day. Review what you've done today, and start new sets tomorrow.");
       }
     }
+    // The checks above read the counts a moment ago, which is good enough for a kind message but not for a limit:
+    // requests sent together would all have read the same numbers. So the start and its questions are taken from
+    // their allowances here, each in one statement that refuses once the allowance is used up.
+    const refuse = async (back: D1PreparedStatement[], e: Error) => { if (back.length) await c.db.batch(back); throw e; };
+    if (!me.staff) {
+      const [day, hour] = await c.db.batch([reserve(c.db, `given:${me.id}`, ids.length, DAILY_QUESTIONS, DAY), reserve(c.db, `start:${me.id}`, 1, STARTS_PER_HOUR, HOUR)]);
+      const back = [...(took(day) ? [giveBack(c.db, `given:${me.id}`, ids.length)] : []), ...(took(hour) ? [giveBack(c.db, `start:${me.id}`, 1)] : [])];
+      if (!took(hour)) await refuse(back, fail(429, "rate_limited", "Too many tries. Please wait a little and try again."));
+      if (!took(day)) await refuse(back, fail(429, "daily_limit", "That's the most new questions for one day. Pick a shorter set, or carry on with a test you already have open."));
+    }
+    // Likewise only one timed test or mock may be open, and a free account gets one mini mock: the test is saved only
+    // if that still holds at the moment of saving.
+    const only = mode !== "tutor" ? " AND NOT EXISTS (SELECT 1 FROM attempts WHERE user_id = ?2 AND finished_at IS NULL AND mode != 'tutor')" : "";
+    const once = kind === "mini-mock" && !me.paid ? " AND NOT EXISTS (SELECT 1 FROM attempts WHERE user_id = ?2 AND kind = 'mini-mock')" : "";
     // Timed tests get a minute a question; the mock is the real paper's 3 hours for 180.
     // A full mock gets its paper's own time (NUMS: 150 questions in 2 hours 45 minutes).
     const deadline = !clock ? null : kind === "mock" ? now + format.minutes * 60 * 1000 : now + ids.length * 60 * 1000;
     // The same trip that saves the test also reads its questions, so the player opens without asking again.
     const made = await c.db.batch([
       c.db.prepare(`INSERT INTO attempts (id, user_id, kind, mode, title, question_ids, mock_no, paper, started_at, deadline_at, total, neg_first)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).bind(id, me.id, kind, mode, title, JSON.stringify(ids), mockNo, year, now, deadline, ids.length, kind === "mock" ? format.negFirst : 0),
-      c.db.prepare("INSERT INTO answers (attempt_id, idx, user_id, question_id) SELECT ?1, key, ?2, value FROM json_each(?3)").bind(id, me.id, JSON.stringify(ids)),
+        SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12 WHERE 1 = 1${only}${once}`).bind(id, me.id, kind, mode, title, JSON.stringify(ids), mockNo, year, now, deadline, ids.length, kind === "mock" ? format.negFirst : 0),
+      c.db.prepare("INSERT INTO answers (attempt_id, idx, user_id, question_id) SELECT ?1, key, ?2, value FROM json_each(?3) WHERE EXISTS (SELECT 1 FROM attempts WHERE id = ?1)").bind(id, me.id, JSON.stringify(ids)),
       c.db.prepare("SELECT * FROM served WHERE id IN (SELECT value FROM json_each(?))").bind(JSON.stringify(ids)),
       c.db.prepare("SELECT question_id FROM bookmarks WHERE user_id = ?").bind(me.id),
-      ...(me.staff ? [] : [spend(c.db, `given:${me.id}`, ids.length, DAY), hit(c.db, `start:${me.id}`, HOUR)]),
       ...(keepMock ? [keepMock] : []),
     ]);
+    if (!made[0]!.meta.changes) {
+      await refuse(me.staff ? [] : [giveBack(c.db, `given:${me.id}`, ids.length), giveBack(c.db, `start:${me.id}`, 1)],
+        once ? fail(402, "needs_pass", "You've used your free mini mock. A paid plan opens every full mock.")
+          : fail(409, "open_test", "You still have a timed test running. Finish or submit it before starting another."));
+    }
     const wanted = Number(b.count) || 0;
     const a: AttemptRow = { id, user_id: me.id, kind, mode, title, question_ids: "", mock_no: mockNo, paper: year, started_at: now, deadline_at: deadline, finished_at: null, seconds: null, score: null, total: ids.length };
     const rows: AnswerRow[] = ids.map((q, idx) => ({ idx, question_id: q, answer: null, flagged: 0, checked: 0, seconds: null }));

@@ -9,7 +9,8 @@ export async function checkCaptcha(env: Env, token: unknown, ip: string): Promis
   const form = new FormData();
   form.append("secret", env.TURNSTILE_SECRET_KEY);
   form.append("response", token);
-  form.append("remoteip", ip);
+  // A cut-down IPv6 block (server/http.ts ipKey) isn't an address Turnstile can use, so it is left out.
+  if (!ip.endsWith("/64")) form.append("remoteip", ip);
   const res = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", { method: "POST", body: form });
   const out = (await res.json()) as { success?: boolean };
   if (!out.success) throw fail(400, "captcha_failed", "The check didn't go through. Please try it again.");
