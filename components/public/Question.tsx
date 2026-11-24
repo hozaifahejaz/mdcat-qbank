@@ -1,3 +1,4 @@
+import { Figure } from "@/components/test/Figure";
 import type { PublicQuestion } from "@/lib/public";
 
 const letters = ["A", "B", "C", "D"];
@@ -8,6 +9,7 @@ export default function Question({ q, n }: { q: PublicQuestion; n: number }) {
   return (
     <article className="pq x3-card">
       <h3><span>Q{n}</span>{q.stem}</h3>
+      <Figure svg={q.figure} />
       <ol>
         {q.options.map((o, i) => <li key={i}><b>{letters[i]}</b>{o}</li>)}
       </ol>

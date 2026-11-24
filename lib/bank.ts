@@ -15,6 +15,8 @@ export type Question = {
   difficulty: Difficulty;
   source: string;
   stem: string;
+  /* An SVG drawing shown under the stem (components/test/Figure.tsx); empty for most questions. */
+  figure?: string;
   options: string[];
   answer: number;
   why: string;
@@ -28,4 +30,4 @@ export const syllabus: Record<Subject, string[]> = { ...mdcatSyllabus, Mathemati
 export const subjects = Object.keys(syllabus) as Subject[];
 
 /* A question while it's being answered: no key, no explanations. Those come from the API once the answer is out. */
-export type Asked = Pick<Question, "id" | "subject" | "chapter" | "topic" | "stem" | "options">;
+export type Asked = Pick<Question, "id" | "subject" | "chapter" | "topic" | "stem" | "figure" | "options">;

@@ -1,5 +1,6 @@
 "use client";
 
+import { Figure } from "@/components/test/Figure";
 import { useEffect, useState } from "react";
 import AppShell from "@/components/app/AppShell";
 import { go } from "@/components/Nav";
@@ -162,6 +163,7 @@ function ReviewItem({ r, n, open, saved, onSave, onReport }: { r: Scored & { sta
           <svg className="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
         </summary>
         <div className="rbody">
+          <Figure svg={r.q.figure} />
           <AnsweredOptions q={r.q} chosen={r.chosen} stats={r.stats} />
           <ResultStrip q={r.q} chosen={r.chosen} stats={r.stats} seconds={r.seconds} />
           <Explanation q={r.q} chosen={r.chosen} onReport={onReport} />

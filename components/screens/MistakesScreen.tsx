@@ -1,5 +1,6 @@
 "use client";
 
+import { Figure } from "@/components/test/Figure";
 import { useEffect, useState } from "react";
 import AppShell, { PageHead } from "@/components/app/AppShell";
 import Empty from "@/components/app/Empty";
@@ -79,6 +80,7 @@ function Mistakes({ user }: { user: AccountUser }) {
                 </button>
                 {open === q.id && (
                   <div className="rbody">
+                    <Figure svg={q.figure} />
                     <AnsweredOptions q={q} chosen={m?.chosen} />
                     <Explanation q={q} chosen={m?.chosen} />
                     <div className="hello-ctas">

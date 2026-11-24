@@ -159,6 +159,9 @@
 @media (hover: hover) { .qact:hover { background: var(--bg); color: var(--ink) !important; } }
 .qact.on { color: var(--warn) !important; }
 .stem { font-size: 1.125rem; font-weight: 500; line-height: 1.6; white-space: pre-line; } /* keeps line breaks in passages and statements */
+.qfig { margin: 4px 0 18px; } /* a question's drawing (components/test/Figure.tsx) */
+.qfig img { display: block; max-width: min(100%, 560px); height: auto; max-height: 360px; -webkit-user-drag: none; user-select: none; }
+:root[data-theme="dark"] .qfig img { filter: invert(1) hue-rotate(180deg); } /* black line art reads white on the dark page */
 
 /* Options: a radio, a letter and the text. No boxes until one is picked. */
 .opts { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }

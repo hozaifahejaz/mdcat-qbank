@@ -5,7 +5,7 @@ import raw from "@/lib/public-data.json";
 import { mdcatSyllabus } from "@/lib/banks";
 import { paper, site } from "@/lib/site";
 
-export type PublicQuestion = { id: string; topic: string; stem: string; options: string[]; answer: number; why: string; wrong: Record<string, string>; subject?: string };
+export type PublicQuestion = { id: string; topic: string; stem: string; figure?: string; options: string[]; answer: number; why: string; wrong: Record<string, string>; subject?: string };
 type ChapterData = { total: number; samples: PublicQuestion[] };
 type Data = {
   made: string; bank: number; banks: Record<string, number>; totals: Record<string, number>;
