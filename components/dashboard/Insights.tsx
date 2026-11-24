@@ -4,6 +4,7 @@ import { Fragment, useState } from "react";
 import Icon from "@/components/app/Icon";
 import { SubjectMark } from "@/components/Marks";
 import { banks, toneOf } from "@/lib/banks";
+import { useMyBanks } from "@/lib/my-banks";
 import { warm } from "@/lib/cache";
 import { type ChapterStat, type Dashboard, ESTIMATE_AFTER, estimateScore, getDashboard } from "@/lib/dashboard-data";
 import { band, pct } from "@/lib/format";
@@ -105,6 +106,7 @@ function ordered(chapters: ChapterStat[]) {
 /* Subjects, each opening into its chapters with accuracy, coverage and a link straight into practice. The bank
    tabs lay the same answers out in another test's subjects and chapters. */
 export function Subjects({ data, onBank }: { data: Dashboard; onBank?: (bank: string) => void }) {
+  const shown = useMyBanks();
   const [open, setOpen] = useState<string | null>(null);
   const bankId = data.bank ?? "mdcat";
   // The tab lights the moment it is pressed, and its numbers are fetched as soon as it is pointed at or touched.
@@ -118,7 +120,7 @@ export function Subjects({ data, onBank }: { data: Dashboard; onBank?: (bank: st
         <h2 id="subj-h">Subjects and chapters</h2>
         {onBank && (
           <div className="bk-tabs" role="tablist" aria-label="Question bank">
-            {banks.map((b) => (
+            {shown.map((b) => (
               <button key={b.id} type="button" role="tab" aria-selected={b.id === lit} onPointerEnter={() => ahead(b.id)} onTouchStart={() => ahead(b.id)} onFocus={() => ahead(b.id)}
                 onClick={() => { if (b.id !== lit) { setPressed(b.id); onBank(b.id); } }}>{b.short}</button>
             ))}

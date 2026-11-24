@@ -5,10 +5,12 @@
    every other bank lists its questions in the bank_questions table with that bank's subject and chapter
    (migrations/0008_banks.sql). So a Biology question can be "Enzymes" in MDCAT and "Chapter 3: Enzymes" in FSc
    Part 1 at the same time. Which questions go in which bank gets filled in as questions are added. */
-export type BankId = "fsc1" | "fsc2" | "mdcat" | "nums" | "aku";
+export type BankId = "fsc1" | "fsc2" | "mdcat" | "nums" | "aku" | "eng1" | "eng2" | "ecat" | "net";
 
 export type BankSubject = { name: string; chapters: string[] };
-export type Bank = { id: BankId; name: string; short: string; blurb: string; subjects: BankSubject[] };
+/* track: which group of students the bank is for. Pre-medical banks have none. Engineering banks are shown only to
+   staff until the engineering area opens (see visibleBanks). */
+export type Bank = { id: BankId; name: string; short: string; blurb: string; subjects: BankSubject[]; track?: "engineering" };
 
 /* The PMDC MDCAT syllabus, chapters per subject in syllabus order (lib/bank.ts re-exports it as syllabus). */
 export const mdcatSyllabus = {
@@ -284,8 +286,55 @@ export const banks: Bank[] = [
   },
 ];
 
+/* Engineering (pre-engineering students). Physics and Chemistry are the same FSc textbook questions as the pre-medical
+   FSc banks, listed again under these banks (migrations/0063_engineering_banks.sql). ECAT and NUST NET both test the
+   full FSc Part 1 and Part 2 syllabus (UET: "full intermediate syllabus"; NUST: "FA / FSc level, Part-1 and Part-II"),
+   and neither publishes a chapter list, so their chapters are the textbook chapters in book order. English is the
+   MDCAT English set; NET's Intelligence part uses the puzzle chapters of the Logical Reasoning set. Mathematics is added when the FSc Maths
+   bank is written. When new FSc Physics or Chemistry questions are added, list them in these banks too. */
+const engPhysics = [...fsc1[2]!.chapters, ...fsc2[2]!.chapters.filter((c) => !fsc1[2]!.chapters.includes(c))];
+const engChemistry = [...fsc1[1]!.chapters, ...fsc2[1]!.chapters.filter((c) => !fsc1[1]!.chapters.includes(c))];
+const INTELLIGENCE = ["Patterns and sequences", "Logical deductions", "Logical problems"];
+const engineering: Bank[] = [
+  {
+    id: "eng1", name: "FSc Pre-Engineering Part 1", short: "Pre-Eng 1", blurb: "First-year textbooks", track: "engineering",
+    subjects: [fsc1[2]!, fsc1[1]!],
+  },
+  {
+    id: "eng2", name: "FSc Pre-Engineering Part 2", short: "Pre-Eng 2", blurb: "Second-year textbooks", track: "engineering",
+    subjects: [fsc2[2]!, fsc2[1]!],
+  },
+  {
+    id: "ecat", name: "ECAT", short: "ECAT", blurb: "UET entry test", track: "engineering",
+    subjects: [
+      { name: "Physics", chapters: engPhysics },
+      { name: "Chemistry", chapters: engChemistry },
+      mdcatSubject("English"),
+    ],
+  },
+  {
+    id: "net", name: "NUST NET", short: "NET", blurb: "NUST entry test", track: "engineering",
+    subjects: [
+      { name: "Physics", chapters: engPhysics },
+      { name: "Chemistry", chapters: engChemistry },
+      mdcatSubject("English"),
+      // NUST names an Intelligence part but no topics. Only the puzzle-type Logical Reasoning chapters fit it; the
+      // argument chapters (critical thinking, course of action, cause and effect) are MDCAT-style and stay out.
+      { name: "Intelligence", chapters: INTELLIGENCE },
+    ],
+  },
+];
+banks.push(...engineering);
+
 export const bankIds = banks.map((b) => b.id);
 export const bankById = (id: string | null | undefined) => banks.find((b) => b.id === id);
+/* The banks an account may see. Engineering is open to staff only, until the engineering area launches. */
+export const visibleBanks = (staff: boolean) => banks.filter((b) => !b.track || staff);
+/* A bank asked for by id, or undefined when it doesn't exist or this account may not see it. */
+export const visibleBank = (id: string | null | undefined, staff: boolean) => {
+  const b = bankById(id);
+  return b && (!b.track || staff) ? b : undefined;
+};
 
 /* Colour per subject, matching the MDCAT paper split; subjects outside the paper get a neutral one. */
 export const subjectTone: Record<string, { tone: string; solid: string }> = {
@@ -295,5 +344,6 @@ export const subjectTone: Record<string, { tone: string; solid: string }> = {
   English: { tone: "var(--lilac)", solid: "#8a63ff" },
   "Logical Reasoning": { tone: "var(--lemon)", solid: "#c9a400" },
   Mathematics: { tone: "var(--sky)", solid: "#0f9fb5" },
+  Intelligence: { tone: "var(--lemon)", solid: "#c9a400" },
 };
 export const toneOf = (subject: string) => subjectTone[subject] ?? { tone: "var(--bg)", solid: "var(--muted)" };

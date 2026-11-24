@@ -1,5 +1,5 @@
 import { normalisePhone } from "../lib/phone";
-import { REASONING, bankById } from "../lib/banks";
+import { REASONING, bankById, visibleBank } from "../lib/banks";
 import { mockFormat, mockFormats, NEG_MARK, paper } from "../lib/site";
 import { REPORT_HIDE, bankCounts, chaptersOf, subjectTotals } from "./counts";
 import { uuid } from "./crypto";
@@ -201,8 +201,9 @@ const FILTERS = ["unused", "incorrect", "marked", "omitted", "correct"] as const
 type Filter = (typeof FILTERS)[number];
 
 /* Which questions a practice set draws from: a bank, then subjects, chapters or a topic of it. */
-export function scope(b: Record<string, unknown>, pool: string) {
-  const bank = bankById(str(b.bank, 10)) ?? bankById("mdcat")!;
+export function scope(b: Record<string, unknown>, pool: string, staff = false) {
+  // A bank this account may not see (lib/banks.ts visibleBanks) counts as not asked for.
+  const bank = visibleBank(str(b.bank, 10), staff) ?? bankById("mdcat")!;
   const where: string[] = ["bank = ?", `open_reports < ${REPORT_HIDE}${pool}`];
   const args: unknown[] = [bank.id];
   const list = (v: unknown, max: number) => (Array.isArray(v) ? v : typeof v === "string" && v ? v.split("|") : []).filter((x): x is string => typeof x === "string").slice(0, max);
@@ -306,7 +307,7 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
   "GET /api/study/catalog": async (c) => {
     const me = await student(c, false);
     // ?bank= picks whose chapters to count (lib/banks.ts); past papers are always MDCAT.
-    const bank = bankById(new URL(c.request.url).searchParams.get("bank"))?.id ?? "mdcat";
+    const bank = visibleBank(new URL(c.request.url).searchParams.get("bank"), me.staff)?.id ?? "mdcat";
     // The bank's own numbers come from the kept counts; only this student's rows are read here.
     const [counts, [mini, mine]] = await Promise.all([
       bankCounts(c.db),
@@ -335,7 +336,8 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
       papers: counts.papers.map((p) => ({ year: p.year, count: p.n })),
       mocks: MOCKS,
       // The NUMS mock draws on the NUMS bank's own chapters; every other bank shows the MDCAT mocks.
-      mockReady: bank === "nums" || bank === "aku"
+      // Engineering banks have no mocks until their Maths is in.
+      mockReady: bankById(bank)?.track ? false : bank === "nums" || bank === "aku"
         ? mockFormats[bank].split.every((p) => rows.filter((r) => r.subject === p.subject).reduce((n, r) => n + r.total, 0) >= p.count)
         : paper.every((p) => bySubject(p.subject, "total") >= p.count),
       miniReady: subjects.reduce((n, s) => n + bySubject(s, "open"), 0) >= 10,
@@ -349,7 +351,7 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
   "GET /api/study/pool": async (c) => {
     const me = await student(c, false);
     const p = new URL(c.request.url).searchParams;
-    const sc = scope(Object.fromEntries(p), me.pool);
+    const sc = scope(Object.fromEntries(p), me.pool, me.staff);
     const m = membership(sc, me.pool);
     const state = `sum(CASE WHEN l.question_id IS NOT NULL AND l.answer IS NULL THEN 1 ELSE 0 END) AS omitted,
         sum(CASE WHEN l.answer = s.answer THEN 1 ELSE 0 END) AS correct,
@@ -358,7 +360,7 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
     // ?by=chapter: the same counts for every chapter of the bank at once, so the practice screen can add up any
     // selection itself instead of asking again each time a box is ticked.
     if (p.get("by") === "chapter") {
-      const all = scope({ bank: p.get("bank") ?? "" }, me.pool);
+      const all = scope({ bank: p.get("bank") ?? "" }, me.pool, me.staff);
       const am = membership(all, me.pool);
       const t = all.bank.id === "mdcat" ? "s" : "b";
       type ChRow = Row & { subject: string; chapter: string };
@@ -427,6 +429,8 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
     let mockNo: number | null = null;
     let year: number | null = null;
     const format = mockFormat(b.bank);
+    // Engineering banks have no mock format yet: they open once their Maths is in.
+    if (kind === "mock" && bankById(str(b.bank, 10))?.track) throw fail(409, "not_ready", "Mocks for this test open once its bank is complete.");
     const asked = custom && Array.isArray(b.ids) ? b.ids.filter((x): x is string => typeof x === "string").slice(0, 200) : [];
 
     // Which questions the test will hold depends only on what was asked, so that lookup rides in the first trip too.
@@ -450,7 +454,7 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
       if (me.paid) picks.push(c.db.prepare(`SELECT id, subject FROM served WHERE paper = ? AND open_reports < ${REPORT_HIDE} ORDER BY id`).bind(year));
     } else {
       const count = Math.min(100, Math.max(1, Number(b.count) || 25));
-      const sc = scope(asked.length ? { bank: b.bank } : b, me.pool);
+      const sc = scope(asked.length ? { bank: b.bank } : b, me.pool, me.staff);
       const { bank, where, args } = sc;
       where.push(`id NOT IN (${IN_OPEN_TEST})`);
       args.push(me.id);
@@ -744,7 +748,7 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
     const days = 84;
     const since = Date.parse(`${pkDate(now - (days - 1) * DAY)}T00:00:00+05:00`);
     // ?bank= picks whose subjects and chapters the numbers are laid out in; without it, the one the student chose.
-    const asked = bankById(new URL(c.request.url).searchParams.get("bank"))?.id;
+    const asked = visibleBank(new URL(c.request.url).searchParams.get("bank"), me.staff)?.id;
     const own = (bank: string | null, withPrefs: boolean) => afterClosing(c.db, me.id, () => [
       c.db.prepare(`SELECT date((a.counted_at + ${PKT}) / 1000, 'unixepoch') AS d, count(*) AS n, sum(CASE WHEN a.answer = s.answer THEN 1 ELSE 0 END) AS c
         FROM answers a JOIN served s ON s.id = a.question_id WHERE a.user_id = ? AND a.counted_at >= ? AND a.answer IS NOT NULL GROUP BY d`).bind(me.id, since),
@@ -768,7 +772,7 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
     const first = (bank: string | null) => own(bank, true).catch(() => { hasPrefs = false; return own(bank, false); });
     // Their answers are read for the bank they most likely chose (the one this browser saw last, else MDCAT), so the
     // second trip is only needed when that guess is wrong.
-    const guess = asked ?? bankById(new URL(c.request.url).searchParams.get("hint"))?.id ?? "mdcat";
+    const guess = asked ?? visibleBank(new URL(c.request.url).searchParams.get("hint"), me.staff)?.id ?? "mdcat";
     const [counts, res] = await Promise.all([bankCounts(c.db), first(guess)]);
     const [daily, recent, open, marks, miniUsed, ever, wrong] = res;
     const prefs = readPrefs(hasPrefs ? (res[8]!.results[0] as Parameters<typeof readPrefs>[0]) : null);

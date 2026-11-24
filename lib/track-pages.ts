@@ -30,12 +30,12 @@ export const trackPages: Record<TrackId, TrackPage> = {
   },
   engineering: {
     phrase: "engineering university",
-    subjects: [{ name: "Maths", n: 30, c: A }, { name: "Physics", n: 30, c: B }, { name: "Chemistry", n: 20, c: G }, { name: "Computer Science", n: 10, c: T }, { name: "English", n: 10, c: V }],
+    subjects: [{ name: "Maths", n: 30, c: A }, { name: "Physics", n: 30, c: B }, { name: "Chemistry", n: 30, c: G }, { name: "English", n: 10, c: V }],
     mock: { line: "100 MCQs in 100 minutes, like ECAT.", secs: 100 * 60 },
     price: { month: 799, three: 1999 },
-    perks: ["ECAT, NUST NET, GIKI, FAST and PIEAS banks", "FSc pre-engineering and ICS chapters", "Timed mocks for each test", "My mistakes and bookmarks"],
+    perks: ["ECAT and NUST NET banks", "FSc pre-engineering chapters", "Timed mocks for ECAT, NET, GIKI and PIEAS", "My mistakes and bookmarks"],
     faqs: [
-      { q: "Is Maths included?", a: "Yes. Maths is the biggest part of most engineering tests, so it gets the most questions, chapter by chapter from FSc. ICS students get Computer Science in place of Chemistry." },
+      { q: "Is Maths included?", a: "Yes. Maths is the biggest part of most engineering tests, so it gets the most questions, chapter by chapter from FSc." },
     ],
   },
   doctors: {

@@ -104,6 +104,12 @@ export function SubjectMark({ subject, size = 18 }: { subject: string; size?: nu
   return parts ? <Mark parts={parts} size={size} /> : <>{subject[0]}</>;
 }
 
+// FSc Pre-Engineering Part 1 and 2 use the same books.
+examParts.eng1 = examParts.fsc1!;
+examParts.eng2 = examParts.fsc2!;
+// NUST NET's Intelligence part is the Logical Reasoning set.
+if (subjectParts["Logical Reasoning"]) subjectParts.Intelligence = subjectParts["Logical Reasoning"];
+
 /** The mark for a test or bank: mdcat, nums, aku, fsc1, fsc2, and ecat, net, lat for the ones still to come. */
 export function ExamMark({ id, size = 22 }: { id: string; size?: number }) {
   const parts = examParts[id];

@@ -1,4 +1,4 @@
-import { bankById } from "../lib/banks";
+import { bankById, visibleBank } from "../lib/banks";
 import { body, json } from "./http";
 import { requireSession } from "./session";
 
@@ -42,7 +42,7 @@ export const prefRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
   "POST /api/account/prefs": async (c) => {
     const s = await requireSession(c.db, c.request);
     const b = await body(c.request);
-    const bank = typeof b.bank === "string" ? bankById(b.bank)?.id ?? null : null;
+    const bank = typeof b.bank === "string" ? visibleBank(b.bank, s.role !== "student")?.id ?? null : null;
     const year = Number.isInteger(b.examYear) && (b.examYear as number) >= 2026 && (b.examYear as number) <= 2035 ? (b.examYear as number) : null;
     const goal = Number.isFinite(Number(b.dailyGoal)) && b.dailyGoal !== null && b.dailyGoal !== undefined
       ? Math.min(GOALS.max, Math.max(GOALS.min, Math.round(Number(b.dailyGoal)))) : null;
