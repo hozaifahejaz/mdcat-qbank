@@ -9,6 +9,8 @@
 -- The Army Medical College bank ('amc', lib/banks.ts) holds the verbal and non-verbal intelligence tests that Army
 -- medical cadets sit on top of the NUMS test. It lists the new reasoning questions above and these existing Logical
 -- Reasoning questions, filed by kind of test.
+-- The live database already has bank_questions without its old CHECK on bank ids (migrations/0070). A database built
+-- from scratch runs this file before 0070, where the CHECK still stands and the 'amc' rows are skipped.
 INSERT OR IGNORE INTO bank_questions (bank, question_id, subject, chapter)
 SELECT 'amc', id, 'Verbal intelligence',
   CASE
