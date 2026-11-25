@@ -69,5 +69,7 @@ body { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-are
 }
 
 /* Urdu text: Nastaliq needs tall lines */
-[data-ur] { line-height: 2.2; }
+/* Jakarta's fallback (local Arial) has Arabic letters, so Urdu must name Nastaliq before it:
+   Latin stays in Jakarta, Urdu letters fall through to Nastaliq. */
+[data-ur] { font-family: "Plus Jakarta Sans", var(--font-urdu), var(--font); line-height: 2.2; }
 [lang="ur"] { font-size: 1.06em; }
