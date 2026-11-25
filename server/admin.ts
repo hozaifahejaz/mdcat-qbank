@@ -434,7 +434,8 @@ const reportRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
   /* People who asked to hear when Markhor Prep opens. */
   "GET /api/admin/waitlist": async (c) => {
     await admin(c);
-    const { results } = await c.db.prepare("SELECT contact, kind, created_at FROM waitlist ORDER BY created_at DESC LIMIT 2000").all();
+    const { results } = await c.db.prepare("SELECT contact, kind, created_at, exams FROM waitlist ORDER BY created_at DESC LIMIT 2000").all()
+      .catch(() => c.db.prepare("SELECT contact, kind, created_at FROM waitlist ORDER BY created_at DESC LIMIT 2000").all());
     return json({ waitlist: results });
   },
 };

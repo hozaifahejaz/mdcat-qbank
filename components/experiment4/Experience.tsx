@@ -122,6 +122,7 @@ function AreaCard({ area, soon }: { area: Area; soon: boolean }) {
           const later = soon && !e.live;
           return (
             <li key={e.id} className={later ? "x4-ticket x4-later" : "x4-ticket"} style={{ ["--r" as string]: n > 5 ? `${i % 2 ? 1.5 : -1.5}deg` : `${(i - (n - 1) / 2) * 3}deg`, ["--d" as string]: `${i * 60}ms`, ["--c" as string]: c }}>
+              {e.href && <a className="x4-tk-link" href={e.href} aria-label={`${e.name}: open its page`} />}
               <div className="x4-tk-top">
                 <span className="x4-tk-row">
                   <small>No. {String(i + 1).padStart(2, "0")}</small>

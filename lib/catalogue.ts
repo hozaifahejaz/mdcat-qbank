@@ -42,7 +42,7 @@ export const tracks: Track[] = [
     id: "engineering", name: "Pre-engineering", who: "FSc pre-engineering and ICS", colour: "#b06a00",
     exams: [
       {
-        id: "ecat", name: "ECAT", body: "UET",
+        id: "ecat", name: "ECAT", body: "UET", href: "/ecat",
         pattern: { summary: "100 MCQs · 100 minutes", parts: [{ name: "Maths", n: 30 }, { name: "Physics", n: 30 }, { name: "Chemistry or CS", n: 30 }, { name: "English", n: 10 }] },
       },
       { id: "net", name: "NUST NET", body: "NUST" },
@@ -73,7 +73,7 @@ export const tracks: Track[] = [
   {
     id: "doctors", name: "Doctors", who: "Residency and licensing", colour: "#2f55f0",
     exams: [
-      { id: "fcps1", name: "FCPS Part 1", body: "CPSP" },
+      { id: "fcps1", name: "FCPS Part 1", body: "CPSP", href: "/fcps" },
       {
         id: "jcat", name: "JCAT", body: "MS, MD and MDS induction",
         pattern: { summary: "100 MCQs + 25 clinical slides", parts: [{ name: "Basic sciences", n: 50 }, { name: "Medicine, surgery or dentistry", n: 35 }, { name: "Specialty", n: 15 }] },

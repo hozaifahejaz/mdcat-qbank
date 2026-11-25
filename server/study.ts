@@ -927,7 +927,17 @@ export const studyRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
     const email = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(raw) ? raw.toLowerCase() : null;
     const phone = email ? null : normalisePhone(raw);
     if (!email && !phone) throw fail(400, "bad_contact", "Enter an email address or a mobile number like 0300 1234567.");
-    await c.db.prepare("INSERT OR IGNORE INTO waitlist (contact, kind, created_at) VALUES (?, ?, ?)").bind(email ?? phone, email ? "email" : "phone", Date.now()).run();
+    // From an exam page: the exam it was left for, added to any the address already asked about (migrations/0110).
+    const exam = /^[a-z0-9][a-z0-9-]{0,39}$/.test(str(b.exam, 40)) ? str(b.exam, 40) : "";
+    try {
+      await c.db.prepare(`INSERT INTO waitlist (contact, kind, created_at, exams) VALUES (?1, ?2, ?3, ?4)
+        ON CONFLICT (contact) DO UPDATE SET exams = CASE
+          WHEN ?4 = '' OR instr(',' || exams || ',', ',' || ?4 || ',') > 0 THEN exams
+          WHEN exams = '' THEN ?4 ELSE exams || ',' || ?4 END`).bind(email ?? phone, email ? "email" : "phone", Date.now(), exam).run();
+    } catch {
+      // The column isn't there yet (deploys apply migrations and carry on if one fails): keep the address anyway.
+      await c.db.prepare("INSERT OR IGNORE INTO waitlist (contact, kind, created_at) VALUES (?, ?, ?)").bind(email ?? phone, email ? "email" : "phone", Date.now()).run();
+    }
     return json({ ok: true });
   },
 };

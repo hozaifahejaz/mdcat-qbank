@@ -1,0 +1,142 @@
+/* The exam pages (components/exam/ExamPage.tsx): the landing page's look (.x3), narrowed to one exam. --c is the
+   exam's colour. Motion is transform-only, no fades. */
+
+.xe { --c: var(--x-blue); }
+.xe-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.xe-mute { color: var(--x-mute); font-size: .875rem; }
+
+/* Bar: the logo, then the exam's name as a small tag beside it. */
+.xe-brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.xe-exam { font-size: .8125rem; font-weight: 700; padding: 4px 10px; border-radius: 999px; color: color-mix(in srgb, var(--c) 80%, var(--x-ink)); background: color-mix(in srgb, var(--c) 12%, transparent); white-space: nowrap; }
+@media (max-width: 420px) { .xe-nav .x3-signin { display: none; } }
+
+/* Hero: short and centred. */
+.xe-hero { padding-block: 88px 56px; text-align: center; }
+.xe-hero h1 { font-size: clamp(2.2rem, 1.2rem + 3.4vw, 3.9rem); font-weight: 800; letter-spacing: -0.045em; line-height: 1.04; max-width: 15ch; margin-inline: auto !important; text-wrap: balance; }
+.xe-lede { max-width: 54ch; margin: 22px auto 0 !important; font-size: 1.0625rem; line-height: 1.55; color: var(--x-mute); text-wrap: pretty; }
+.xe-acts { display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; margin-top: 32px; }
+.x3 .xe-line { background: var(--x-card); color: var(--x-ink); box-shadow: inset 0 0 0 1px var(--x-line); }
+.xe-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); max-width: 760px; margin: 56px auto 0; border-radius: 18px; background: var(--x-card); box-shadow: var(--x-shadow); overflow: hidden; }
+.xe-stats > div { display: flex; flex-direction: column-reverse; gap: 4px; padding: 20px 16px; }
+.xe-stats > div + div { box-shadow: inset 1px 0 0 var(--x-line); }
+.xe-stats dt { font-size: .8125rem; color: var(--x-mute); line-height: 1.35; }
+.xe-stats dd { margin: 0; font-size: 1.5rem; font-weight: 800; letter-spacing: -0.03em; color: color-mix(in srgb, var(--c) 70%, var(--x-ink)); }
+@media (max-width: 640px) {
+  .xe-hero { padding-block: 56px 32px; }
+  .xe-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 40px; }
+  .xe-stats > div:nth-child(3) { box-shadow: inset 0 1px 0 var(--x-line); }
+  .xe-stats > div:nth-child(4) { box-shadow: inset 1px 0 0 var(--x-line), inset 0 1px 0 var(--x-line); }
+}
+
+.xe-sec { padding-block: 72px; }
+.xe-sec .x3-head { margin-bottom: 32px; }
+.xe-sec .x3-head h2 { font-size: clamp(1.9rem, 1.2rem + 2.2vw, 2.75rem); }
+@media (max-width: 640px) { .xe-sec { padding-block: 48px; } }
+
+/* The paper, as one wide admit ticket: the size and the clock, a band split by the parts, then the small print. */
+.xe-paper { max-width: 760px; margin-inline: auto; padding: 28px; border-radius: 20px; display: grid; gap: 20px; }
+.xe-paper-top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; padding-bottom: 20px; border-bottom: 1.5px dashed var(--x-line); }
+.xe-paper-top b { font-size: 1.625rem; font-weight: 800; letter-spacing: -0.03em; }
+.xe-paper-top span { color: var(--x-mute); font-size: .875rem; }
+.xe-bar { display: flex; height: 14px; border-radius: 999px; overflow: hidden; gap: 3px; }
+.xe-bar i { display: block; min-width: 6px; }
+.xe-parts { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px 24px; font-size: .9375rem; }
+.xe-parts li { display: flex; align-items: center; gap: 10px; }
+.xe-parts li i { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+.xe-parts li b { margin-left: auto; font-variant-numeric: tabular-nums; }
+.xe-notes { display: grid; gap: 8px; font-size: .9375rem; }
+.xe-notes li { position: relative; padding-left: 18px; }
+.xe-notes li::before { content: ""; position: absolute; left: 2px; top: .6em; width: 6px; height: 6px; border-radius: 50%; background: var(--c); }
+.xe-src { font-size: .8125rem; color: var(--x-mute); }
+
+/* Try a question. */
+.xe-try { max-width: 760px; margin-inline: auto; padding: 28px; border-radius: 20px; display: grid; gap: 16px; }
+.xe-tag { font-size: .8125rem; font-weight: 600; color: color-mix(in srgb, var(--c) 75%, var(--x-ink)); }
+.xe-try h3 { font-size: 1.25rem; line-height: 1.4; letter-spacing: -0.01em; }
+.xe-opts { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.xe-opts button { width: 100%; display: flex; align-items: center; gap: 14px; text-align: left; padding: 14px 16px; border: 0; border-radius: 12px; font: inherit; color: var(--x-ink); background: var(--x-bg); box-shadow: inset 0 0 0 1px var(--x-line); cursor: pointer; transition: transform .15s, box-shadow .15s; }
+.xe-opts button b { flex: none; width: 28px; height: 28px; display: grid; place-items: center; border-radius: 8px; background: var(--x-card); font-size: .8125rem; box-shadow: inset 0 0 0 1px var(--x-line); }
+@media (hover: hover) { .xe-opts button:not(:disabled):hover { transform: translateX(3px); box-shadow: inset 0 0 0 1.5px var(--c); } }
+.xe-opts button:disabled { cursor: default; }
+.xe-opts button.right { box-shadow: inset 0 0 0 2px #11804a; background: color-mix(in srgb, #11804a 10%, var(--x-card)); }
+.xe-opts button.right b { background: #11804a; color: #fff; box-shadow: none; }
+.xe-opts button.wrong { box-shadow: inset 0 0 0 2px #d4483b; background: color-mix(in srgb, #d4483b 9%, var(--x-card)); }
+.xe-opts button.wrong b { background: #d4483b; color: #fff; box-shadow: none; }
+.xe-opts button.dim { color: var(--x-mute); }
+.xe-why { display: grid; gap: 10px; padding-top: 4px; line-height: 1.6; animation: xe-drop .35s cubic-bezier(.2,.8,.2,1); }
+.xe-verdict { font-weight: 700; }
+.xe-again { justify-self: start; border: 0; background: none; padding: 0; font: inherit; font-weight: 600; font-size: .875rem; color: var(--x-blue); cursor: pointer; }
+@keyframes xe-drop { from { transform: translateY(-6px); } }
+
+/* Subjects: a tile each, linking to its chapter pages or opening its chapter list. */
+.xe-topics { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; align-items: start; }
+.xe-topic { display: grid; gap: 6px; padding: 20px; border-radius: 16px; transition: transform .15s; }
+@media (hover: hover) { a.xe-topic:hover { transform: translateY(-2px); } }
+.xe-topic summary { list-style: none; display: grid; gap: 6px; cursor: pointer; }
+.xe-topic summary::-webkit-details-marker { display: none; }
+.xe-tmark { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 12px; margin-bottom: 6px; font-weight: 800; color: color-mix(in srgb, var(--c) 80%, var(--x-ink)); background: color-mix(in srgb, var(--c) 12%, var(--x-card)); }
+.xe-topic b { font-size: 1.0625rem; }
+.xe-topic small { color: var(--x-mute); font-size: .8125rem; line-height: 1.45; }
+.xe-go { margin-top: 6px; font-size: .8125rem; font-weight: 600; color: var(--x-blue); }
+.xe-topic[open] .xe-go { display: none; }
+.xe-topic ol { margin: 12px 0 0; padding-left: 20px; display: grid; gap: 6px; font-size: .875rem; color: var(--x-mute); }
+
+/* Add to your plan. */
+.xe-add { max-width: 760px; margin: 0 auto 32px; display: grid; gap: 14px; }
+.xe-add > p { display: grid; gap: 2px; text-align: center; }
+.xe-add > p span { color: var(--x-mute); font-size: .875rem; }
+.xe-addopts { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+.xe-addopt { display: flex; align-items: center; gap: 14px; padding: 16px 18px; border: 0; border-radius: 14px; font: inherit; text-align: left; color: var(--x-ink); background: var(--x-card); box-shadow: var(--x-shadow), inset 0 0 0 1px var(--x-line); cursor: pointer; transition: transform .15s, box-shadow .15s; }
+.xe-addopt > span:last-child { display: grid; gap: 2px; }
+.xe-addopt small { color: var(--x-mute); font-size: .8125rem; }
+.xe-box { flex: none; width: 24px; height: 24px; border-radius: 7px; display: grid; place-items: center; color: transparent; box-shadow: inset 0 0 0 1.5px var(--x-faint); transition: background .15s; }
+.xe-addopt[aria-pressed="true"] { box-shadow: var(--x-shadow), inset 0 0 0 2px var(--x-blue); }
+.xe-addopt[aria-pressed="true"] .xe-box { background: var(--x-blue); color: #fff; box-shadow: none; }
+@media (hover: hover) { .xe-addopt:hover { transform: translateY(-1px); } }
+
+/* Opening soon: the "tell me" box in place of the plans. */
+.xe-soon { max-width: 560px; margin-inline: auto; padding: 32px; border-radius: 20px; display: grid; gap: 12px; justify-items: center; text-align: center; }
+.xe-soon h3 { font-size: 1.375rem; letter-spacing: -0.02em; }
+.xe-soon > p { color: var(--x-mute); line-height: 1.55; }
+.xe-form { display: flex; gap: 10px; width: 100%; margin-top: 8px; }
+.xe-form input { flex: 1; min-width: 0; height: 46px; padding: 0 14px; border: 0; border-radius: 10px; font: inherit; color: var(--x-ink); background: var(--x-bg); box-shadow: inset 0 0 0 1px var(--x-line); }
+.xe-form input:focus { outline: none; box-shadow: inset 0 0 0 2px var(--x-blue); }
+.xe-form .x3-btn { height: 46px; border: 0; cursor: pointer; font: inherit; font-weight: 600; }
+.xe-err { color: #d4483b; font-size: .875rem; }
+.xe-done { font-weight: 600; color: #11804a !important; }
+@media (max-width: 520px) { .xe-form { flex-direction: column; } .xe-soon { padding: 24px 20px; } }
+
+/* Closing line. */
+.xe-end { text-align: center; padding-block: 64px 96px; }
+.xe-end .x3-wrap { display: grid; justify-items: center; gap: 18px; }
+.xe-end h2 { font-size: clamp(1.7rem, 1.1rem + 2vw, 2.5rem); font-weight: 800; letter-spacing: -0.035em; text-wrap: balance; }
+.xe-end .x3-proof { color: var(--x-mute); font-size: .875rem; }
+
+/* The FCPS family page: one card per speciality. */
+.xe-specs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; max-width: 680px; margin-inline: auto; }
+@media (max-width: 560px) { .xe-specs { grid-template-columns: minmax(0, 1fr); } }
+.xe-spec { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 20px; border-radius: 16px; transition: transform .15s; }
+.xe-spec b { font-size: 1rem; }
+.xe-spec small { font-size: .75rem; font-weight: 700; color: var(--x-mute); white-space: nowrap; }
+a.xe-spec small { color: var(--x-blue); }
+@media (hover: hover) { a.xe-spec:hover { transform: translateY(-2px); } }
+
+/* The home page's list of every exam by area. */
+.xe-all { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 1060px) { .xe-all { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 720px) { .xe-all { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 460px) { .xe-all { grid-template-columns: minmax(0, 1fr); } }
+.xe-area { padding: 20px; border-radius: 18px; display: grid; gap: 14px; align-content: start; }
+.xe-area h3 { display: flex; align-items: center; gap: 10px; font-size: 1rem; line-height: 1.25; }
+.xe-area h3 span { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 10px; color: var(--a); background: color-mix(in srgb, var(--a) 13%, var(--x-card)); }
+.xe-area ul { display: grid; gap: 4px; }
+.xe-area li a, .xe-area li > span { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 10px; margin-inline: -10px; border-radius: 9px; font-size: .9375rem; }
+.xe-area li a { font-weight: 600; }
+.xe-area li a::after { content: "→"; color: var(--x-faint); transition: transform .15s; }
+@media (hover: hover) { .xe-area li a:hover { background: var(--x-bg); } .xe-area li a:hover::after { transform: translateX(3px); color: var(--a); } }
+.xe-area li > span { color: var(--x-mute); flex-direction: column; align-items: flex-start; gap: 0; }
+.xe-area li em { font-style: normal; font-size: .6875rem; font-weight: 600; color: var(--x-faint); white-space: nowrap; }
+
+/* The admit tickets on the home page now open their exam's page. */
+.x4-tk-link { position: absolute; inset: 0; z-index: 2; border-radius: inherit; }
+.x4-tk-link:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }

@@ -130,7 +130,9 @@ export const insightRoutes: Record<string, (c: Ctx) => Promise<Response>> = {
 
   "GET /api/admin/waitlist/export": async (c) => {
     await requireRole(c, ["admin"]);
-    const { results } = await c.db.prepare("SELECT contact, kind, created_at FROM waitlist ORDER BY created_at DESC LIMIT 20000").all<{ contact: string; kind: string; created_at: number }>();
-    return csv(`markhor-prep-waitlist-${pkDay(Date.now())}.csv`, ["Contact", "Kind", "Joined"], results.map((w) => [w.contact, w.kind, iso(w.created_at)]));
+    type Row = { contact: string; kind: string; created_at: number; exams?: string };
+    const { results } = await c.db.prepare("SELECT contact, kind, created_at, exams FROM waitlist ORDER BY created_at DESC LIMIT 20000").all<Row>()
+      .catch(() => c.db.prepare("SELECT contact, kind, created_at FROM waitlist ORDER BY created_at DESC LIMIT 20000").all<Row>());
+    return csv(`markhor-prep-waitlist-${pkDay(Date.now())}.csv`, ["Contact", "Kind", "Exams", "Joined"], results.map((w) => [w.contact, w.kind, w.exams ?? "", iso(w.created_at)]));
   },
 };

@@ -50,8 +50,10 @@ function Welcome({ user }: { user: AccountUser }) {
     if (a?.open) {
       setArea(a.id);
       setStep("exam");
-      const e = examById(p.get("exam"));
-      if (e && e.area === a.id) setPicked({ exams: [e.id], unsure: false, main: e.id });
+      // One exam, or several from an exam page's "Add to your plan" (exam=mdcat,nums); the first is the main one.
+      const es = (p.get("exam") ?? "").split(",").map((id) => examById(id)).filter((e) => e && e.area === a.id).map((e) => e!.id);
+      const picks = [...new Set(es)];
+      if (picks.length) setPicked({ exams: picks, unsure: false, main: picks[0]! });
     }
     setReady(true);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps

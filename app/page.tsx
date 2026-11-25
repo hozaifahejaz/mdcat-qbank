@@ -5,20 +5,20 @@ import ThemeToggle from "@/components/ThemeToggle";
 import { PublicFooter } from "@/components/public/Frame";
 import Experience from "@/components/experiment4/Experience";
 import { ExamProvider } from "@/components/experiment4/ExamState";
-import Pricing from "@/components/experiment8/Pricing";
 import AppStory from "@/components/experiment8/AppStory";
-import Orbit from "@/components/experiment8/Orbit";
+import AllExams from "@/components/landing/AllExams";
 import HeroIcons from "@/components/experiment8/HeroIcons";
-import { abs, bankSize, faqData, ld, subjects as subjectPages } from "@/lib/public";
+import { abs, bankSize, faqData, ld } from "@/lib/public";
 import { prices, site } from "@/lib/site";
 import "./landing-new.css";
 import "./landing-hero.css";
 import "./landing-story.css";
 import "./landing-areas.css";
+import "./exam-page.css";
 
-/* The landing page (from experiment 8): the "I'm preparing for ___" hero with the area's tests as admit tickets, the
-   subjects orbit, pricing and the app walkthrough, each following the area picked in the hero, then the FAQ. Anything
-   not open yet (tests, and every area but pre-medical) says "Coming soon". */
+/* The home page: the "I'm preparing for ___" hero with each area's tests as admit tickets, then every exam by area, the
+   app walkthrough and the FAQ. It sells nothing itself: a ticket or a name in the list opens that exam's own page
+   (lib/exam-pages.ts), which has its pattern, a question to try and its price. Anything not open yet says "Coming soon". */
 export const metadata: Metadata = { alternates: { canonical: "/" } };
 
 const faqs = [
@@ -52,8 +52,7 @@ export default function Home() {
         <div className="x3-wrap x3-navin">
           <Logo href="#top" size={22} />
           <ul>
-            <li><a href="#subjects">Subjects</a></li>
-            <li><a href="#pricing">Pricing</a></li>
+            <li><a href="#exams">Exams</a></li>
             <li><a href="#app">App</a></li>
             <li><a href="#faq">FAQ</a></li>
           </ul>
@@ -71,21 +70,7 @@ export default function Home() {
       </div>
 
       <main>
-        <section id="subjects" className="x3-sec x3-grid">
-          <div className="x3-wrap">
-            <div className="x3-head">
-              <h2>Every subject.<br />One bank.</h2>
-            </div>
-            <Orbit soon links={
-              <p className="x3-links">
-                {subjectPages.map((x) => <a key={x.slug} href={`/mdcat/${x.slug}`}>{x.name} MCQs</a>)}
-                <a href="/mdcat/syllabus">Syllabus</a>
-              </p>
-            } />
-          </div>
-        </section>
-
-        <Pricing payments={site.payments} soon />
+        <AllExams />
 
         <AppStory />
 

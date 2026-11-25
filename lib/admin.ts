@@ -148,7 +148,7 @@ export const replyTicket = (id: number, message: string, close: boolean) => api(
 export const setTicketStatus = (id: number, status: "open" | "closed") => api("/api/admin/tickets/status", { body: { id, status } });
 export const deleteTicket = (id: number) => api("/api/admin/tickets/delete", { body: { id } });
 
-export type WaitlistEntry = { contact: string; kind: "email" | "phone"; created_at: number };
+export type WaitlistEntry = { contact: string; kind: "email" | "phone"; created_at: number; exams?: string };
 export const getWaitlist = () => keep("waitlist", api<{ waitlist: WaitlistEntry[] }>("/api/admin/waitlist").then((r) => r.waitlist));
 
 type UserPage = { users: AdminUser[]; hasMore: boolean; meOwner: boolean };

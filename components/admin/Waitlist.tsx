@@ -17,18 +17,18 @@ export default function Waitlist() {
 
   return (
     <div className="dgrid">
-      <PageHead title="Waitlist" sub="People who asked to hear when Markhor Prep opens.">
+      <PageHead title="Waitlist" sub="People who asked to hear when an exam opens, from its page.">
         {!!rows?.length && <a className="dpill light small" href="/api/admin/waitlist/export" download>Download CSV</a>}
         {!!rows?.length && <button type="button" className="dpill light small" onClick={copy}>Copy all</button>}
       </PageHead>
       {err && <p className="note-bad">{err}</p>}
       {!rows ? <div className="sk" style={{ height: 240 }} /> : !rows.length ? (
-        <section className="dcard panel"><Empty title="Nobody yet" text="The landing page now sends people straight to sign-up, so this list only holds earlier entries." /></section>
+        <section className="dcard panel"><Empty title="Nobody yet" text="Exam pages that aren't open yet ask for an email. Entries show up here." /></section>
       ) : (
         <section className="dcard panel">
           <table className="wl-table">
-            <thead><tr><th>Contact</th><th>Type</th><th>Joined</th></tr></thead>
-            <tbody>{rows.map((r) => <tr key={r.contact}><td>{r.contact}</td><td>{r.kind === "email" ? "Email" : "Phone"}</td><td>{day(new Date(r.created_at).toISOString())}</td></tr>)}</tbody>
+            <thead><tr><th>Contact</th><th>Type</th><th>Asked about</th><th>Joined</th></tr></thead>
+            <tbody>{rows.map((r) => <tr key={r.contact}><td>{r.contact}</td><td>{r.kind === "email" ? "Email" : "Phone"}</td><td>{r.exams ? r.exams.split(",").join(", ") : "Launch"}</td><td>{day(new Date(r.created_at).toISOString())}</td></tr>)}</tbody>
           </table>
         </section>
       )}

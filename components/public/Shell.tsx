@@ -2,6 +2,9 @@ import Ahead, { AheadReading } from "@/components/Ahead";
 import { PublicFooter, PublicNav } from "@/components/public/Frame";
 import { type Crumb, crumbData, ld } from "@/lib/public";
 import { signupHref } from "@/lib/exams";
+import { ExamFooter, ExamNav } from "@/components/exam/ExamFrame";
+import { examPage } from "@/lib/exam-pages";
+import "@/app/exam-page.css";
 
 export { PublicFooter, PublicNav };
 
@@ -13,9 +16,12 @@ export default function Shell({ trail, children, cta = true, article = false, pl
   const here = trail.at(-1)?.href ?? "";
   const exam = /^\/mdcat(\/|$)/.test(here) ? "mdcat" : here.startsWith("/nums-mdcat") ? "nums" : here.startsWith("/aku-test") ? "aku" : undefined;
   const start = exam ? signupHref({ area: "medical", exam }) : "/signup";
+  // A page under an exam (the MDCAT chapters, syllabus and paper) wears that exam's bar and footer, so it names no
+  // other exam (lib/exam-pages.ts).
+  const page = exam ? examPage(exam) : undefined;
   return (
     <div className={`x3 pub${article ? " pub-article" : ""}`} id="top" data-plain={plain ? "1" : undefined}>
-      <PublicNav start={start} />
+      {page ? <ExamNav exam={page} start={start} on={false} /> : <PublicNav start={start} />}
       <main className="x3-wrap pub-main">
         {trail.length > 1 && (
           <nav className="crumbs" aria-label="You are here">
@@ -33,7 +39,7 @@ export default function Shell({ trail, children, cta = true, article = false, pl
           </aside>
         )}
       </main>
-      <PublicFooter />
+      {page ? <ExamFooter exam={page} /> : <PublicFooter />}
       <Ahead />
       <AheadReading />
       {trail.length > 1 && <script type="application/ld+json" dangerouslySetInnerHTML={ld(crumbData(trail))} />}
