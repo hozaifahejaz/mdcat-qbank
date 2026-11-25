@@ -13,6 +13,7 @@ import { clock, letters, script } from "@/lib/format";
 import { type OpenAttempt, type Stats, checkAnswer, finishTest, lockAnswer, peekAnswer, reportQuestion, saveAnswer, setBookmark } from "@/lib/study";
 import type { Question } from "@/lib/bank";
 import type { AccountUser } from "@/lib/user";
+import { rich } from "@/lib/rich";
 
 const SIZE_KEY = "q-text-size";
 const sizeNames = ["Normal", "Large", "Larger"];
@@ -328,7 +329,7 @@ export default function TestPlayer({ user, attempt, note }: Props) {
                 </button>
               </span>
             </div>
-            <p id="stem" className="stem" {...script(q.stem)}>{q.stem}</p>
+            <p id="stem" className="stem" {...script(q.stem)}>{rich(q.stem)}</p>
             <Figure svg={q.figure} />
 
             {reveal ? (
@@ -345,7 +346,7 @@ export default function TestPlayer({ user, attempt, note }: Props) {
                         <span className="omark" />
                         <span className="oradio" aria-hidden="true" />
                         <span className="oletter">{letters[k]}.</span>
-                        <span className="otext" {...script(o)}>{o}{state === "out" && <span className="sr"> (crossed out)</span>}</span>
+                        <span className="otext" {...script(o)}>{rich(o)}{state === "out" && <span className="sr"> (crossed out)</span>}</span>
                       </button>
                     </li>
                   );

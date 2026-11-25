@@ -12,6 +12,7 @@ import { type Mistake, setBookmark, watchBookmarks, watchMistakes, testHref } fr
 import type { Subject } from "@/lib/dashboard-data";
 import { day, letters, script } from "@/lib/format";
 import type { AccountUser } from "@/lib/user";
+import { rich } from "@/lib/rich";
 
 const PAGE = 15;
 
@@ -70,7 +71,7 @@ function Mistakes({ user }: { user: AccountUser }) {
               <li key={q.id}>
                 <button type="button" className="mrow" aria-expanded={open === q.id} onClick={() => setOpen(open === q.id ? null : q.id)}>
                   <span className="mq">
-                    <b {...script(q.stem)}>{q.stem}</b>
+                    <b {...script(q.stem)}>{rich(q.stem)}</b>
                     <span className="muted small">
                       {q.subject} · {q.topic}
                       {m && <> · you chose {letters[m.chosen]} on {day(m.date)}{m.tries > 1 ? ` · wrong ${m.tries} times` : ""}</>}

@@ -15,6 +15,7 @@ import type { Subject } from "@/lib/dashboard-data";
 import { day, letters } from "@/lib/format";
 import { DUPLICATE_LIMIT, type QuestionFields, type StageId, checklist, missingFields, stageLabel, stages } from "@/lib/qc";
 import type { AccountUser } from "@/lib/user";
+import { rich } from "@/lib/rich";
 
 type View = StageId | "all" | "mine";
 const stageIndex = (s: StageId) => stages.findIndex((x) => x.id === s);
@@ -190,7 +191,7 @@ export default function Questions({ user }: { user: AccountUser }) {
                     {q.free && <span className="acc good">Free</span>}
                     {q.paper && <span className="acc">{q.paper}</span>}
                   </span>
-                  <span className="qrow-stem">{q.stem || <span className="muted">No stem yet</span>}</span>
+                  <span className="qrow-stem">{rich(q.stem) || <span className="muted">No stem yet</span>}</span>
                   <span className="muted small">{q.subject} · {q.topic || q.chapter} · {q.writer}</span>
                 </button>
               </li>
@@ -496,13 +497,13 @@ function BlindSolve({ q, onChanged }: { q: AdminQuestion; onChanged: (q: AdminQu
     <div className="dcard panel blind">
       <div className="panel-h"><h3 className="panel-title">Solve it blind</h3><span className="muted small">{q.subject} · {q.chapter} · {q.topic}</span></div>
       <p className="muted">Answer as a student would. The key and explanations stay hidden until you do. If your answer doesn&apos;t match the key, the question goes back to {q.writer}.</p>
-      <p className="blind-stem">{q.stem}</p>
+      <p className="blind-stem">{rich(q.stem)}</p>
       <Figure svg={q.figure} />
       <div className="blind-opts" role="radiogroup" aria-label="Your answer">
         {q.options.map((o, k) => (
           <label key={k} className={`blind-opt${pick === k ? " on" : ""}`}>
             <input type="radio" name="blind" checked={pick === k} onChange={() => setPick(k)} />
-            <b>{letters[k]}</b><span>{o}</span>
+            <b>{letters[k]}</b><span>{rich(o)}</span>
           </label>
         ))}
       </div>

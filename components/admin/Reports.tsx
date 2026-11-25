@@ -7,6 +7,7 @@ import { friendlyError } from "@/lib/auth";
 import { type Report, last, listReports, resolveReports } from "@/lib/admin";
 import { day } from "@/lib/format";
 import { stageLabel } from "@/lib/qc";
+import { rich } from "@/lib/rich";
 
 /* /admin/reports — what students flagged from the test screen, grouped by question. A question with three open
    reports is hidden from new tests until it's fixed or the reports are dismissed here. */
@@ -64,7 +65,7 @@ function Group({ id, reports, open, onDone }: { id: string; reports: Report[]; o
         {first.stage && <span className={`stage s-${first.stage}`}>{stageLabel(first.stage)}</span>}
         {open && <span className={`acc${reports.length >= 3 ? " warn" : ""}`}>{reports.length} open{reports.length >= 3 ? ", hidden from new tests" : ""}</span>}
       </div>
-      <p className="qrow-stem">{first.stem ?? <span className="muted">This question was deleted.</span>}</p>
+      <p className="qrow-stem">{first.stem == null ? <span className="muted">This question was deleted.</span> : rich(first.stem)}</p>
       <ul className="rep-items">
         {reports.map((r) => (
           <li key={r.id}>
