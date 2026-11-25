@@ -22,7 +22,7 @@
   --warn: #b06a00;
   --bad: #cc2f2f;
   --shadow: 0 1px 2px rgba(17,18,20,.04), 0 12px 32px -12px rgba(17,18,20,.14);
-  --font: var(--font-jakarta), "Plus Jakarta Sans", "Helvetica Neue", Arial, system-ui, sans-serif;
+  --font: var(--font-jakarta), "Plus Jakarta Sans", var(--font-urdu), "Noto Nastaliq Urdu", "Helvetica Neue", Arial, system-ui, sans-serif;
   --r-lg: 28px;
   --r-md: 18px;
 }
@@ -67,3 +67,7 @@ body { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-are
   /* Under 16px, phones zoom the whole page in when a field is tapped and leave it zoomed. */
   input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]), select, textarea { font-size: max(16px, 1em) !important; }
 }
+
+/* Urdu text: Nastaliq needs tall lines */
+[data-ur] { line-height: 2.2; }
+[lang="ur"] { font-size: 1.06em; }

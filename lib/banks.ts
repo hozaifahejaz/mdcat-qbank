@@ -247,7 +247,7 @@ export const akuMathematics = [
 
 /* HEC Law Admission Test (LAT), Part I: 75 MCQs in 100 minutes. English 20, General Knowledge 20, Pakistan Studies
    10, Islamiat 10, Urdu 10, Mathematics 5 (HEC ETC content weightages). Part II, an essay and a personal statement,
-   is practised on the writing screen, not in the bank. English and Mathematics are the questions already written
+   is practiced on the writing screen, not in the bank. English and Mathematics are the questions already written
    (MDCAT English, AKU Mathematics, migrations/0070); the other four subjects are written for LAT and later shared with
    the government jobs tests. Chapters follow the topics LAT prep guides group the subjects into. */
 export const latSyllabus = {

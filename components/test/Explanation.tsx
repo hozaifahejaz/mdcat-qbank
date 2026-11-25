@@ -1,5 +1,5 @@
 import type { Question } from "@/lib/bank";
-import { letters } from "@/lib/format";
+import { letters, script } from "@/lib/format";
 import type { Stats } from "@/lib/study";
 
 const share = (stats: Stats | null | undefined, k: number) => (stats && stats.n ? Math.round(((stats.picks[k] ?? 0) / stats.n) * 100) : null);
@@ -26,7 +26,7 @@ export function AnsweredOptions({ q, chosen, stats }: { q: Question; chosen: num
               <span className="omark">{key ? <Tick /> : mine ? <Cross /> : null}</span>
               <span className="oradio" aria-hidden="true" />
               <span className="oletter">{letters[k]}.</span>
-              <span className="otext">
+              <span className="otext" {...script(o)}>
                 {o}
                 {pct !== null && <span className="opct"> ({pct}%)</span>}
                 <span className="sr">{key ? (mine ? " Your answer, correct" : " Correct answer") : mine ? " Your answer" : ""}</span>
@@ -72,9 +72,9 @@ export default function Explanation({ q, chosen, onReport }: { q: Question; chos
   return (
     <section className="expl" aria-label="Explanation">
       <h2 className="expl-tab">Explanation</h2>
-      <p><b>{letters[q.answer]} is correct.</b> {q.why}</p>
+      <p {...script(q.why)}><b>{letters[q.answer]} is correct.</b> {q.why}</p>
       {others.map((i) => (
-        <p key={i} className={i === chosen ? "mine" : undefined}><b>Choice {letters[i]}{i === chosen ? " (your answer)" : ""}:</b> {q.wrong[i]}</p>
+        <p key={i} className={i === chosen ? "mine" : undefined} {...script(q.wrong[i])}><b>Choice {letters[i]}{i === chosen ? " (your answer)" : ""}:</b> {q.wrong[i]}</p>
       ))}
       <div className="expl-ref">
         <b>Reference</b>

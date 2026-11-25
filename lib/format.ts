@@ -3,6 +3,17 @@ import type { TestResult } from "@/lib/dashboard-data";
 import type { StudentUser } from "@/lib/user";
 
 export const tz = "Asia/Karachi";
+
+/* Urdu in a question (the LAT Urdu section, Urdu words quoted in an explanation). Text whose first letter is Urdu reads
+   right to left; any Urdu gets the taller line the Nastaliq script needs (globals.css, [data-ur]). English text is
+   left as it is. */
+const URDU = /[\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF]/;
+const LETTER = /[A-Za-z\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF]/;
+export function script(s: string | null | undefined): { dir?: "rtl"; lang?: "ur"; "data-ur"?: "" } {
+  if (!s || !URDU.test(s)) return {};
+  const first = s.match(LETTER)?.[0];
+  return first && URDU.test(first) ? { dir: "rtl", lang: "ur", "data-ur": "" } : { "data-ur": "" };
+}
 export const day = (iso: string) => new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: tz });
 export const fullDay = (iso: string) => new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: tz });
 export const pct = (n: number, d: number) => (d ? Math.round((n / d) * 100) : 0);
