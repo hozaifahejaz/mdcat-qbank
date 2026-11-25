@@ -126,7 +126,8 @@ const fsc1: BankSubject[] = [
       "Special theory of relativity", "Nuclear and particle physics",
     ],
   },
-  { name: "English", chapters: ["Grammar", "Vocabulary", "Reading comprehension"] },
+  // FSc English uses the MDCAT English set (grammar, vocabulary and reading), filed in the same chapters (migrations/0091).
+  { name: "English", chapters: mdcatSyllabus.English },
 ];
 
 const fsc2: BankSubject[] = [
@@ -157,7 +158,8 @@ const fsc2: BankSubject[] = [
       "Quantum physics", "Nuclear and particle physics", "Medical physics", "Space and environment",
     ],
   },
-  { name: "English", chapters: ["Grammar", "Vocabulary", "Reading comprehension"] },
+  // FSc English uses the MDCAT English set (grammar, vocabulary and reading), filed in the same chapters (migrations/0091).
+  { name: "English", chapters: mdcatSyllabus.English },
 ];
 
 /* NUMS MDCAT 2026 Biology: its own 13 units, in the syllabus order. It has no excretion or homeostasis, chromosomes and

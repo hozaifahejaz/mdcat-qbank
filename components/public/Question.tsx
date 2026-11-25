@@ -1,6 +1,7 @@
 import { Figure } from "@/components/test/Figure";
 import { script } from "@/lib/format";
 import type { PublicQuestion } from "@/lib/public";
+import { rich } from "@/lib/rich";
 
 const letters = ["A", "B", "C", "D"];
 
@@ -9,18 +10,18 @@ const letters = ["A", "B", "C", "D"];
 export default function Question({ q, n }: { q: PublicQuestion; n: number }) {
   return (
     <article className="pq x3-card">
-      <h3><span>Q{n}</span><span {...script(q.stem)}>{q.stem}</span></h3>
+      <h3><span>Q{n}</span><span {...script(q.stem)}>{rich(q.stem)}</span></h3>
       <Figure svg={q.figure} />
       <ol>
-        {q.options.map((o, i) => <li key={i}><b>{letters[i]}</b><span {...script(o)}>{o}</span></li>)}
+        {q.options.map((o, i) => <li key={i}><b>{letters[i]}</b><span {...script(o)}>{rich(o)}</span></li>)}
       </ol>
       <details>
         <summary>Show the answer and explanation</summary>
-        <p className="ans"><b>Answer: {letters[q.answer]}.</b> {q.options[q.answer]}</p>
-        <p {...script(q.why)}>{q.why}</p>
+        <p className="ans"><b>Answer: {letters[q.answer]}.</b> {rich(q.options[q.answer])}</p>
+        <p {...script(q.why)}>{rich(q.why)}</p>
         {Object.keys(q.wrong).length > 0 && (
           <ul>
-            {q.options.map((_, i) => (q.wrong[String(i)] ? <li key={i}><b>{letters[i]} is wrong:</b> {q.wrong[String(i)]}</li> : null))}
+            {q.options.map((_, i) => (q.wrong[String(i)] ? <li key={i}><b>{letters[i]} is wrong:</b> {rich(q.wrong[String(i)])}</li> : null))}
           </ul>
         )}
       </details>

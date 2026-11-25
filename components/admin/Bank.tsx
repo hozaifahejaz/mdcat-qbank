@@ -8,6 +8,7 @@ import { friendlyError } from "@/lib/auth";
 import { type Coverage, type Quality, getCoverage, getQuality, last } from "@/lib/admin";
 import { letters } from "@/lib/format";
 import type { AccountUser } from "@/lib/user";
+import { rich } from "@/lib/rich";
 
 /* A chapter with fewer questions than this is thin: a student runs out after a test or two. */
 const THIN = 20;
@@ -65,7 +66,7 @@ export default function Bank({ user }: { user: AccountUser }) {
                           <a className="link-row" href={`/admin/questions?id=${encodeURIComponent(r.id)}`}>
                             <b>{r.id}{r.reports > 0 && <> <span className="badge bad">{r.reports} report{r.reports === 1 ? "" : "s"}</span></>}</b>
                             <span className="muted small">{r.subject} · {r.chapter}</span>
-                            <span className="small bh-stem">{r.stem}</span>
+                            <span className="small bh-stem">{rich(r.stem)}</span>
                           </a>
                         </td>
                         <td><b>{r.pct}%</b><br /><span className="muted small">of {r.n}</span></td>
