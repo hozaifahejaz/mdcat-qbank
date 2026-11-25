@@ -100,7 +100,7 @@ const examParts: Record<string, Part[]> = {
     { d: "M2.5 20 9 9l3.5 6 2.5-4 6.5 9z", fill: "soft" },
     { d: "M2.5 20 9 9l3.5 6 2.5-4 6.5 9zM7.2 12.1 9 13.5l1.6-1.8" },
   ],
-  // Tests still to come (LAT's scales are in use)
+  // ECAT: a gear. NUST NET: a compass. LAT: scales.
   ecat: [
     { d: "M18.55 10.19 20.9 10.64v2.72l-2.35.45-.63 1.54 1.33 1.98-1.92 1.92-1.98-1.33-1.54.63-.45 2.35h-2.72l-.45-2.35-1.54-.63-1.98 1.33-1.92-1.92 1.33-1.98-.63-1.54-2.35-.45v-2.72l2.35-.45.63-1.54-1.33-1.98 1.92-1.92 1.98 1.33 1.54-.63.45-2.35h2.72l.45 2.35 1.54.63 1.98-1.33 1.92 1.92-1.33 1.98z", fill: "soft" },
     { d: "M18.55 10.19 20.9 10.64v2.72l-2.35.45-.63 1.54 1.33 1.98-1.92 1.92-1.98-1.33-1.54.63-.45 2.35h-2.72l-.45-2.35-1.54-.63-1.98 1.33-1.92-1.92 1.33-1.98-.63-1.54-2.35-.45v-2.72l2.35-.45.63-1.54-1.33-1.98 1.92-1.92 1.98 1.33 1.54-.63.45-2.35h2.72l.45 2.35 1.54.63 1.98-1.33 1.92 1.92-1.33 1.98z" },
@@ -116,6 +116,12 @@ const examParts: Record<string, Part[]> = {
     { d: "M12 4v16M8 20.5h8M4.5 6.5h15M5 6.5l-3 7M5 6.5l3 7M19 6.5l-3 7M19 6.5l3 7M2 13.5a3 3 0 0 0 6 0zM16 13.5a3 3 0 0 0 6 0z" },
   ],
 };
+
+// FSc Pre-Engineering Part 1 and 2 use the same books.
+examParts.eng1 = examParts.fsc1!;
+examParts.eng2 = examParts.fsc2!;
+// NUST NET's Intelligence part shares the Logical Reasoning mark.
+if (subjectParts["Logical Reasoning"]) subjectParts.Intelligence = subjectParts["Logical Reasoning"];
 
 function Mark({ parts, size }: { parts: Part[]; size: number }) {
   return (
@@ -135,7 +141,7 @@ export function SubjectMark({ subject, size = 18 }: { subject: string; size?: nu
   return parts ? <Mark parts={parts} size={size} /> : <>{subject[0]}</>;
 }
 
-/** The mark for a test or bank: mdcat, nums, aku, amc, etea, fsc1, fsc2, lat, and ecat, net for the ones still to come. */
+/** The mark for a test or bank: mdcat, nums, aku, amc, etea, fsc1, fsc2, eng1, eng2, ecat, net, lat. */
 export function ExamMark({ id, fallback, size = 22 }: { id: string; fallback?: string; size?: number }) {
   const parts = examParts[id] ?? (fallback ? examParts[fallback] : undefined);
   return parts ? <Mark parts={parts} size={size} /> : null;

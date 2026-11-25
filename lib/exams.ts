@@ -30,12 +30,18 @@ export const exams: Exam[] = [
   { id: "aku", area: "medical", name: "AKU Test", short: "AKU", blurb: "Aga Khan University", bank: "aku", banks: ["aku", "fsc1", "fsc2"] },
   { id: "fsc1", area: "medical", name: "FSc Part 1", short: "FSc 1", blurb: "First-year textbooks", bank: "fsc1", banks: ["fsc1"], group: "fsc" },
   { id: "fsc2", area: "medical", name: "FSc Part 2", short: "FSc 2", blurb: "Second-year textbooks", bank: "fsc2", banks: ["fsc2"], group: "fsc" },
+  // Engineering opens to students when the area does (areas above); until then only staff see its banks. GIKI and
+  // PIEAS are mocks on the ECAT bank, not exams of their own.
+  { id: "ecat", area: "engineering", name: "ECAT", short: "ECAT", blurb: "UET engineering entry test", bank: "ecat", banks: ["ecat", "eng1", "eng2"] },
+  { id: "net", area: "engineering", name: "NUST NET", short: "NET", blurb: "NUST entry test", bank: "net", banks: ["net", "eng1", "eng2"] },
+  { id: "eng1", area: "engineering", name: "FSc Pre-Engineering Part 1", short: "Pre-Eng 1", blurb: "First-year textbooks", bank: "eng1", banks: ["eng1"], group: "fsc" },
+  { id: "eng2", area: "engineering", name: "FSc Pre-Engineering Part 2", short: "Pre-Eng 2", blurb: "Second-year textbooks", bank: "eng2", banks: ["eng2"], group: "fsc" },
   // Law opens to students when the area does (areas above); until then only staff see the LAT bank.
   { id: "lat", area: "law", name: "LAT", short: "LAT", blurb: "HEC Law Admission Test, for LLB", bank: "lat", banks: ["lat"] },
 ];
 
 /* What a student who isn't sure yet starts with: the test most students in the area sit. */
-export const startingExam: Record<AreaId, string | undefined> = { medical: "mdcat", engineering: undefined, doctors: undefined, law: "lat", jobs: undefined };
+export const startingExam: Record<AreaId, string | undefined> = { medical: "mdcat", engineering: "ecat", doctors: undefined, law: "lat", jobs: undefined };
 
 /* What every account had before exams were chosen, and what an account reads as if its choice can't be read. */
 export const LEGACY = { area: "medical" as AreaId, exams: ["mdcat", "nums", "aku"] };

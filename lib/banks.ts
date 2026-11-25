@@ -5,7 +5,7 @@
    every other bank lists its questions in the bank_questions table with that bank's subject and chapter
    (migrations/0008_banks.sql). So a Biology question can be "Enzymes" in MDCAT and "Chapter 3: Enzymes" in FSc
    Part 1 at the same time. Which questions go in which bank gets filled in as questions are added. */
-export type BankId = "fsc1" | "fsc2" | "mdcat" | "nums" | "aku" | "amc" | "lat";
+export type BankId = "fsc1" | "fsc2" | "mdcat" | "nums" | "aku" | "amc" | "eng1" | "eng2" | "ecat" | "net" | "lat";
 
 export type BankSubject = { name: string; chapters: string[] };
 export type Bank = { id: BankId; name: string; short: string; blurb: string; subjects: BankSubject[] };
@@ -231,7 +231,7 @@ export const REASONING = "Science reasoning";
 /* AKU Mathematics. AKU publishes no maths syllabus: its MBBS test has a "Science and Mathematics Reasoning" section,
    and its only official maths material is the Mathematics Reasoning practice set on aku.edu. These chapters follow the
    question types in that set (quantity comparisons, data sufficiency, percentages, ratios and rates, data and box plots,
-   probability and counting, sequences, geometry), plus HSSC algebra. Mathematics is only in the AKU bank. */
+   probability and counting, sequences, geometry), plus HSSC algebra. These reasoning chapters are only in the AKU bank (and the basic ones in LAT). */
 export const akuMathematics = [
   "Arithmetic and number",
   "Percentages",
@@ -291,6 +291,57 @@ export const latSyllabus = {
   ],
 };
 
+/* FSc Mathematics, the PECTAA Mathematics 11 and 12 textbooks (National Curriculum 2023), units in book order. Written
+   for the engineering banks (migrations/0081 onwards, ids MTH-); not on the MDCAT, NUMS or AKU papers. */
+export const fscMaths11 = [
+  "Complex numbers", "Functions and graphs", "Quadratic functions", "Matrices and determinants", "Partial fractions",
+  "Sequences and series", "Permutations and combinations", "Mathematical induction and binomial theorem",
+  "Division of polynomials", "Trigonometric identities", "Trigonometric functions and their graphs", "Limits and continuity",
+  "Differentiation", "Vectors in space",
+];
+export const fscMaths12 = [
+  "Graphs of functions", "Further differentiation", "Integration", "Differential equations", "Analytical geometry",
+  "Conic sections", "Kinematics", "Numerical methods", "Inverse trigonometric functions", "Trigonometric equations",
+  "Vector-valued functions",
+];
+
+/* Engineering (pre-engineering students). Physics and Chemistry are the same FSc textbook questions as the pre-medical
+   FSc banks, listed again under these banks (migrations/0080_engineering_banks.sql). ECAT and NUST NET both test the
+   full FSc Part 1 and Part 2 syllabus (UET: "full intermediate syllabus"; NUST: "FA / FSc level, Part-1 and Part-II"),
+   and neither publishes a chapter list, so their chapters are the textbook chapters in book order. English is the
+   MDCAT English set; NET's Intelligence part uses the Army intelligence chapters and the logic puzzles. Mathematics is
+   the FSc Maths bank (fscMaths11, fscMaths12). When new FSc Physics or Chemistry questions are added, list them in these
+   banks too. Students see them once the engineering area opens (lib/exams.ts); until then only staff do. */
+const engPhysics = [...fsc1[2]!.chapters, ...fsc2[2]!.chapters.filter((c) => !fsc1[2]!.chapters.includes(c))];
+const engChemistry = [...fsc1[1]!.chapters, ...fsc2[1]!.chapters.filter((c) => !fsc1[1]!.chapters.includes(c))];
+// NUST names an Intelligence part but no topics. It is a verbal and non-verbal IQ test, so NET uses the Army
+// intelligence chapters (the amc bank below) plus the logic puzzles; the argument chapters of Logical Reasoning
+// (critical thinking, course of action, cause and effect) are MDCAT-style and stay out.
+const engMaths: BankSubject = { name: "Mathematics", chapters: [...fscMaths11, ...fscMaths12] };
+const INTELLIGENCE = [
+  "Series", "Analogies", "Odd one out", "Coding and decoding", "Relations and directions", "Ordering and ranking",
+  "Calendars and clocks", "Word skills", "Logical deductions", "Logical problems",
+  "Figure series", "Figure matrices", "Odd figure out", "Mirror images", "Paper folding", "Counting figures", "Cubes and dice",
+];
+const engineering: Bank[] = [
+  { id: "eng1", name: "FSc Pre-Engineering Part 1", short: "Pre-Eng 1", blurb: "First-year textbooks", subjects: [{ name: "Mathematics", chapters: fscMaths11 }, fsc1[2]!, fsc1[1]!] },
+  { id: "eng2", name: "FSc Pre-Engineering Part 2", short: "Pre-Eng 2", blurb: "Second-year textbooks", subjects: [{ name: "Mathematics", chapters: fscMaths12 }, fsc2[2]!, fsc2[1]!] },
+  {
+    id: "ecat", name: "ECAT", short: "ECAT", blurb: "UET entry test",
+    subjects: [engMaths, { name: "Physics", chapters: engPhysics }, { name: "Chemistry", chapters: engChemistry }, mdcatSubject("English")],
+  },
+  {
+    id: "net", name: "NUST NET", short: "NET", blurb: "NUST entry test",
+    subjects: [
+      engMaths,
+      { name: "Physics", chapters: engPhysics },
+      { name: "Chemistry", chapters: engChemistry },
+      mdcatSubject("English"),
+      { name: "Intelligence", chapters: INTELLIGENCE },
+    ],
+  },
+];
+
 export const banks: Bank[] = [
   { id: "fsc1", name: "FSc Part 1", short: "FSc 1", blurb: "First-year textbooks", subjects: fsc1 },
   { id: "fsc2", name: "FSc Part 2", short: "FSc 2", blurb: "Second-year textbooks", subjects: fsc2 },
@@ -328,6 +379,7 @@ export const banks: Bank[] = [
       { name: "Mathematics", chapters: akuMathematics },
     ],
   },
+  ...engineering,
   {
     // Army medical cadets sit the NUMS test and then the Army's own intelligence tests (migrations/0067).
     id: "amc", name: "Army intelligence tests", short: "Army IQ", blurb: "Army Medical College",
@@ -359,5 +411,6 @@ export const subjectTone: Record<string, { tone: string; solid: string }> = {
   "Pakistan Studies": { tone: "var(--peach)", solid: "#d9822b" },
   Islamiat: { tone: "var(--lemon)", solid: "#b08d00" },
   Urdu: { tone: "var(--lilac)", solid: "#a05acb" },
+  Intelligence: { tone: "var(--lemon)", solid: "#c9a400" },
 };
 export const toneOf = (subject: string) => subjectTone[subject] ?? { tone: "var(--bg)", solid: "var(--muted)" };

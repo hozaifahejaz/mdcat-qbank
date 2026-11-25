@@ -46,12 +46,14 @@ export const tracks: Track[] = [
         pattern: { summary: "100 MCQs · 100 minutes", parts: [{ name: "Maths", n: 30 }, { name: "Physics", n: 30 }, { name: "Chemistry or CS", n: 30 }, { name: "English", n: 10 }] },
       },
       { id: "net", name: "NUST NET", body: "NUST" },
-      {
-        id: "giki", name: "GIKI test", body: "GIKI",
-        pattern: { summary: "80 MCQs · 2 hours", parts: [{ name: "Maths", n: 30 }, { name: "Physics", n: 30 }, { name: "English", n: 20 }] },
-      },
+      // GIKI publishes its subjects (Maths, Physics, English) but not the number of questions or the time.
+      { id: "giki", name: "GIKI test", body: "GIKI" },
       { id: "fast", name: "FAST test", body: "FAST-NU" },
-      { id: "pieas", name: "PIEAS test", body: "PIEAS" },
+      {
+        // PIEAS written test pattern for BS programmes (entry test 2025), pre-engineering paper; no negative marking.
+        id: "pieas", name: "PIEAS test", body: "PIEAS",
+        pattern: { summary: "100 MCQs · 3 hours", parts: [{ name: "Maths", n: 30 }, { name: "Physics", n: 30 }, { name: "Chemistry", n: 30 }, { name: "English", n: 10 }] },
+      },
       { id: "etea-eng", name: "ETEA engineering", body: "ETEA, Khyber Pakhtunkhwa" },
       { id: "fsc-eng", name: "FSc Pre-Engineering", body: "Part 1 and Part 2" },
     ],

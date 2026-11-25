@@ -437,6 +437,11 @@
 .bank-mdcat { --bt: var(--pill); --bs: var(--on-pill); }
 .bank-nums { --bt: var(--peach); --bs: var(--warn); }
 .bank-aku { --bt: var(--lilac); --bs: #8a63ff; }
+.bank-eng1 { --bt: var(--mint); --bs: var(--good); }
+.bank-eng2 { --bt: var(--sky); --bs: var(--blue); }
+.bank-ecat { --bt: var(--pill); --bs: var(--on-pill); }
+.bank-net { --bt: var(--peach); --bs: var(--warn); }
+.bank-lat { --bt: var(--lilac); --bs: #8a63ff; }
 .bank-amc { --bt: var(--lemon); --bs: #c9a400; }
 
 /* Phone home: bank buttons, then one progress card */
