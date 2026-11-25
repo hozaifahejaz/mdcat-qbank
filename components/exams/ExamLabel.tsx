@@ -22,7 +22,7 @@ export default function ExamLabel({ bank, onBank }: { bank: string | undefined; 
   const lit = pressed ?? now?.id;
   if (!now) return null;
   if (list.length < 2 || !onBank) {
-    return <a className="exam-label" href="/account/exams" aria-label={`Preparing for ${now.name}. Change your exams.`}><ExamMark id={now.bank} size={16} />{now.name}</a>;
+    return <a className="exam-label" href="/account/exams" aria-label={`Preparing for ${now.name}. Change your exams.`}><ExamMark id={now.id} fallback={now.bank} size={16} />{now.name}</a>;
   }
   function pick(e: Exam) {
     if (e.id === lit) return;
@@ -34,7 +34,7 @@ export default function ExamLabel({ bank, onBank }: { bank: string | undefined; 
   return (
     <div className="exam-switch" role="radiogroup" aria-label="The exam shown here">
       {list.map((e) => (
-        <button key={e.id} type="button" role="radio" aria-checked={e.id === lit} onClick={() => pick(e)}><ExamMark id={e.bank} size={15} />{e.short}</button>
+        <button key={e.id} type="button" role="radio" aria-checked={e.id === lit} onClick={() => pick(e)}><ExamMark id={e.id} fallback={e.bank} size={15} />{e.short}</button>
       ))}
     </div>
   );

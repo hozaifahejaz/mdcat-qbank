@@ -8,6 +8,8 @@ export type AdminQuestion = Omit<QuestionFields, "answer"> & {
   /* null while the question waits for its blind solve and you aren't its writer. */
   answer: number | null;
   keyHidden: boolean;
+  /* The question's drawing, if it has one (questions.figure). Not edited in the panel. */
+  figure?: string;
   stage: StageId;
   checks: boolean[];
   duplicate: number | null;
