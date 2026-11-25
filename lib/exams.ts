@@ -24,6 +24,9 @@ export type Exam = { id: string; area: AreaId; name: string; short: string; blur
 export const exams: Exam[] = [
   { id: "mdcat", area: "medical", name: "MDCAT", short: "MDCAT", blurb: "Medical and dental colleges", bank: "mdcat", banks: ["mdcat", "fsc1", "fsc2"] },
   { id: "nums", area: "medical", name: "NUMS", short: "NUMS", blurb: "Army medical colleges", bank: "nums", banks: ["nums", "fsc1", "fsc2"] },
+  { id: "amc", area: "medical", name: "Army Medical College", short: "AMC", blurb: "NUMS test and Army intelligence tests", bank: "nums", banks: ["nums", "amc", "fsc1", "fsc2"] },
+  // ETEA runs the MDCAT in Khyber Pakhtunkhwa from 2027 on the PMDC syllabus, so it opens the MDCAT bank.
+  { id: "etea", area: "medical", name: "ETEA MDCAT", short: "ETEA", blurb: "Khyber Pakhtunkhwa, from 2027", bank: "mdcat", banks: ["mdcat", "fsc1", "fsc2"] },
   { id: "aku", area: "medical", name: "AKU Test", short: "AKU", blurb: "Aga Khan University", bank: "aku", banks: ["aku", "fsc1", "fsc2"] },
   { id: "fsc1", area: "medical", name: "FSc Part 1", short: "FSc 1", blurb: "First-year textbooks", bank: "fsc1", banks: ["fsc1"], group: "fsc" },
   { id: "fsc2", area: "medical", name: "FSc Part 2", short: "FSc 2", blurb: "Second-year textbooks", bank: "fsc2", banks: ["fsc2"], group: "fsc" },

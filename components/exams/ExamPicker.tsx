@@ -61,7 +61,7 @@ export function ExamOptions({ area, value, onChange, labelledBy, unsure = true }
       <div className="wel-opts" role="group" aria-labelledby={labelledBy}>
         {tests.map((e) => (
           <button key={e.id} type="button" role="checkbox" aria-checked={has(e.id)} className="wel-opt tick" onClick={() => toggleTest(e.id)}>
-            <span className={`wel-mark bank-${e.bank}`}><ExamMark id={e.bank} size={22} /></span><b>{e.name}</b><span>{e.blurb}</span>
+            <span className={`wel-mark bank-${e.bank}`}><ExamMark id={e.id} fallback={e.bank} size={22} /></span><b>{e.name}</b><span>{e.blurb}</span>
             <i className="wel-box" aria-hidden="true"><Icon name="check" size={14} /></i>
           </button>
         ))}

@@ -35,7 +35,7 @@ type Mode = "tutor" | "timed" | "mock";
 const modeOf: Record<Kind, Mode> = { practice: "tutor", timed: "timed", mock: "mock", "mini-mock": "mock", "past-paper": "mock" };
 
 export type Served = {
-  id: string; subject: string; chapter: string; topic: string; difficulty: string; source: string; stem: string;
+  id: string; subject: string; chapter: string; topic: string; difficulty: string; source: string; stem: string; figure?: string | null;
   options: string; answer: number; why: string; wrong: string; free: number; paper: number | null; open_reports: number;
 };
 export type AttemptRow = {
@@ -48,7 +48,7 @@ type AnswerRow = { idx: number; question_id: string; answer: number | null; flag
 const parse = <T>(s: string, fallback: T): T => { try { return JSON.parse(s) as T; } catch { return fallback; } };
 
 /* What a student sees while answering, and what they see once the answer is out. */
-const ask = (r: Served) => ({ id: r.id, subject: r.subject, chapter: r.chapter, topic: r.topic, stem: r.stem, options: parse<string[]>(r.options, []) });
+const ask = (r: Served) => ({ id: r.id, subject: r.subject, chapter: r.chapter, topic: r.topic, stem: r.stem, ...(r.figure ? { figure: r.figure } : {}), options: parse<string[]>(r.options, []) });
 export const full = (r: Served) => ({ ...ask(r), difficulty: r.difficulty, source: r.source, answer: r.answer, why: r.why, wrong: parse<Record<number, string>>(r.wrong, {}) });
 
 /* Who's asking, and which questions their plan opens: everything for a pass, the free set otherwise. `banks` are the

@@ -90,6 +90,16 @@ const examParts: Record<string, Part[]> = {
     { d: "M12 6.5C10 5 7 4.5 3.5 5v13c3.5-.5 6.5 0 8.5 1.5 2-1.5 5-2 8.5-1.5V5c-3.5-.5-6.5 0-8.5 1.5zM12 6.5v13" },
     { d: "M14.9 9.5c.3-.7 1-1.1 1.8-1.1 1 0 1.7.7 1.7 1.6 0 1.6-3.5 2.8-3.5 5.5h3.6" },
   ],
+  // Army intelligence tests: a star on a chevron
+  amc: [
+    { d: "M12 3.5l1.9 3.9 4.3.6-3.1 3 .7 4.3L12 13.3l-3.8 2 .7-4.3-3.1-3 4.3-.6z", fill: "soft" },
+    { d: "M12 3.5l1.9 3.9 4.3.6-3.1 3 .7 4.3L12 13.3l-3.8 2 .7-4.3-3.1-3 4.3-.6zM4.5 17.5 12 21l7.5-3.5" },
+  ],
+  // ETEA (Khyber Pakhtunkhwa): mountain peaks
+  etea: [
+    { d: "M2.5 20 9 9l3.5 6 2.5-4 6.5 9z", fill: "soft" },
+    { d: "M2.5 20 9 9l3.5 6 2.5-4 6.5 9zM7.2 12.1 9 13.5l1.6-1.8" },
+  ],
   // ECAT: a gear. NUST NET: a compass. LAT: scales.
   ecat: [
     { d: "M18.55 10.19 20.9 10.64v2.72l-2.35.45-.63 1.54 1.33 1.98-1.92 1.92-1.98-1.33-1.54.63-.45 2.35h-2.72l-.45-2.35-1.54-.63-1.98 1.33-1.92-1.92 1.33-1.98-.63-1.54-2.35-.45v-2.72l2.35-.45.63-1.54-1.33-1.98 1.92-1.92 1.98 1.33 1.54-.63.45-2.35h2.72l.45 2.35 1.54.63 1.98-1.33 1.92 1.92-1.33 1.98z", fill: "soft" },
@@ -131,8 +141,8 @@ export function SubjectMark({ subject, size = 18 }: { subject: string; size?: nu
   return parts ? <Mark parts={parts} size={size} /> : <>{subject[0]}</>;
 }
 
-/** The mark for a test or bank: mdcat, nums, aku, fsc1, fsc2, eng1, eng2, ecat, net, lat. */
-export function ExamMark({ id, size = 22 }: { id: string; size?: number }) {
-  const parts = examParts[id];
+/** The mark for a test or bank: mdcat, nums, aku, amc, etea, fsc1, fsc2, eng1, eng2, ecat, net, lat. */
+export function ExamMark({ id, fallback, size = 22 }: { id: string; fallback?: string; size?: number }) {
+  const parts = examParts[id] ?? (fallback ? examParts[fallback] : undefined);
   return parts ? <Mark parts={parts} size={size} /> : null;
 }

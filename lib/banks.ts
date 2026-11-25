@@ -5,7 +5,7 @@
    every other bank lists its questions in the bank_questions table with that bank's subject and chapter
    (migrations/0008_banks.sql). So a Biology question can be "Enzymes" in MDCAT and "Chapter 3: Enzymes" in FSc
    Part 1 at the same time. Which questions go in which bank gets filled in as questions are added. */
-export type BankId = "fsc1" | "fsc2" | "mdcat" | "nums" | "aku" | "eng1" | "eng2" | "ecat" | "net" | "lat";
+export type BankId = "fsc1" | "fsc2" | "mdcat" | "nums" | "aku" | "amc" | "eng1" | "eng2" | "ecat" | "net" | "lat";
 
 export type BankSubject = { name: string; chapters: string[] };
 export type Bank = { id: BankId; name: string; short: string; blurb: string; subjects: BankSubject[] };
@@ -376,6 +376,14 @@ export const banks: Bank[] = [
   },
   ...engineering,
   {
+    // Army medical cadets sit the NUMS test and then the Army's own intelligence tests (migrations/0067).
+    id: "amc", name: "Army intelligence tests", short: "Army IQ", blurb: "Army Medical College",
+    subjects: [
+      { name: "Verbal intelligence", chapters: ["Analogies", "Odd one out", "Series", "Coding and decoding", "Relations and directions", "Ordering and ranking", "Calendars and clocks", "Word skills"] },
+      { name: "Non-verbal intelligence", chapters: ["Figure series", "Figure matrices", "Odd figure out", "Mirror images", "Paper folding", "Counting figures", "Cubes and dice"] },
+    ],
+  },
+  {
     id: "lat", name: "LAT", short: "LAT", blurb: "HEC Law Admission Test",
     subjects: (Object.keys(latSyllabus) as (keyof typeof latSyllabus)[]).map((name) => ({ name, chapters: latSyllabus[name] })),
   },
@@ -391,6 +399,8 @@ export const subjectTone: Record<string, { tone: string; solid: string }> = {
   Physics: { tone: "var(--peach)", solid: "var(--warn)" },
   English: { tone: "var(--lilac)", solid: "#8a63ff" },
   "Logical Reasoning": { tone: "var(--lemon)", solid: "#c9a400" },
+  "Verbal intelligence": { tone: "var(--lilac)", solid: "#8a63ff" },
+  "Non-verbal intelligence": { tone: "var(--lemon)", solid: "#c9a400" },
   Mathematics: { tone: "var(--sky)", solid: "#0f9fb5" },
   "General Knowledge": { tone: "var(--mint)", solid: "#1f9d6b" },
   "Pakistan Studies": { tone: "var(--peach)", solid: "#d9822b" },

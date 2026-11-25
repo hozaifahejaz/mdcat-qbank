@@ -44,7 +44,7 @@ const log = (db: D1Database, actor: Staff, action: string, target: string, detai
 
 type QRow = {
   id: string; subject: string; chapter: string; topic: string; difficulty: QuestionFields["difficulty"]; source: string;
-  stem: string; options: string; answer: number; why: string; wrong: string; stage: StageId; checks: string;
+  stem: string; figure: string | null; options: string; answer: number; why: string; wrong: string; stage: StageId; checks: string;
   duplicate: number | null; duplicate_of: string | null; blind_by: string | null; blind_answer: number | null;
   reviewed_by: string | null; signed_off_by: string | null; sent_back: string | null; writer_id: string;
   created_at: number; updated_at: number; free: number; paper: number | null; live_copy: string | null; live_stage: StageId | null;
@@ -63,7 +63,7 @@ function present(r: QRow, viewer: Staff) {
   const hidden = r.stage === "blind" && r.blind_answer === null && r.writer_id !== viewer.id;
   return {
     id: r.id, subject: r.subject, chapter: r.chapter, topic: r.topic, difficulty: r.difficulty, source: r.source,
-    stem: r.stem, options: parse<string[]>(r.options, ["", "", "", ""]),
+    stem: r.stem, ...(r.figure ? { figure: r.figure } : {}), options: parse<string[]>(r.options, ["", "", "", ""]),
     answer: hidden ? null : r.answer, why: hidden ? "" : r.why, wrong: hidden ? {} : parse<Record<number, string>>(r.wrong, {}),
     keyHidden: hidden,
     stage: r.stage, checks: parse<boolean[]>(r.checks, []),

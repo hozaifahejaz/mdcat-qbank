@@ -442,6 +442,7 @@
 .bank-ecat { --bt: var(--pill); --bs: var(--on-pill); }
 .bank-net { --bt: var(--peach); --bs: var(--warn); }
 .bank-lat { --bt: var(--lilac); --bs: #8a63ff; }
+.bank-amc { --bt: var(--lemon); --bs: #c9a400; }
 
 /* Phone home: bank buttons, then one progress card */
 .m-home { gap: 22px; }

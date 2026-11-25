@@ -1,5 +1,6 @@
 "use client";
 
+import { Figure } from "@/components/test/Figure";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { go as leave } from "@/components/Nav";
 import Explanation, { AnsweredOptions, ResultStrip } from "@/components/test/Explanation";
@@ -328,6 +329,7 @@ export default function TestPlayer({ user, attempt, note }: Props) {
               </span>
             </div>
             <p id="stem" className="stem" {...script(q.stem)}>{q.stem}</p>
+            <Figure svg={q.figure} />
 
             {reveal ? (
               <AnsweredOptions q={reveal} chosen={chosen} stats={stats[i]} />

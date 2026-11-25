@@ -1,5 +1,6 @@
 "use client";
 
+import { Figure } from "@/components/test/Figure";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PageHead } from "@/components/app/AppShell";
 import Empty from "@/components/app/Empty";
@@ -496,6 +497,7 @@ function BlindSolve({ q, onChanged }: { q: AdminQuestion; onChanged: (q: AdminQu
       <div className="panel-h"><h3 className="panel-title">Solve it blind</h3><span className="muted small">{q.subject} · {q.chapter} · {q.topic}</span></div>
       <p className="muted">Answer as a student would. The key and explanations stay hidden until you do. If your answer doesn&apos;t match the key, the question goes back to {q.writer}.</p>
       <p className="blind-stem">{q.stem}</p>
+      <Figure svg={q.figure} />
       <div className="blind-opts" role="radiogroup" aria-label="Your answer">
         {q.options.map((o, k) => (
           <label key={k} className={`blind-opt${pick === k ? " on" : ""}`}>
