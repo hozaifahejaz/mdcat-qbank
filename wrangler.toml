@@ -20,3 +20,12 @@ migrations_dir = "migrations"
 # place is named outright: the Cloudflare site nearest AWS's Frankfurt region.
 [placement]
 region = "aws:eu-central-1"
+
+# Every deploy that is not main (the experiments site at experiments.markhorprep.com, and any other branch) uses its
+# own copy of the database, so trying something there can never touch real accounts or answers. Refresh the copy from
+# the live one with the "Copy live database to experiments" workflow (docs/experiments-site.md).
+[[env.preview.d1_databases]]
+binding = "DB"
+database_name = "mdcat-qbank-experiments"
+database_id = "e5e57138-f221-43a3-9e1e-e423b4be5040"
+migrations_dir = "migrations"
