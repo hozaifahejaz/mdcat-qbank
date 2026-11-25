@@ -9,7 +9,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 import { ApiError } from "@/lib/api";
 import { friendlyError } from "@/lib/auth";
 import { subjects } from "@/lib/bank";
-import { clock, letters } from "@/lib/format";
+import { clock, letters, script } from "@/lib/format";
 import { type OpenAttempt, type Stats, checkAnswer, finishTest, lockAnswer, peekAnswer, reportQuestion, saveAnswer, setBookmark } from "@/lib/study";
 import type { Question } from "@/lib/bank";
 import type { AccountUser } from "@/lib/user";
@@ -328,7 +328,7 @@ export default function TestPlayer({ user, attempt, note }: Props) {
                 </button>
               </span>
             </div>
-            <p id="stem" className="stem">{q.stem}</p>
+            <p id="stem" className="stem" {...script(q.stem)}>{q.stem}</p>
             <Figure svg={q.figure} />
 
             {reveal ? (
@@ -345,7 +345,7 @@ export default function TestPlayer({ user, attempt, note }: Props) {
                         <span className="omark" />
                         <span className="oradio" aria-hidden="true" />
                         <span className="oletter">{letters[k]}.</span>
-                        <span className="otext">{o}{state === "out" && <span className="sr"> (crossed out)</span>}</span>
+                        <span className="otext" {...script(o)}>{o}{state === "out" && <span className="sr"> (crossed out)</span>}</span>
                       </button>
                     </li>
                   );

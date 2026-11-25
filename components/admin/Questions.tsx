@@ -340,7 +340,7 @@ function Editor({ user, q, spread, onChanged }: {
                   </select>
                 </label>
                 <label className="fld span2"><span>Source (textbook, chapter, page)</span><input value={f.source} placeholder="e.g. Punjab Biology XI, ch. 4, p. 72" onChange={(e) => set("source", e.target.value)} /></label>
-                <label className="fld span2"><span>Stem</span><textarea rows={3} value={f.stem} onChange={(e) => set("stem", e.target.value)} /></label>
+                <label className="fld span2"><span>Stem</span><textarea rows={3} dir="auto" value={f.stem} onChange={(e) => set("stem", e.target.value)} /></label>
               </div>
 
               <div className="opts-edit">
@@ -351,11 +351,11 @@ function Editor({ user, q, spread, onChanged }: {
                       <input type="radio" name="key" checked={k === f.answer} onChange={() => set("answer", k)} />
                       <span>{letters[k]}</span>
                     </label>
-                    <input value={o} aria-label={`Option ${letters[k]}`} onChange={(e) => set("options", f.options.map((x, j) => (j === k ? e.target.value : x)))} />
+                    <input dir="auto" value={o} aria-label={`Option ${letters[k]}`} onChange={(e) => set("options", f.options.map((x, j) => (j === k ? e.target.value : x)))} />
                     {k === f.answer ? (
-                      <textarea rows={3} aria-label="Why the key is right" placeholder="Why this is right" value={f.why} onChange={(e) => set("why", e.target.value)} />
+                      <textarea rows={3} dir="auto" aria-label="Why the key is right" placeholder="Why this is right" value={f.why} onChange={(e) => set("why", e.target.value)} />
                     ) : (
-                      <textarea rows={2} aria-label={`Why ${letters[k]} is wrong`} placeholder={`Why ${letters[k]} is wrong`} value={f.wrong[k] ?? ""} onChange={(e) => set("wrong", { ...f.wrong, [k]: e.target.value })} />
+                      <textarea rows={2} dir="auto" aria-label={`Why ${letters[k]} is wrong`} placeholder={`Why ${letters[k]} is wrong`} value={f.wrong[k] ?? ""} onChange={(e) => set("wrong", { ...f.wrong, [k]: e.target.value })} />
                     )}
                   </div>
                 ))}
