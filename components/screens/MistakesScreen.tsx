@@ -9,7 +9,7 @@ import { friendlyError } from "@/lib/auth";
 import { type Question, subjects } from "@/lib/bank";
 import { type Mistake, setBookmark, watchBookmarks, watchMistakes, testHref } from "@/lib/study";
 import type { Subject } from "@/lib/dashboard-data";
-import { day, letters } from "@/lib/format";
+import { day, letters, script } from "@/lib/format";
 import type { AccountUser } from "@/lib/user";
 
 const PAGE = 15;
@@ -69,7 +69,7 @@ function Mistakes({ user }: { user: AccountUser }) {
               <li key={q.id}>
                 <button type="button" className="mrow" aria-expanded={open === q.id} onClick={() => setOpen(open === q.id ? null : q.id)}>
                   <span className="mq">
-                    <b>{q.stem}</b>
+                    <b {...script(q.stem)}>{q.stem}</b>
                     <span className="muted small">
                       {q.subject} · {q.topic}
                       {m && <> · you chose {letters[m.chosen]} on {day(m.date)}{m.tries > 1 ? ` · wrong ${m.tries} times` : ""}</>}

@@ -1,10 +1,11 @@
 import type { Metadata, Viewport } from "next";
-import { Plus_Jakarta_Sans } from "next/font/google";
+import { Noto_Nastaliq_Urdu, Plus_Jakarta_Sans } from "next/font/google";
 import Track from "@/components/Track";
 import { site } from "@/lib/site";
 import "./globals.css";
 
 const font = Plus_Jakarta_Sans({ subsets: ["latin"], weight: ["400", "500", "600", "700", "800"], variable: "--font-jakarta" });
+const urdu = Noto_Nastaliq_Urdu({ subsets: ["arabic"], weight: ["400", "700"], variable: "--font-urdu", preload: false, display: "swap" });
 
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
@@ -36,7 +37,7 @@ const themeScript = `(function(){try{var t=localStorage.getItem("theme");if(t!==
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" data-look="new" className={font.variable} suppressHydrationWarning>
+    <html lang="en" data-look="new" className={`${font.variable} ${urdu.variable}`} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
