@@ -1,0 +1,103 @@
+/* The home page (app/page.tsx): the range hero, the route and the summit. Same palette as the rest of the site (.x3
+   tokens). Motion draws lines in and moves the markhor; nothing fades, and all of it stops for reduced motion. */
+
+.xr { --ease: cubic-bezier(.2,.8,.2,1); }
+
+/* Hero */
+.xr-hero { position: relative; padding-top: 72px; overflow: hidden; }
+.xr-top { text-align: center; }
+.xr-kicker { color: var(--x-mute); font-size: .9375rem; margin-bottom: 18px !important; }
+.xr-hero h1 { font-size: clamp(2.4rem, 1.2rem + 4.2vw, 4.6rem); font-weight: 800; letter-spacing: -0.05em; line-height: 1; text-wrap: balance; }
+.xr-hero h1 span { color: var(--a); transition: color .5s var(--ease); }
+
+.xr-range { width: min(1240px, 100%); margin: 32px auto 0; }
+.xr-range svg { display: block; width: 100%; height: auto; overflow: visible; }
+.xr-ridge { fill: none; stroke: var(--x-ink); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 0; animation: xr-draw 1.8s var(--ease) both; }
+.xr-back { fill: none; stroke: var(--x-faint); stroke-width: 1.25; stroke-linejoin: round; stroke-dasharray: 2 6; stroke-linecap: round; }
+.xr-ground { fill: var(--x-bg); }
+.xr-lit { fill: none; stroke: var(--a); stroke-width: 3.5; stroke-linejoin: round; stroke-linecap: round; stroke-dasharray: 1; animation: xr-draw .9s var(--ease) both; }
+.xr-lit-fill { fill: color-mix(in srgb, var(--a) 10%, var(--x-bg)); stroke: none; animation: xr-rise .9s var(--ease) both; transform-box: fill-box; transform-origin: 50% 100%; }
+@keyframes xr-rise { from { transform: scaleY(0); } }
+@keyframes xr-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+
+.xr-peak { cursor: pointer; }
+.xr-hit { fill: transparent; }
+.xr-peak circle { fill: var(--x-bg); stroke: var(--x-ink); stroke-width: 2; transition: transform .3s var(--ease); transform-box: fill-box; transform-origin: center; }
+.xr-peak.on circle { stroke: var(--a); fill: var(--a); }
+.xr-peak text { transition: transform .9s var(--ease), fill .2s; }
+.xr-peak.on text { transform: translateY(-54px); }
+.xr-name { font-size: 17px; font-weight: 700; letter-spacing: -0.02em; fill: var(--x-mute); transition: fill .2s; }
+.xr-sub { font-size: 13px; font-weight: 500; fill: var(--x-faint); }
+.xr-peak.on .xr-name { fill: var(--x-ink); }
+.xr-peak.on .xr-sub { fill: color-mix(in srgb, var(--a) 80%, var(--x-mute)); }
+@media (hover: hover) { .xr-peak:hover .xr-name { fill: var(--x-ink); } .xr-peak:not(.on):hover circle { transform: scale(1.4); } }
+.xr-goat { transition: transform .9s var(--ease); }
+.xr-goat path { fill: var(--x-ink); }
+@media (max-width: 760px) { .xr-name, .xr-sub { display: none; } }
+
+/* The names under the range: the same choice as the peaks, easy to hit on a phone. */
+.xr-areas { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; margin-top: 28px; }
+.xr-areas button { display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border: 0; border-radius: 999px; font: inherit; font-size: .875rem; font-weight: 600; color: var(--x-mute); background: var(--x-card); box-shadow: inset 0 0 0 1px var(--x-line); cursor: pointer; transition: color .2s, box-shadow .2s, transform .15s; }
+.xr-areas button .mark { color: var(--a); }
+.xr-areas button[aria-selected="true"] { color: var(--x-ink); box-shadow: inset 0 0 0 2px var(--a), var(--x-shadow); }
+@media (max-width: 640px) { .xr-areas { flex-wrap: nowrap; justify-content: flex-start; overflow-x: auto; margin-inline: -16px; padding: 4px 16px; scrollbar-width: none; } .xr-areas::-webkit-scrollbar { display: none; } .xr-areas button { flex: none; } }
+@media (hover: hover) { .xr-areas button:hover { color: var(--x-ink); transform: translateY(-1px); } }
+
+/* The trail: the picked area's exams as markers on one dotted line. */
+.xr-trail { max-width: 980px; margin: 28px auto 0; padding-bottom: 96px; }
+.xr-who { text-align: center; color: var(--x-mute); font-size: .875rem; margin-bottom: 18px !important; }
+.xr-trail ul { position: relative; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+.xr-trail li { animation: xr-step .6s var(--ease) both; animation-delay: calc(var(--k) * 60ms); }
+@keyframes xr-step { from { transform: translateY(14px); } }
+.xr-exam { position: relative; display: grid; grid-template-columns: 1fr auto; align-items: center; column-gap: 10px; row-gap: 2px; height: 100%; padding: 16px 18px; border-radius: 14px; background: var(--x-card); box-shadow: var(--x-shadow), inset 0 0 0 1px var(--x-line); transition: transform .2s var(--ease), box-shadow .2s; }
+.xr-exam b { font-size: 1rem; letter-spacing: -0.01em; }
+.xr-exam small { grid-column: 1; color: var(--x-mute); font-size: .8125rem; }
+.xr-exam svg { grid-column: 2; grid-row: 1 / span 2; color: var(--a); transition: transform .2s var(--ease); }
+a.xr-exam::before { content: ""; position: absolute; left: 18px; top: -1px; width: 28px; height: 3px; border-radius: 0 0 3px 3px; background: var(--a); }
+@media (hover: hover) { a.xr-exam:hover { transform: translateY(-3px); box-shadow: var(--x-shadow-lg), inset 0 0 0 1.5px var(--a); } a.xr-exam:hover svg { transform: translateX(3px); } }
+.xr-exam.soon { background: transparent; box-shadow: inset 0 0 0 1.5px var(--x-line); }
+.xr-exam.soon::before { background: var(--x-faint); }
+.xr-exam.quiet { box-shadow: inset 0 0 0 1px var(--x-line); background: transparent; }
+.xr-exam.quiet b { color: var(--x-mute); font-weight: 600; }
+.xr-exam.soon small { color: var(--x-faint); }
+
+/* How it works: three stops on a trail that climbs. */
+.xr-climb { position: relative; max-width: 1040px; margin-inline: auto; }
+.xr-path { position: absolute; inset: 0 0 0 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.xr-path path { fill: none; stroke: var(--x-faint); stroke-width: 2; stroke-dasharray: .006 .012; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+.xr-climb ol { position: relative; list-style: none; margin: 0; padding: 0 0 96px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; }
+.xr-climb li { padding: 26px; border-radius: 20px; display: grid; gap: 8px; align-content: start; }
+.xr-climb li { background: var(--x-card); }
+.xr-climb li:nth-child(1) { transform: translateY(96px); }
+.xr-climb li:nth-child(2) { transform: translateY(48px); }
+.xr-climb li small { font-size: .75rem; font-weight: 700; letter-spacing: .08em; color: var(--x-faint); }
+.xr-climb h3 { font-size: 1.25rem; font-weight: 700; letter-spacing: -0.02em; }
+.xr-climb p { color: var(--x-mute); font-size: .9375rem; line-height: 1.55; }
+.xr-stop { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 13px; color: var(--x-blue); background: color-mix(in srgb, var(--x-blue) 10%, var(--x-card)); margin-bottom: 8px; }
+.xr-flag { position: absolute; right: 8px; top: -70px; width: 54px; height: 64px; overflow: visible; }
+.xr-flag path { fill: none; stroke: var(--x-ink); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.xr-flag .xr-flagcloth { fill: var(--x-blue); stroke: var(--x-blue); transform-origin: 14px 18px; animation: xr-wave 3.2s ease-in-out infinite; }
+@keyframes xr-wave { 50% { transform: skewY(-6deg) scaleX(.94); } }
+@media (max-width: 860px) {
+  .xr-path, .xr-flag { display: none; }
+  .xr-climb ol { grid-template-columns: minmax(0, 1fr); gap: 14px; padding-left: 28px; border-left: 2px dashed var(--x-line); margin-left: 8px; }
+  .xr-climb li:nth-child(n) { transform: none; }
+  .xr-climb ol { padding-bottom: 0; }
+  .xr-climb li { position: relative; }
+  .xr-climb li::before { content: ""; position: absolute; left: -38px; top: 34px; width: 14px; height: 14px; border-radius: 50%; background: var(--x-bg); box-shadow: inset 0 0 0 2px var(--x-blue); }
+}
+
+/* The summit at the end of the page. */
+.xr-summit { padding-block: 40px 112px; text-align: center; }
+.xr-summit .x3-wrap { display: grid; justify-items: center; gap: 20px; }
+.xr-hill { width: min(420px, 90%); height: auto; overflow: visible; margin-bottom: -6px; }
+.xr-hill-l { fill: none; stroke: var(--x-ink); stroke-width: 2; stroke-linejoin: round; stroke-dasharray: 1; animation: xr-draw 1.6s var(--ease) both; }
+.xr-hill-c { fill: none; stroke: var(--x-line); stroke-width: 1.5; stroke-linejoin: round; }
+.xr-hill-goat { fill: var(--x-blue); }
+.xr-summit h2 { font-size: clamp(2rem, 1.2rem + 2.6vw, 3.25rem); font-weight: 800; letter-spacing: -0.045em; line-height: 1.05; text-wrap: balance; }
+.xr-summit small { color: var(--x-mute); font-size: .875rem; }
+
+@media (prefers-reduced-motion: reduce) {
+  .xr-ridge, .xr-lit, .xr-hill-l, .xr-trail li, .xr-flag .xr-flagcloth { animation: none; }
+  .xr-goat, .xr-hero h1 span, .xr-peak text { transition: none; }
+}

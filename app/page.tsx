@@ -3,11 +3,9 @@ import Logo from "@/components/Logo";
 import Ahead, { AheadReading } from "@/components/Ahead";
 import ThemeToggle from "@/components/ThemeToggle";
 import { PublicFooter } from "@/components/public/Frame";
-import Experience from "@/components/experiment4/Experience";
-import { ExamProvider } from "@/components/experiment4/ExamState";
 import AppStory from "@/components/experiment8/AppStory";
-import AllExams from "@/components/landing/AllExams";
-import HeroIcons from "@/components/experiment8/HeroIcons";
+import Range from "@/components/home/Range";
+import Route, { Summit } from "@/components/home/Route";
 import { abs, bankSize, faqData, ld } from "@/lib/public";
 import { prices, site } from "@/lib/site";
 import "./landing-new.css";
@@ -15,10 +13,12 @@ import "./landing-hero.css";
 import "./landing-story.css";
 import "./landing-areas.css";
 import "./exam-page.css";
+import "./home-range.css";
 
-/* The home page: the "I'm preparing for ___" hero with each area's tests as admit tickets, then every exam by area, the
-   app walkthrough and the FAQ. It sells nothing itself: a ticket or a name in the list opens that exam's own page
-   (lib/exam-pages.ts), which has its pattern, a question to try and its price. Anything not open yet says "Coming soon". */
+/* The home page: "Which exam are you climbing?" answered by a range of peaks, one per area, with the picked area's
+   exams on the trail below; then how practicing works as a climb, the app walkthrough, the FAQ and a summit to start
+   from. It sells nothing itself: each exam opens its own page (lib/exam-pages.ts) with its paper, a question to try
+   and its price. */
 export const metadata: Metadata = { alternates: { canonical: "/" } };
 
 const faqs = [
@@ -46,13 +46,13 @@ const who = {
 
 export default function Home() {
   return (
-    <div className="x3 x4 x8" id="top">
-      <ExamProvider>
+    <div className="x3 x4 x8 xr" id="top">
       <nav className="x3-nav">
         <div className="x3-wrap x3-navin">
           <Logo href="#top" size={22} />
           <ul>
-            <li><a href="#exams">Exams</a></li>
+            <li><a href="#top">Exams</a></li>
+            <li><a href="#how">How it works</a></li>
             <li><a href="#app">App</a></li>
             <li><a href="#faq">FAQ</a></li>
           </ul>
@@ -64,13 +64,10 @@ export default function Home() {
         </div>
       </nav>
 
-      <div className="x8-herowrap">
-        <HeroIcons />
-        <Experience soon />
-      </div>
+      <Range />
 
       <main>
-        <AllExams />
+        <Route />
 
         <AppStory />
 
@@ -89,9 +86,9 @@ export default function Home() {
             </div>
           </div>
         </section>
+        <Summit line="Start with 100 free questions." button="Start free" href="/signup" note="No card needed." />
       </main>
 
-      </ExamProvider>
       <PublicFooter home="#top" />
       <script type="application/ld+json" dangerouslySetInnerHTML={ld(faqData(faqs))} />
       <script type="application/ld+json" dangerouslySetInnerHTML={ld(who)} />

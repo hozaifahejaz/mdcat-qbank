@@ -4,6 +4,7 @@ import { pageMeta } from "@/lib/public-meta";
 import "../landing-new.css";
 import "../landing-hero.css";
 import "../landing-areas.css";
+import "../home-range.css";
 import "../exam-page.css";
 
 /* The ECAT exam page (lib/exam-pages.ts). Engineering isn't open yet, so it asks for an email in place of prices. */

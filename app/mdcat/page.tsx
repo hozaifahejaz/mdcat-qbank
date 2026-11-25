@@ -5,6 +5,7 @@ import { pageMeta } from "@/lib/public-meta";
 import "../landing-new.css";
 import "../landing-hero.css";
 import "../landing-areas.css";
+import "../home-range.css";
 import "../exam-page.css";
 
 /* The MDCAT exam page (lib/exam-pages.ts). Its 68 chapter pages, the syllabus and the 2026 paper sit under it. */
@@ -24,7 +25,7 @@ export default function Mdcat() {
       <section className="x3-sec xe-sec">
         <div className="x3-wrap">
           <div className="x3-head"><h2>More for the MDCAT</h2></div>
-          <div className="xe-topics">
+          <div className="xe-more">
             {more.map((m) => <a key={m.href} className="x3-card xe-topic" href={m.href}><b>{m.name}</b><small>{m.line}</small></a>)}
           </div>
         </div>

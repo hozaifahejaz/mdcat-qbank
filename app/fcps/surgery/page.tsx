@@ -4,6 +4,7 @@ import { pageMeta } from "@/lib/public-meta";
 import "../../landing-new.css";
 import "../../landing-hero.css";
 import "../../landing-areas.css";
+import "../../home-range.css";
 import "../../exam-page.css";
 
 /* FCPS Part 1, Surgery and allied (lib/exam-pages.ts). Each speciality is its own exam with its own page. */

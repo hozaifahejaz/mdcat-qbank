@@ -28,7 +28,7 @@ export type ExamPage = {
   h1: string;
   lede: string;
   stats: [string, string][];
-  paper: { summary: string; parts: Part[]; notes: string[]; source: string };
+  paper: { summary: string; parts: Part[]; notes: string[]; source: string; sittings?: string[]; year?: string };
   sample: PublicQuestion;
   topics: Topic[];
   topicsHead?: string;
@@ -193,7 +193,8 @@ export const examPages: ExamPage[] = [
     paper: {
       summary: "MCQ paper · Surgery and allied",
       parts: [],
-      notes: ["2027 sittings: 5 January, 6 April, 6 July and 5 October", "Set by CPSP for each speciality group"],
+      notes: ["Set by CPSP for each speciality group"],
+      sittings: ["5 Jan", "6 Apr", "6 Jul", "5 Oct"], year: "2027",
       source: "CPSP's examination schedule for 2027",
     },
     sample: fromTrack("doctors"),

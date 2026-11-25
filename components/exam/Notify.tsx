@@ -27,14 +27,13 @@ export default function Notify({ exam, short }: { exam: string; short: string })
   }
 
   return (
-    <div className="xe-soon x3-card">
-      <span className="x8-soonbadge">Opening soon</span>
+    <div className="xe-soon">
       <h3>{short} opens soon.</h3>
       {state === "done" ? (
         <p className="xe-done" role="status">Done. We&apos;ll write once, when {short} opens.</p>
       ) : (
         <>
-          <p>Its prices will show here when it opens. Leave your email and we&apos;ll write once, when it does.</p>
+          <p>Leave your email or number and we&apos;ll write once, the day it opens.</p>
           <form className="xe-form" onSubmit={send}>
             <label className="xe-sr" htmlFor="xe-contact">Email or mobile number</label>
             <input id="xe-contact" type="text" inputMode="email" autoComplete="email" placeholder="Email or mobile number" required value={contact} onChange={(e) => setContact(e.target.value)} />
