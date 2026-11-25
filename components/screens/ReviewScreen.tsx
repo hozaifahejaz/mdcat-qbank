@@ -9,7 +9,7 @@ import { ReportDialog } from "@/components/test/TestPlayer";
 import { friendlyError } from "@/lib/auth";
 import { type Question, subjects } from "@/lib/bank";
 import { type Review as Data, type Scored, setBookmark, testHref, watchReview } from "@/lib/study";
-import { band, clock, day, kindNames, letters, pct } from "@/lib/format";
+import { band, clock, day, kindNames, letters, pct, script } from "@/lib/format";
 import { paper } from "@/lib/site";
 import type { AccountUser } from "@/lib/user";
 
@@ -157,7 +157,7 @@ function ReviewItem({ r, n, open, saved, onSave, onReport }: { r: Scored & { sta
       <details open={open}>
         <summary>
           <span className={`rstat ${r.status}`}>{label}</span>
-          <span className="rq"><b>Q{n}.</b> {r.q.stem}</span>
+          <span className="rq"><b>Q{n}.</b> <span {...script(r.q.stem)}>{r.q.stem}</span></span>
           {r.flagged && <span className="badge">Flagged</span>}
           <svg className="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
         </summary>
