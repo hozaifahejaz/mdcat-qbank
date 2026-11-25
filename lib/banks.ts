@@ -309,15 +309,20 @@ export const fscMaths12 = [
    FSc banks, listed again under these banks (migrations/0080_engineering_banks.sql). ECAT and NUST NET both test the
    full FSc Part 1 and Part 2 syllabus (UET: "full intermediate syllabus"; NUST: "FA / FSc level, Part-1 and Part-II"),
    and neither publishes a chapter list, so their chapters are the textbook chapters in book order. English is the
-   MDCAT English set; NET's Intelligence part uses the puzzle chapters of the Logical Reasoning set. Mathematics is
+   MDCAT English set; NET's Intelligence part uses the Army intelligence chapters and the logic puzzles. Mathematics is
    the FSc Maths bank (fscMaths11, fscMaths12). When new FSc Physics or Chemistry questions are added, list them in these
    banks too. Students see them once the engineering area opens (lib/exams.ts); until then only staff do. */
 const engPhysics = [...fsc1[2]!.chapters, ...fsc2[2]!.chapters.filter((c) => !fsc1[2]!.chapters.includes(c))];
 const engChemistry = [...fsc1[1]!.chapters, ...fsc2[1]!.chapters.filter((c) => !fsc1[1]!.chapters.includes(c))];
-// NUST names an Intelligence part but no topics. Only the puzzle-type Logical Reasoning chapters fit it; the argument
-// chapters (critical thinking, course of action, cause and effect) are MDCAT-style and stay out.
+// NUST names an Intelligence part but no topics. It is a verbal and non-verbal IQ test, so NET uses the Army
+// intelligence chapters (the amc bank below) plus the logic puzzles; the argument chapters of Logical Reasoning
+// (critical thinking, course of action, cause and effect) are MDCAT-style and stay out.
 const engMaths: BankSubject = { name: "Mathematics", chapters: [...fscMaths11, ...fscMaths12] };
-const INTELLIGENCE = ["Patterns and sequences", "Logical deductions", "Logical problems"];
+const INTELLIGENCE = [
+  "Series", "Analogies", "Odd one out", "Coding and decoding", "Relations and directions", "Ordering and ranking",
+  "Calendars and clocks", "Word skills", "Logical deductions", "Logical problems",
+  "Figure series", "Figure matrices", "Odd figure out", "Mirror images", "Paper folding", "Counting figures", "Cubes and dice",
+];
 const engineering: Bank[] = [
   { id: "eng1", name: "FSc Pre-Engineering Part 1", short: "Pre-Eng 1", blurb: "First-year textbooks", subjects: [{ name: "Mathematics", chapters: fscMaths11 }, fsc1[2]!, fsc1[1]!] },
   { id: "eng2", name: "FSc Pre-Engineering Part 2", short: "Pre-Eng 2", blurb: "Second-year textbooks", subjects: [{ name: "Mathematics", chapters: fscMaths12 }, fsc2[2]!, fsc2[1]!] },

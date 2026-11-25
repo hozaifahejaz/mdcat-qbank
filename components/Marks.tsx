@@ -120,7 +120,7 @@ const examParts: Record<string, Part[]> = {
 // FSc Pre-Engineering Part 1 and 2 use the same books.
 examParts.eng1 = examParts.fsc1!;
 examParts.eng2 = examParts.fsc2!;
-// NUST NET's Intelligence part is the Logical Reasoning set.
+// NUST NET's Intelligence part shares the Logical Reasoning mark.
 if (subjectParts["Logical Reasoning"]) subjectParts.Intelligence = subjectParts["Logical Reasoning"];
 
 function Mark({ parts, size }: { parts: Part[]; size: number }) {

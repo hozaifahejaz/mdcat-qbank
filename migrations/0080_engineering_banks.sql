@@ -7,9 +7,10 @@
 --   chapter. FSc Part 1 goes into eng1, Part 2 into eng2, and both into ECAT and NET (each tests the full FSc
 --   syllabus and publishes no chapter list of its own).
 -- * English (ECAT and NET): the MDCAT English set, under its own chapters.
--- * Intelligence (NET): the puzzle chapters of the Logical Reasoning set (patterns and sequences, logical deductions,
---   logical problems). NUST names no Intelligence topics; the argument chapters are MDCAT-style and stay out.
--- Maths is added when the FSc Maths bank is written.
+-- * Intelligence (NET): the Army verbal and non-verbal intelligence set (the amc bank, same chapters), the remaining
+--   Patterns and sequences questions under Series, and the Logical deductions and Logical problems chapters. NUST
+--   names no Intelligence topics; the argument chapters of Logical Reasoning are MDCAT-style and stay out.
+-- Maths comes from the FSc Maths bank (migrations 0081 and 0082).
 
 -- FSc Pre-Engineering Part 1 and Part 2: Physics and Chemistry from the FSc banks.
 INSERT OR IGNORE INTO bank_questions (bank, question_id, subject, chapter)
@@ -29,5 +30,7 @@ SELECT 'ecat', id, 'English', chapter FROM questions WHERE subject = 'English';
 INSERT OR IGNORE INTO bank_questions (bank, question_id, subject, chapter)
 SELECT 'net', id, 'English', chapter FROM questions WHERE subject = 'English';
 INSERT OR IGNORE INTO bank_questions (bank, question_id, subject, chapter)
-SELECT 'net', id, 'Intelligence', chapter FROM questions
+SELECT 'net', question_id, 'Intelligence', chapter FROM bank_questions WHERE bank = 'amc';
+INSERT OR IGNORE INTO bank_questions (bank, question_id, subject, chapter)
+SELECT 'net', id, 'Intelligence', CASE WHEN chapter = 'Patterns and sequences' THEN 'Series' ELSE chapter END FROM questions
 WHERE subject = 'Logical Reasoning' AND chapter IN ('Patterns and sequences', 'Logical deductions', 'Logical problems');
